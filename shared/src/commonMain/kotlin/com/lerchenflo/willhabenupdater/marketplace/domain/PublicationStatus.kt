@@ -15,3 +15,10 @@ data class PublicationStatus(
 interface PublicationStatusRepository {
     fun getStatusesAsFlow(): Flow<List<PublicationStatus>>
 }
+
+/** willhaben's status name of an expired listing. */
+private const val EXPIRED_STATUS = "Abgelaufen"
+
+/** Expired on the marketplace: its own status says so, or the end date has passed. */
+fun PublicationStatus.isExpired(nowMillis: Long): Boolean =
+    statusText == EXPIRED_STATUS || (expiresAt != null && expiresAt <= nowMillis)

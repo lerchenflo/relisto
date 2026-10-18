@@ -142,4 +142,10 @@
     <string name="republish_error_not_published">This listing is not on willhaben.</string>
     <string name="republish_error_paid">willhaben asks for a payment. Cancelled, nothing was bought.</string>
     <string name="republish_error_api_changed">willhaben changed its interface (%1$s is missing).</string>
+    <string name="renew_summary">%1$d renewed, %2$d failed</string>
+    <string name="renew_checked">Renew selected (%1$d)</string>
+    <string name="renew_select_all">Select all expired (%1$d)</string>
+    <string name="renew_clear">Clear selection</string>
+    <string name="renew_running">Renewing …</string>
+    <string name="renew_check_description">Select for renewing</string>
 </resources>

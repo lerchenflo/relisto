@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,20 +19,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +46,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -70,6 +78,11 @@ import willhabenupdater.shared.generated.resources.listings_settings
 import willhabenupdater.shared.generated.resources.listings_untitled
 import willhabenupdater.shared.generated.resources.listings_updated
 import willhabenupdater.shared.generated.resources.listings_willhaben_status
+import willhabenupdater.shared.generated.resources.renew_check_description
+import willhabenupdater.shared.generated.resources.renew_checked
+import willhabenupdater.shared.generated.resources.renew_clear
+import willhabenupdater.shared.generated.resources.renew_running
+import willhabenupdater.shared.generated.resources.renew_select_all
 
 @Composable
 fun ListingsRoot(
@@ -188,6 +201,9 @@ private fun ListingListPane(
                 label = { Text(stringResource(Res.string.listings_filter_archived)) },
             )
         }
+        if (state.renewableCount > 0 || state.isRenewing) {
+            RenewBar(state = state, onAction = onAction)
+        }
         when {
             state.isLoading -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -208,8 +224,39 @@ private fun ListingListPane(
                         item = item,
                         selected = item.id == state.selectedListingId,
                         onClick = { onAction(ListingsAction.OnListingClick(item.id)) },
+                        onCheckedChange = { checked -> onAction(ListingsAction.OnListingCheckedChange(item.id, checked)) },
                     )
                 }
+            }
+        }
+    }
+}
+
+/** Renewing several expired listings at once. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RenewBar(state: ListingsState, onAction: (ListingsAction) -> Unit) {
+    if (state.isRenewing) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(Res.string.renew_running))
+        }
+        return
+    }
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (state.checkedListingIds.isEmpty()) {
+            OutlinedButton(onClick = { onAction(ListingsAction.OnSelectAllExpiredClick) }) {
+                Text(stringResource(Res.string.renew_select_all, state.renewableCount))
+            }
+        } else {
+            Button(onClick = { onAction(ListingsAction.OnRenewCheckedClick) }) {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.renew_checked, state.checkedListingIds.size))
+            }
+            TextButton(onClick = { onAction(ListingsAction.OnClearCheckedClick) }) {
+                Text(stringResource(Res.string.renew_clear))
             }
         }
     }
@@ -220,6 +267,7 @@ private fun ListingListItem(
     item: ListingListItemUi,
     selected: Boolean,
     onClick: () -> Unit,
+    onCheckedChange: (Boolean) -> Unit,
 ) {
     val title = item.title.ifBlank { stringResource(Res.string.listings_untitled) }
     Surface(
@@ -228,6 +276,14 @@ private fun ListingListItem(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick),
     ) {
         Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (item.canRenew) {
+                val checkDescription = stringResource(Res.string.renew_check_description)
+                Checkbox(
+                    checked = item.isChecked,
+                    onCheckedChange = onCheckedChange,
+                    modifier = Modifier.semantics { contentDescription = checkDescription },
+                )
+            }
             ListingImage(
                 filePath = item.coverImagePath,
                 contentDescription = stringResource(Res.string.listings_cover_image, title),
@@ -277,12 +333,14 @@ private fun ListingsScreenPreview() {
         ListingsScreen(
             state = ListingsState(
                 listings = listOf(
-                    ListingListItemUi(1, "Kinderfahrrad 20 Zoll", "45 €", null, 4, "18.10.2026 19:05", willhabenStatus = "Online"),
+                    ListingListItemUi(1, "Kinderfahrrad 20 Zoll", "45 €", null, 4, "18.10.2026 19:05", willhabenStatus = "Abgelaufen", canRenew = true, isChecked = true),
                     ListingListItemUi(2, "Esstisch Eiche massiv", "120 €", null, 2, "17.10.2026 08:30"),
                     ListingListItemUi(3, "", null, null, 0, "16.10.2026 21:12"),
                 ),
                 selectedListingId = 1,
                 isLoading = false,
+                checkedListingIds = setOf(1),
+                renewableCount = 1,
             ),
             onAction = {},
             snackbarHostState = SnackbarHostState(),

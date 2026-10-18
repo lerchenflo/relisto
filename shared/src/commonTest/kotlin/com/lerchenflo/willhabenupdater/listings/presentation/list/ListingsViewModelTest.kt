@@ -4,9 +4,11 @@ import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.isEqualTo
+import assertk.assertions.isEmpty
 import assertk.assertions.isFalse
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import com.lerchenflo.willhabenupdater.app.domain.DataError
 import com.lerchenflo.willhabenupdater.app.navigation.NavigationAction
 import com.lerchenflo.willhabenupdater.app.navigation.Navigator
@@ -17,13 +19,21 @@ import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus
 import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.willhabenupdater.settings.domain.AppSettings
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.PublishError
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenRenewer
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.toUiText
+import com.lerchenflo.willhabenupdater.testutil.FakeImporter
 import com.lerchenflo.willhabenupdater.testutil.FakeListingRepository
 import com.lerchenflo.willhabenupdater.testutil.FakePublicationStatusRepository
+import com.lerchenflo.willhabenupdater.testutil.FakePublisher
 import com.lerchenflo.willhabenupdater.testutil.FakeSettingsDataSource
+import com.lerchenflo.willhabenupdater.testutil.FakeTimeProvider
 import com.lerchenflo.willhabenupdater.testutil.FakeWillhabenFieldsDataSource
 import com.lerchenflo.willhabenupdater.testutil.MainDispatcherTest
 import com.lerchenflo.willhabenupdater.testutil.image
 import com.lerchenflo.willhabenupdater.testutil.listing
+import com.lerchenflo.willhabenupdater.app.domain.Result
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -35,7 +45,22 @@ class ListingsViewModelTest : MainDispatcherTest() {
     private val navigator = Navigator()
     private val statuses = FakePublicationStatusRepository()
 
-    private fun viewModel() = ListingsViewModel(repository, settings, willhabenFields, navigator, statuses)
+    private val publisher = FakePublisher()
+    private val importer = FakeImporter()
+    private val time = FakeTimeProvider(now = 10_000L)
+    private val renewer = WillhabenRenewer(publisher, importer, statuses, time)
+
+    private fun viewModel() = ListingsViewModel(repository, settings, willhabenFields, navigator, statuses, renewer, time)
+
+    /** Listings 1 and 3 are expired on willhaben, 2 is online, 4 exists only locally. */
+    private fun expiredAndOnlineListings() {
+        repository.listings.value = listOf(listing(1, updatedAt = 4), listing(2, updatedAt = 3), listing(3, updatedAt = 2), listing(4, updatedAt = 1))
+        statuses.statuses.value = listOf(
+            PublicationStatus(1, Marketplace.WILLHABEN, "Abgelaufen", null, SyncState.SYNCED),
+            PublicationStatus(2, Marketplace.WILLHABEN, "Online", 20_000L, SyncState.SYNCED),
+            PublicationStatus(3, Marketplace.WILLHABEN, "Online", 5_000L, SyncState.SYNCED),
+        )
+    }
 
     @Test
     fun activeListingsAreShownNewestFirstWithFormattedPriceAndCover() = runTest {
@@ -173,5 +198,78 @@ class ListingsViewModelTest : MainDispatcherTest() {
 
         assertThat(items.getValue(1).willhabenStatus).isEqualTo("Abgelaufen")
         assertThat(items.getValue(2).willhabenStatus).isNull()
+    }
+
+    @Test
+    fun onlyExpiredWillhabenListingsCanBeRenewed() = runTest {
+        expiredAndOnlineListings()
+
+        val items = viewModel().state.value.listings.associateBy { it.id }
+
+        assertThat(items.getValue(1).canRenew).isTrue()
+        assertThat(items.getValue(2).canRenew).isFalse()
+        assertThat(items.getValue(3).canRenew).isTrue()
+        assertThat(items.getValue(4).canRenew).isFalse()
+    }
+
+    @Test
+    fun expiredListingsCanBeCheckedAndUnchecked() = runTest {
+        expiredAndOnlineListings()
+        val viewModel = viewModel()
+
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(1, true))
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(2, true))
+        assertThat(viewModel.state.value.checkedListingIds).isEqualTo(setOf(1L))
+        assertThat(viewModel.state.value.listings.first { it.id == 1L }.isChecked).isTrue()
+
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(1, false))
+        assertThat(viewModel.state.value.checkedListingIds).isEmpty()
+    }
+
+    @Test
+    fun selectAllExpiredChecksEveryRenewableListing() = runTest {
+        expiredAndOnlineListings()
+        val viewModel = viewModel()
+
+        viewModel.onAction(ListingsAction.OnSelectAllExpiredClick)
+
+        assertThat(viewModel.state.value.checkedListingIds).isEqualTo(setOf(1L, 3L))
+        assertThat(viewModel.state.value.renewableCount).isEqualTo(2)
+    }
+
+    @Test
+    fun checkedListingsAreRenewedTogether() = runTest {
+        expiredAndOnlineListings()
+        publisher.pending = CompletableDeferred()
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnSelectAllExpiredClick)
+
+        viewModel.events.test {
+            viewModel.onAction(ListingsAction.OnRenewCheckedClick)
+            assertThat(viewModel.state.value.isRenewing).isTrue()
+
+            publisher.pending!!.complete(Unit)
+
+            assertThat(awaitItem()).isInstanceOf(ListingsEvent.ShowMessage::class)
+            assertThat(publisher.republished).containsExactly(1L, 3L)
+            assertThat(importer.calls).isEqualTo(1)
+            assertThat(viewModel.state.value.isRenewing).isFalse()
+            assertThat(viewModel.state.value.checkedListingIds).isEmpty()
+        }
+    }
+
+    @Test
+    fun failedRenewalShowsSummaryAndFirstError() = runTest {
+        expiredAndOnlineListings()
+        publisher.result = Result.Error(PublishError.PaidProduct)
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(1, true))
+
+        viewModel.events.test {
+            viewModel.onAction(ListingsAction.OnRenewCheckedClick)
+
+            assertThat(awaitItem()).isInstanceOf(ListingsEvent.ShowMessage::class)
+            assertThat(awaitItem()).isEqualTo(ListingsEvent.ShowMessage(PublishError.PaidProduct.toUiText()))
+        }
     }
 }

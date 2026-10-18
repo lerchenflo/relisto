@@ -142,4 +142,10 @@
     <string name="republish_error_not_published">Diese Anzeige ist nicht auf willhaben.</string>
     <string name="republish_error_paid">willhaben verlangt eine Zahlung. Abgebrochen, es wurde nichts gebucht.</string>
     <string name="republish_error_api_changed">willhaben hat die Schnittstelle geändert (%1$s fehlt).</string>
+    <string name="renew_summary">%1$d erneuert, %2$d fehlgeschlagen</string>
+    <string name="renew_checked">Ausgewählte erneuern (%1$d)</string>
+    <string name="renew_select_all">Alle abgelaufenen auswählen (%1$d)</string>
+    <string name="renew_clear">Auswahl aufheben</string>
+    <string name="renew_running">Wird erneuert …</string>
+    <string name="renew_check_description">Zum Erneuern auswählen</string>
 </resources>

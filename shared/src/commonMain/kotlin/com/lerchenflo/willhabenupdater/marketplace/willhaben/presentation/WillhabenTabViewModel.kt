@@ -9,6 +9,7 @@ import com.lerchenflo.willhabenupdater.listings.domain.ListingRepository
 import com.lerchenflo.willhabenupdater.marketplace.domain.Marketplace
 import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus
 import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatusRepository
+import com.lerchenflo.willhabenupdater.marketplace.domain.isExpired
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenImporter
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenPublisher
 import com.lerchenflo.willhabenupdater.utilities.TimeProvider
@@ -133,12 +134,11 @@ class WillhabenTabViewModel(
 
     private fun PublicationStatus.toUi(): PublicationUi? {
         if (statusText == null && expiresAt == null) return null
-        val expired = statusText == EXPIRED_STATUS || (expiresAt != null && expiresAt <= timeProvider.nowEpochMillis())
         return PublicationUi(
             statusText = statusText,
             expiresText = expiresAt?.let(::formatDateTime),
             syncState = syncState,
-            canRepublish = expired,
+            canRepublish = isExpired(timeProvider.nowEpochMillis()),
         )
     }
 
@@ -290,7 +290,5 @@ class WillhabenTabViewModel(
         const val PATH_SEPARATOR = " › "
         const val MAX_CATEGORY_RESULTS = 50
         val POSTCODE = Regex("""\d{4}""")
-        /** willhaben's status name of an expired listing. */
-        const val EXPIRED_STATUS = "Abgelaufen"
     }
 }

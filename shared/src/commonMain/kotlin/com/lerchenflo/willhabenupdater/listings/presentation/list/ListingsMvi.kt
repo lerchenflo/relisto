@@ -10,6 +10,11 @@ data class ListingsState(
     val searchQuery: String = "",
     val filter: ListingFilter = ListingFilter.ACTIVE,
     val isLoading: Boolean = true,
+    /** Expired listings checked for renewing them together. */
+    val checkedListingIds: Set<Long> = emptySet(),
+    /** Number of expired listings that can be renewed. */
+    val renewableCount: Int = 0,
+    val isRenewing: Boolean = false,
 )
 
 data class ListingListItemUi(
@@ -21,6 +26,9 @@ data class ListingListItemUi(
     val updatedText: String,
     /** willhaben's status text for published listings, e.g. "Abgelaufen". */
     val willhabenStatus: String? = null,
+    /** Expired on willhaben, so it can be renewed. */
+    val canRenew: Boolean = false,
+    val isChecked: Boolean = false,
 )
 
 enum class ListingFilter {
@@ -34,6 +42,10 @@ sealed interface ListingsAction {
     data class OnListingClick(val listingId: Long) : ListingsAction
     data object OnNewListingClick : ListingsAction
     data object OnSettingsClick : ListingsAction
+    data class OnListingCheckedChange(val listingId: Long, val checked: Boolean) : ListingsAction
+    data object OnSelectAllExpiredClick : ListingsAction
+    data object OnClearCheckedClick : ListingsAction
+    data object OnRenewCheckedClick : ListingsAction
 }
 
 sealed interface ListingsEvent {

@@ -34,6 +34,7 @@ import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCat
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenImporter
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenPublisher
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenRenewer
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenSessionRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.WillhabenTabViewModel
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountViewModel
@@ -81,6 +82,7 @@ val datasourceModule = module {
     singleOf(::RoomWillhabenImporter) { bind<WillhabenImporter>() }
     singleOf(::KtorWillhabenWriteDataSource)
     singleOf(::WillhabenRepublisher) { bind<WillhabenPublisher>() }
+    singleOf(::WillhabenRenewer)
 
     // Separate plain client for the optional update hint (no willhaben headers or cookies)
     single<HttpClient>(named(GITHUB_CLIENT)) { HttpClientFactory.createGitHubClient(get()) }
