@@ -85,6 +85,19 @@ class WillhabenSessionTest {
     }
 
     @Test
+    fun realProfileShapeGivesNameFromUserData() = runTest {
+        // Shape of GET /userprofile-service/userprofile/me as recorded on 2026-10-18 (values made up)
+        profileResponses = mutableListOf(
+            profile(
+                """{"contextLinkList":{"contextLink":[]},"titleList":[],
+                   "userData":{"firstName":"Flo","lastName":"Example","emailAddress":"flo@example.at","loginId":12345678,"uuid":"u"}}"""
+            )
+        )
+
+        assertThat(dataSource.fetchAccount()).isEqualTo(Result.Success(WillhabenAccount("12345678", "Flo Example")))
+    }
+
+    @Test
     fun profileWithoutNameFallsBackToEmail() = runTest {
         profileResponses = mutableListOf(profile("""{"email":"flo@example.at"}"""))
 

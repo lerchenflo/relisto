@@ -58,11 +58,13 @@ class KtorWillhabenAccountDataSource(
         }
     }
 
+    /** The profile sits in "userData" (seen 2026-10-18); older or other shapes are read from the top level. */
     private fun JsonObject.toAccount(): WillhabenAccount {
-        fun text(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
+        val profile = this["userData"] as? JsonObject ?: this
+        fun text(key: String) = (profile[key] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
         val fullName = listOfNotNull(text("firstName"), text("lastName")).joinToString(" ").ifBlank { null }
         val loginId = text("loginId")
-        val displayName = text("displayName") ?: text("name") ?: fullName ?: text("email") ?: loginId ?: WEB_HOST
+        val displayName = text("displayName") ?: text("name") ?: fullName ?: text("emailAddress") ?: text("email") ?: loginId ?: WEB_HOST
         return WillhabenAccount(loginId = loginId, displayName = displayName)
     }
 
