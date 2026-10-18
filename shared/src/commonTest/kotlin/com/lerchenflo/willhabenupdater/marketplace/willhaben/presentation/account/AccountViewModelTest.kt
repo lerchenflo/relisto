@@ -5,12 +5,13 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isInstanceOf
-import assertk.assertions.isNull
 import assertk.assertions.isTrue
+import com.lerchenflo.willhabenupdater.app.domain.DataError
 import com.lerchenflo.willhabenupdater.app.domain.Result
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.ImportSummary
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState
-import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount
+import com.lerchenflo.willhabenupdater.testutil.FakeImporter
 import com.lerchenflo.willhabenupdater.testutil.FakeLoginBrowser
 import com.lerchenflo.willhabenupdater.testutil.FakeSessionRepository
 import com.lerchenflo.willhabenupdater.testutil.MainDispatcherTest
@@ -22,12 +23,13 @@ class AccountViewModelTest : MainDispatcherTest() {
 
     private val sessions = FakeSessionRepository()
     private val browser = FakeLoginBrowser()
+    private val importer = FakeImporter()
 
-    private fun viewModel() = AccountViewModel(sessions, browser)
+    private fun viewModel() = AccountViewModel(sessions, browser, importer)
 
     @Test
     fun storedSessionIsCheckedOnStart() = runTest {
-        sessions.refreshResult = SessionState.LoggedIn(WillhabenAccount("flo@example.at", "Flo"))
+        sessions.refreshResult = SessionState.LoggedIn(displayName = "Flo")
 
         val state = viewModel().state.value
 
@@ -41,7 +43,6 @@ class AccountViewModelTest : MainDispatcherTest() {
         val state = viewModel().state.value
 
         assertThat(state.isLoggedIn).isFalse()
-        assertThat(state.accountName).isNull()
     }
 
     @Test
@@ -106,7 +107,7 @@ class AccountViewModelTest : MainDispatcherTest() {
 
     @Test
     fun logoutEndsSessionAndBrowserLogin() = runTest {
-        sessions.refreshResult = SessionState.LoggedIn(WillhabenAccount(null, "Flo"))
+        sessions.refreshResult = SessionState.LoggedIn(displayName = null)
         val viewModel = viewModel()
 
         viewModel.onAction(AccountAction.OnLogoutClick)
@@ -114,5 +115,43 @@ class AccountViewModelTest : MainDispatcherTest() {
         assertThat(sessions.logoutCalls).isEqualTo(1)
         assertThat(browser.clearCalls).isEqualTo(1)
         assertThat(viewModel.state.value.isLoggedIn).isFalse()
+    }
+
+    @Test
+    fun importReportsFoundListings() = runTest {
+        importer.result = Result.Success(ImportSummary(found = 7, created = 7))
+        val viewModel = viewModel()
+
+        viewModel.events.test {
+            viewModel.onAction(AccountAction.OnImportClick)
+            assertThat(awaitItem()).isInstanceOf(AccountEvent.ShowMessage::class)
+        }
+        assertThat(importer.calls).isEqualTo(1)
+        assertThat(viewModel.state.value.isImporting).isFalse()
+    }
+
+    @Test
+    fun importIsRunningUntilFinished() = runTest {
+        importer.pending = CompletableDeferred()
+        val viewModel = viewModel()
+
+        viewModel.onAction(AccountAction.OnImportClick)
+        assertThat(viewModel.state.value.isImporting).isTrue()
+        viewModel.onAction(AccountAction.OnImportClick)
+        importer.pending?.complete(Unit)
+
+        assertThat(importer.calls).isEqualTo(1)
+        assertThat(viewModel.state.value.isImporting).isFalse()
+    }
+
+    @Test
+    fun failedImportShowsMessage() = runTest {
+        importer.result = Result.Error(DataError.Network.UNAUTHORIZED)
+        val viewModel = viewModel()
+
+        viewModel.events.test {
+            viewModel.onAction(AccountAction.OnImportClick)
+            assertThat(awaitItem()).isInstanceOf(AccountEvent.ShowMessage::class)
+        }
     }
 }

@@ -24,6 +24,8 @@ private const val WILLHABEN_CLIENT_HEADER = "api@willhaben.at;responsive_web;ser
 private const val BROWSER_USER_AGENT =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
 
+private const val LOGIN_SERVER_HOST = "sso.willhaben.at"
+
 /** Headers that carry credentials and must never show up in logs. */
 private val SENSITIVE_HEADERS = setOf(HttpHeaders.Cookie, HttpHeaders.SetCookie, CSRF_HEADER)
 
@@ -37,6 +39,7 @@ object HttpClientFactory {
         engine: HttpClientEngine,
         cookiesStorage: CookiesStorage = AcceptAllCookiesStorage(),
         captureDir: String? = null,
+        logger: Logger = Logger.SIMPLE,
     ): HttpClient = HttpClient(engine) {
         install(ContentNegotiation) {
             json(AppJson)
@@ -58,9 +61,11 @@ object HttpClientFactory {
             socketTimeoutMillis = 60_000
         }
         install(Logging) {
-            logger = Logger.SIMPLE
+            this.logger = logger
             level = LogLevel.INFO
             sanitizeHeader { header -> header in SENSITIVE_HEADERS }
+            // Login and its redirects carry one-time codes in the URL; they are never logged
+            filter { request -> request.url.host != LOGIN_SERVER_HOST && !request.url.build().encodedPath.contains("/oauth2/") }
         }
         defaultRequest {
             headers.append(HttpHeaders.Accept, "application/json")

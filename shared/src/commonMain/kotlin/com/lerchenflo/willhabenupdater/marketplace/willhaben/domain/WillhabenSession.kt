@@ -1,20 +1,17 @@
 package com.lerchenflo.willhabenupdater.marketplace.willhaben.domain
 
+import com.lerchenflo.willhabenupdater.app.domain.EmptyResult
 import com.lerchenflo.willhabenupdater.app.domain.Error
 import com.lerchenflo.willhabenupdater.app.domain.Result
 import com.lerchenflo.willhabenupdater.app.domain.SessionCookie
 import kotlinx.coroutines.flow.StateFlow
 
-data class WillhabenAccount(
-    val loginId: String?,
-    val displayName: String,
-)
-
 sealed interface SessionState {
     /** Not checked yet, or willhaben could not be reached. */
     data object Unknown : SessionState
     data object LoggedOut : SessionState
-    data class LoggedIn(val account: WillhabenAccount) : SessionState
+    /** [displayName] is only shown in the app, never logged or captured. */
+    data class LoggedIn(val displayName: String?) : SessionState
 }
 
 enum class LoginError : Error {
@@ -38,7 +35,7 @@ interface WillhabenSessionRepository {
     /** Checks the stored session and renews it silently when possible. */
     suspend fun refreshSession(): SessionState
 
-    suspend fun completeLogin(cookies: List<SessionCookie>): Result<WillhabenAccount, LoginError>
+    suspend fun completeLogin(cookies: List<SessionCookie>): EmptyResult<LoginError>
 
     suspend fun logout()
 }

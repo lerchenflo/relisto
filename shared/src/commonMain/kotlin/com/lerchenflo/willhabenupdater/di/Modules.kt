@@ -16,11 +16,16 @@ import com.lerchenflo.willhabenupdater.listings.presentation.list.ListingsViewMo
 import com.lerchenflo.willhabenupdater.listings.domain.ListingRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CachedWillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CookieWillhabenSessionRepository
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.FetchingWillhabenImporter
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KtorWillhabenListingsDataSource
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.WillhabenListingsFetcher
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.WillhabenRequestRunner
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KtorWillhabenAccountDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KtorWillhabenCatalogDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.RoomWillhabenFieldsDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenImporter
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenSessionRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.WillhabenTabViewModel
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountViewModel
@@ -29,6 +34,7 @@ import com.lerchenflo.willhabenupdater.settings.presentation.SettingsViewModel
 import com.lerchenflo.willhabenupdater.utilities.SystemTimeProvider
 import com.lerchenflo.willhabenupdater.utilities.TimeProvider
 import io.ktor.client.HttpClient
+import kotlinx.coroutines.delay
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -58,6 +64,10 @@ val datasourceModule = module {
     singleOf(::CachedWillhabenCatalogRepository) { bind<WillhabenCatalogRepository>() }
     singleOf(::KtorWillhabenAccountDataSource)
     singleOf(::CookieWillhabenSessionRepository) { bind<WillhabenSessionRepository>() }
+    single { WillhabenRequestRunner(renewSession = { get<KtorWillhabenAccountDataSource>().renewSession() }, backoff = { delay(it) }) }
+    singleOf(::KtorWillhabenListingsDataSource)
+    single { WillhabenListingsFetcher(get(), get()) }
+    singleOf(::FetchingWillhabenImporter) { bind<WillhabenImporter>() }
 
     // Separate plain client for the optional update hint (no willhaben headers or cookies)
     single<HttpClient>(named(GITHUB_CLIENT)) { HttpClientFactory.createGitHubClient(get()) }

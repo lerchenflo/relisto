@@ -19,11 +19,16 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
- * Writes every willhaben API response (method, URL, status, body; never headers, so no cookies
- * or CSRF tokens) as a JSON file into [directory]. Only used in development runs to learn the
+ * Writes willhaben listing API responses (method, URL, status, body; never headers, so no cookies
+ * or CSRF tokens, and never profile data) as JSON files into [directory]. Only used in development runs to learn the
  * response shapes of the unofficial API.
  */
 internal class ResponseCaptureWriter(private val directory: String) {
+
+    private companion object {
+        /** Only listing data is recorded, never the user's profile, chats or other personal data. */
+        val LISTING_ENDPOINTS = Regex("^/webapi/(myatz/|iad/(bap|bapcom|productgroups|categorytree|locations|deletereasons|soldreasons)(/|$)|iad-upload/|p2p-aggregator/)")
+    }
 
     private val mutex = Mutex()
     private var counter = 0
@@ -34,7 +39,7 @@ internal class ResponseCaptureWriter(private val directory: String) {
 
     private suspend fun capture(response: HttpResponse) {
         val url = response.request.url
-        if (!url.encodedPath.startsWith("/webapi/")) return
+        if (!LISTING_ENDPOINTS.containsMatchIn(url.encodedPath)) return
         try {
             val body = response.bodyAsText()
             val bodyJson: JsonElement = runCatching { AppJson.parseToJsonElement(body) }.getOrElse { JsonPrimitive(body) }

@@ -209,8 +209,7 @@ class FakeSessionRepository(
         com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState.Unknown
     )
     override val sessionState = state
-    var completeLoginResult: Result<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount, com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError> =
-        Result.Success(com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount(null, "Flo"))
+    var completeLoginResult: EmptyResult<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError> = Result.Success(Unit)
     val completedLogins = mutableListOf<List<com.lerchenflo.willhabenupdater.app.domain.SessionCookie>>()
     var logoutCalls = 0
 
@@ -221,11 +220,11 @@ class FakeSessionRepository(
 
     override suspend fun completeLogin(
         cookies: List<com.lerchenflo.willhabenupdater.app.domain.SessionCookie>
-    ): Result<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount, com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError> {
+    ): EmptyResult<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError> {
         completedLogins += cookies
         val result = completeLoginResult
         if (result is Result.Success) {
-            state.value = com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState.LoggedIn(result.data)
+            state.value = com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState.LoggedIn(displayName = null)
         }
         return result
     }
@@ -253,5 +252,18 @@ class FakeLoginBrowser(
 
     override suspend fun clearSession() {
         clearCalls++
+    }
+}
+
+class FakeImporter : com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenImporter {
+    var result: Result<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.ImportSummary, DataError> =
+        Result.Success(com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.ImportSummary(found = 0))
+    var calls = 0
+    var pending: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
+    override suspend fun importMyListings(): Result<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.ImportSummary, DataError> {
+        calls++
+        pending?.await()
+        return result
     }
 }

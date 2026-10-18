@@ -49,7 +49,7 @@ class ResponseCaptureTest {
     fun cookiesAndCsrfTokenAreNeverWritten() = runTest {
         val client = HttpClientFactory.createWillhabenClient(engine, captureDir = captureDir.absolutePath)
 
-        client.get("https://www.willhaben.at/webapi/x") {
+        client.get("https://www.willhaben.at/webapi/iad/bap/1") {
             header(HttpHeaders.Cookie, "BBX_JSESSIONID=secret-session")
             header("x-bbx-csrf-token", "secret-csrf")
         }
@@ -57,6 +57,17 @@ class ResponseCaptureTest {
         val text = captureDir.listFiles()!!.single().readText()
         assertThat(text).doesNotContain("secret-session")
         assertThat(text).doesNotContain("secret-csrf")
+    }
+
+    @Test
+    fun userProfileAndOtherNonListingResponsesAreNeverWritten() = runTest {
+        val client = HttpClientFactory.createWillhabenClient(engine, captureDir = captureDir.absolutePath)
+
+        client.get("https://www.willhaben.at/webapi/userprofile-service/userprofile/me")
+        client.get("https://www.willhaben.at/webapi/iad/user/123")
+        client.get("https://www.willhaben.at/webapi/chat-api/v1/counter")
+
+        assertThat(!captureDir.exists() || captureDir.listFiles()!!.isEmpty()).isTrue()
     }
 
     @Test

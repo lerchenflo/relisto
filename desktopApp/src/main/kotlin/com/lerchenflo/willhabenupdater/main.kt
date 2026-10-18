@@ -6,8 +6,11 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import java.awt.Dimension
+import java.util.Locale
 
 fun main() {
+    // German is the app language; English texts exist in values-en for later
+    Locale.setDefault(Locale.GERMAN)
     onAppStart()
     application {
         Window(

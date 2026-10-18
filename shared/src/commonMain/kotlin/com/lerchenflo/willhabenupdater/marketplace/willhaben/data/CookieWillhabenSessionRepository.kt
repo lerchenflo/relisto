@@ -1,11 +1,11 @@
 package com.lerchenflo.willhabenupdater.marketplace.willhaben.data
 
+import com.lerchenflo.willhabenupdater.app.domain.EmptyResult
 import com.lerchenflo.willhabenupdater.app.domain.Result
 import com.lerchenflo.willhabenupdater.app.domain.SessionCookie
 import com.lerchenflo.willhabenupdater.datasource.network.PersistentCookiesStorage
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState
-import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenSessionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,29 +22,29 @@ class CookieWillhabenSessionRepository(
 
     override suspend fun refreshSession(): SessionState {
         if (!cookiesStorage.hasCookies()) return publish(SessionState.LoggedOut)
-        return when (val check = accountDataSource.fetchAccount()) {
+        return when (val check = accountDataSource.checkLogin()) {
             is Result.Error -> publish(SessionState.Unknown)
-            is Result.Success -> check.data?.let { publish(SessionState.LoggedIn(it)) } ?: renewAndCheck()
+            is Result.Success -> when (val login = check.data) {
+                is LoginCheck.LoggedIn -> publish(SessionState.LoggedIn(login.displayName))
+                LoginCheck.LoggedOut -> renewAndCheck()
+            }
         }
     }
 
-    override suspend fun completeLogin(cookies: List<SessionCookie>): Result<WillhabenAccount, LoginError> {
+    override suspend fun completeLogin(cookies: List<SessionCookie>): EmptyResult<LoginError> {
         cookiesStorage.replaceAll(cookies)
-        return when (val check = accountDataSource.fetchAccount()) {
+        return when (val check = accountDataSource.checkLogin()) {
             is Result.Error -> {
                 publish(SessionState.Unknown)
                 Result.Error(LoginError.NETWORK)
             }
-            is Result.Success -> {
-                val account = check.data
-                if (account == null) {
-                    cookiesStorage.clear()
-                    publish(SessionState.LoggedOut)
-                    Result.Error(LoginError.NOT_LOGGED_IN)
-                } else {
-                    publish(SessionState.LoggedIn(account))
-                    Result.Success(account)
-                }
+            is Result.Success -> if (check.data is LoginCheck.LoggedIn) {
+                publish(SessionState.LoggedIn((check.data as LoginCheck.LoggedIn).displayName))
+                Result.Success(Unit)
+            } else {
+                cookiesStorage.clear()
+                publish(SessionState.LoggedOut)
+                Result.Error(LoginError.NOT_LOGGED_IN)
             }
         }
     }
@@ -61,9 +61,9 @@ class CookieWillhabenSessionRepository(
             cookiesStorage.clear()
             return publish(SessionState.LoggedOut)
         }
-        return when (val check = accountDataSource.fetchAccount()) {
+        return when (val check = accountDataSource.checkLogin()) {
             is Result.Error -> publish(SessionState.Unknown)
-            is Result.Success -> publish(check.data?.let { SessionState.LoggedIn(it) } ?: SessionState.LoggedOut)
+            is Result.Success -> publish((check.data as? LoginCheck.LoggedIn)?.let { SessionState.LoggedIn(it.displayName) } ?: SessionState.LoggedOut)
         }
     }
 

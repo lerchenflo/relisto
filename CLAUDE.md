@@ -32,7 +32,12 @@ listings on other marketplaces (Kleinanzeigen, Shpock, Facebook Marketplace).
 - Keep `PLAN.md` in sync when a decision or an API fact changes it.
 - Do not send any write request to willhaben (or another marketplace) without asking first which
   listing to use for testing.
-- Never log or commit cookie values, CSRF tokens or captured personal data.
+- Never log, capture or commit personal data, passwords, session cookies, CSRF tokens or login
+  codes. The account name may only be shown in the app UI. HTTP logging stays at INFO (no bodies,
+  sensitive headers masked, login/OAuth URLs filtered; see `HttpLoggingTest`). Response capture
+  only covers listing endpoints. The project is only about listings, never about user data.
+- Every UI string exists in German (default, `composeResources/values/`) and English
+  (`values-en/`); the desktop app starts in German.
 - Never drop or reset the local database on updates: no `fallbackToDestructiveMigration`. Every
   schema change raises the version and ships a Room migration (prefer `AutoMigration`) with a
   migration test; schemas are exported to `shared/schemas/`.
@@ -60,17 +65,18 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 
 ## Current status
 
-Phase 3 (willhaben login) implemented; needs a real login test by the user:
-`./gradlew :desktopApp:run` (or the IDE hot run), then "Log in to willhaben". The login window is
-a JavaFX WebView (KCEF/Chromium was dropped because JetBrains Runtime ships a conflicting `libjcef`). Development runs write every willhaben API response to
-`docs/api-samples/` (gitignored) for Phase 4.
+Phase 3 done and tested by the user: login works (JavaFX WebView login window, account name in
+the account bar). Phase 4 step A done: "Import from willhaben" (account bar) loads the user's
+marketplace listings and their details and only reports the count; dev runs capture these listing
+responses to `docs/api-samples/` (gitignored, listing endpoints only).
 
-Releases: every push to `main` runs `.github/workflows/release.yml` (first green test run: #2).
-
-Open in Phase 3: throttling (3.6), automatic retry after `401` for API calls, verification of
-session lifetime and CSRF behaviour with real samples (3.12).
-
-Next: Phase 4 import, built from the captured samples of the first real login.
+Next (Phase 4 step B):
+1. Ask the user to press "Import from willhaben" once in a dev run (`hotRun` or
+   `./gradlew :desktopApp:run`) so `docs/api-samples/` gets `GET_myatz_atverz_showpagedadsfromuser`
+   and `GET_iad_bap_<id>` samples.
+2. From those samples (listing data only): document the JSON keys in `docs/willhaben-api.md`,
+   then map remote listings to local listings + willhaben publications (TDD with sanitised
+   fixtures), download images, match by remote id, conflict handling.
 
 ## Progress log
 
@@ -87,3 +93,6 @@ Next: Phase 4 import, built from the captured samples of the first real login.
   Switched to TDD on request: logic written before was deleted and rebuilt test-first.
   Pushed: project setup (4587cc1), data layer with 76 tests (21f1bdf), ViewModels (afdf5cf),
   screens + app wiring + packaging (0fc7114), login (2f8a16e), update hint, response capture.
+- 2026-10-18 – KCEF replaced by JavaFX WebView (JetBrains Runtime crash). Login tested OK by the
+  user. Privacy rules added (no personal data or secrets in logs/captures), German default UI,
+  import step A (fetch + count).

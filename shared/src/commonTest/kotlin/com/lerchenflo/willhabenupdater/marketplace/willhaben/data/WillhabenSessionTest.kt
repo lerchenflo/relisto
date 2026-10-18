@@ -13,7 +13,6 @@ import com.lerchenflo.willhabenupdater.datasource.network.HttpClientFactory
 import com.lerchenflo.willhabenupdater.datasource.network.PersistentCookiesStorage
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState
-import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount
 import com.lerchenflo.willhabenupdater.testutil.FakeSecureStorage
 import com.lerchenflo.willhabenupdater.testutil.FakeTimeProvider
 import io.ktor.client.engine.mock.MockEngine
@@ -75,54 +74,42 @@ class WillhabenSessionTest {
 
     private val loginCookies = listOf(SessionCookie("BBX_JSESSIONID", "s1", "www.willhaben.at", hostOnly = true))
 
-    // --- KtorWillhabenAccountDataSource ---
+    // --- KtorWillhabenAccountDataSource (name only for display; never logged or captured) ---
 
     @Test
-    fun profileWithDisplayNameGivesAccount() = runTest {
-        profileResponses = mutableListOf(profile("""{"loginId":"flo@example.at","displayName":"Flo","more":1}"""))
+    fun profileAnswerMeansLoggedIn() = runTest {
+        profileResponses = mutableListOf(profile("""{"anything":"else"}"""))
 
-        assertThat(dataSource.fetchAccount()).isEqualTo(Result.Success(WillhabenAccount("flo@example.at", "Flo")))
+        assertThat(dataSource.checkLogin()).isEqualTo(Result.Success(LoginCheck.LoggedIn(displayName = null)))
     }
 
     @Test
-    fun realProfileShapeGivesNameFromUserData() = runTest {
-        // Shape of GET /userprofile-service/userprofile/me as recorded on 2026-10-18 (values made up)
-        profileResponses = mutableListOf(
-            profile(
-                """{"contextLinkList":{"contextLink":[]},"titleList":[],
-                   "userData":{"firstName":"Flo","lastName":"Example","emailAddress":"flo@example.at","loginId":12345678,"uuid":"u"}}"""
-            )
-        )
+    fun displayNameComesFromUserData() = runTest {
+        // Shape of the profile response seen on 2026-10-18 (values made up)
+        profileResponses = mutableListOf(profile("""{"userData":{"firstName":"Flo","lastName":"Example","loginId":1}}"""))
 
-        assertThat(dataSource.fetchAccount()).isEqualTo(Result.Success(WillhabenAccount("12345678", "Flo Example")))
-    }
-
-    @Test
-    fun profileWithoutNameFallsBackToEmail() = runTest {
-        profileResponses = mutableListOf(profile("""{"email":"flo@example.at"}"""))
-
-        assertThat(dataSource.fetchAccount()).isEqualTo(Result.Success(WillhabenAccount(null, "flo@example.at")))
+        assertThat(dataSource.checkLogin()).isEqualTo(Result.Success(LoginCheck.LoggedIn(displayName = "Flo Example")))
     }
 
     @Test
     fun noContentMeansLoggedOut() = runTest {
         profileResponses = mutableListOf(noContent())
 
-        assertThat(dataSource.fetchAccount()).isEqualTo(Result.Success(null))
+        assertThat(dataSource.checkLogin()).isEqualTo(Result.Success(LoginCheck.LoggedOut))
     }
 
     @Test
     fun unauthorizedMeansLoggedOut() = runTest {
         profileResponses = mutableListOf({ respondError(HttpStatusCode.Unauthorized) })
 
-        assertThat(dataSource.fetchAccount()).isEqualTo(Result.Success(null))
+        assertThat(dataSource.checkLogin()).isEqualTo(Result.Success(LoginCheck.LoggedOut))
     }
 
     @Test
     fun serverErrorIsReported() = runTest {
         profileResponses = mutableListOf({ respondError(HttpStatusCode.InternalServerError) })
 
-        assertThat(dataSource.fetchAccount()).isEqualTo(Result.Error(DataError.Network.SERVER_ERROR))
+        assertThat(dataSource.checkLogin()).isEqualTo(Result.Error(DataError.Network.SERVER_ERROR))
     }
 
     @Test
@@ -143,12 +130,12 @@ class WillhabenSessionTest {
 
     @Test
     fun loginWithValidCookiesGivesLoggedInState() = runTest {
-        profileResponses = mutableListOf(profile("""{"displayName":"Flo"}"""))
+        profileResponses = mutableListOf(profile("""{"userData":{"firstName":"Flo"}}"""))
 
         val result = repository.completeLogin(loginCookies)
 
-        assertThat(result).isEqualTo(Result.Success(WillhabenAccount(null, "Flo")))
-        assertThat(repository.sessionState.value).isEqualTo(SessionState.LoggedIn(WillhabenAccount(null, "Flo")))
+        assertThat(result).isEqualTo(Result.Success(Unit))
+        assertThat(repository.sessionState.value).isEqualTo(SessionState.LoggedIn(displayName = "Flo"))
     }
 
     @Test
@@ -173,11 +160,11 @@ class WillhabenSessionTest {
     @Test
     fun refreshWithExpiredSessionRenewsSilently() = runTest {
         cookies.replaceAll(loginCookies)
-        profileResponses = mutableListOf(noContent(), profile("""{"displayName":"Flo"}"""))
+        profileResponses = mutableListOf(noContent(), profile("{}"))
 
         val state = repository.refreshSession()
 
-        assertThat(state).isEqualTo(SessionState.LoggedIn(WillhabenAccount(null, "Flo")))
+        assertThat(state).isEqualTo(SessionState.LoggedIn(displayName = null))
         assertThat(requests.any { it.contains("/webapi/oauth2/authorization/sso") }).isTrue()
     }
 
@@ -200,7 +187,7 @@ class WillhabenSessionTest {
 
     @Test
     fun logoutCallsWillhabenAndForgetsCookies() = runTest {
-        profileResponses = mutableListOf(profile("""{"displayName":"Flo"}"""))
+        profileResponses = mutableListOf(profile("{}"))
         repository.completeLogin(loginCookies)
 
         repository.logout()

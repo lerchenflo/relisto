@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.lerchenflo.willhabenupdater.app.domain.Result
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenImporter
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLoginBrowser
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenSessionRepository
 import com.lerchenflo.willhabenupdater.utilities.UiText
@@ -14,7 +15,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.lerchenflo.willhabenupdater.utilities.toUiText
 import willhabenupdater.shared.generated.resources.Res
+import willhabenupdater.shared.generated.resources.import_done
 import willhabenupdater.shared.generated.resources.login_error_browser
 import willhabenupdater.shared.generated.resources.login_error_network
 import willhabenupdater.shared.generated.resources.login_error_not_logged_in
@@ -23,6 +26,7 @@ import willhabenupdater.shared.generated.resources.login_error_not_logged_in
 class AccountViewModel(
     private val sessionRepository: WillhabenSessionRepository,
     private val loginBrowser: WillhabenLoginBrowser,
+    private val importer: WillhabenImporter,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AccountState())
@@ -38,7 +42,7 @@ class AccountViewModel(
                     it.copy(
                         isChecking = session is SessionState.Unknown && it.isChecking,
                         isLoggedIn = session is SessionState.LoggedIn,
-                        accountName = (session as? SessionState.LoggedIn)?.account?.displayName,
+                        accountName = (session as? SessionState.LoggedIn)?.displayName,
                     )
                 }
             }
@@ -52,6 +56,7 @@ class AccountViewModel(
     fun onAction(action: AccountAction) {
         when (action) {
             AccountAction.OnLoginClick -> login()
+            AccountAction.OnImportClick -> importListings()
             AccountAction.OnLogoutClick -> viewModelScope.launch {
                 sessionRepository.logout()
                 loginBrowser.clearSession()
@@ -69,6 +74,19 @@ class AccountViewModel(
             }
             _state.update { it.copy(isLoggingIn = false) }
             error?.toUiText()?.let { _events.send(AccountEvent.ShowMessage(it)) }
+        }
+    }
+
+    private fun importListings() {
+        if (_state.value.isImporting) return
+        _state.update { it.copy(isImporting = true) }
+        viewModelScope.launch {
+            val message = when (val result = importer.importMyListings()) {
+                is Result.Success -> UiText.StringResourceText(Res.string.import_done, arrayOf(result.data.found))
+                is Result.Error -> result.error.toUiText()
+            }
+            _state.update { it.copy(isImporting = false) }
+            _events.send(AccountEvent.ShowMessage(message))
         }
     }
 

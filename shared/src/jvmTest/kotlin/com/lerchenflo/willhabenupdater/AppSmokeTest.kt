@@ -16,6 +16,7 @@ import com.lerchenflo.willhabenupdater.testutil.TempAppDirectories
 import com.lerchenflo.willhabenupdater.testutil.testPlatformModule
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import java.util.Locale
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -25,14 +26,18 @@ import kotlin.test.Test
 class AppSmokeTest {
 
     private val dirs = TempAppDirectories()
+    private val originalLocale = Locale.getDefault()
 
     @BeforeTest
     fun setUp() {
+        // Texts below are the English ones; the machine's language must not matter
+        Locale.setDefault(Locale.ENGLISH)
         startKoin { modules(testPlatformModule(dirs), datasourceModule, presentationModule) }
     }
 
     @AfterTest
     fun tearDown() {
+        Locale.setDefault(originalLocale)
         stopKoin()
         dirs.delete()
     }
