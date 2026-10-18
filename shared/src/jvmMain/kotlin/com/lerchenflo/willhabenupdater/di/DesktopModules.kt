@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.lerchenflo.willhabenupdater.app.domain.AppVersionProvider
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
 import com.lerchenflo.willhabenupdater.datasource.preferences.KSafeSecureStorage
 import com.lerchenflo.willhabenupdater.datasource.preferences.SecureStorage
@@ -15,6 +16,7 @@ import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KcefWillhabenL
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLoginBrowser
 import com.lerchenflo.willhabenupdater.utilities.AppDirectories
 import com.lerchenflo.willhabenupdater.utilities.DesktopAppDirectories
+import com.lerchenflo.willhabenupdater.utilities.DesktopAppVersionProvider
 import io.ktor.client.engine.HttpClientEngine
 import eu.anifantakis.lib.ksafe.KSafe
 import io.ktor.client.engine.okhttp.OkHttp
@@ -42,4 +44,5 @@ val desktopPlatformModule = module {
         KSafeSecureStorage(KSafe(fileName = SECURE_STORE_NAME, baseDir = File(get<AppDirectories>().dataDir)))
     }
     singleOf(::KcefWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
+    single<AppVersionProvider> { DesktopAppVersionProvider() }
 }

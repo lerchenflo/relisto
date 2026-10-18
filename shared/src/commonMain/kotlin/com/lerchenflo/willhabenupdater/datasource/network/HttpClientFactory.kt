@@ -58,4 +58,17 @@ object HttpClientFactory {
             headers.append("X-WH-Client", WILLHABEN_CLIENT_HEADER)
         }
     }
+
+    /** Plain JSON client for the GitHub release check; no willhaben headers or cookies. */
+    fun createGitHubClient(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
+        install(ContentNegotiation) {
+            json(AppJson)
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 15_000
+        }
+        defaultRequest {
+            headers.append(HttpHeaders.Accept, "application/vnd.github+json")
+        }
+    }
 }

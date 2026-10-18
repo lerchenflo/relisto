@@ -1,6 +1,9 @@
 package com.lerchenflo.willhabenupdater.di
 
+import com.lerchenflo.willhabenupdater.app.data.GitHubUpdateChecker
+import com.lerchenflo.willhabenupdater.app.domain.UpdateChecker
 import com.lerchenflo.willhabenupdater.app.navigation.Navigator
+import com.lerchenflo.willhabenupdater.app.presentation.AppUpdateViewModel
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
 import com.lerchenflo.willhabenupdater.datasource.database.CreateAppDatabase
 import com.lerchenflo.willhabenupdater.datasource.network.HttpClientFactory
@@ -28,6 +31,7 @@ import io.ktor.client.HttpClient
 import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 /**
@@ -52,8 +56,15 @@ val datasourceModule = module {
     singleOf(::KtorWillhabenAccountDataSource)
     singleOf(::CookieWillhabenSessionRepository) { bind<WillhabenSessionRepository>() }
 
+    // Separate plain client for the optional update hint (no willhaben headers or cookies)
+    single<HttpClient>(named(GITHUB_CLIENT)) { HttpClientFactory.createGitHubClient(get()) }
+    single<UpdateChecker> { GitHubUpdateChecker(get(named(GITHUB_CLIENT)), get()) }
+
     singleOf(::Navigator)
 }
+
+private const val GITHUB_CLIENT = "github"
+
 
 /** All ViewModels. */
 val presentationModule = module {
@@ -63,4 +74,5 @@ val presentationModule = module {
     viewModelOf(::WillhabenTabViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::AccountViewModel)
+    viewModelOf(::AppUpdateViewModel)
 }

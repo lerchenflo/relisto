@@ -33,6 +33,9 @@ listings on other marketplaces (Kleinanzeigen, Shpock, Facebook Marketplace).
 - Do not send any write request to willhaben (or another marketplace) without asking first which
   listing to use for testing.
 - Never log or commit cookie values, CSRF tokens or captured personal data.
+- Never drop or reset the local database on updates: no `fallbackToDestructiveMigration`. Every
+  schema change raises the version and ships a Room migration (prefer `AutoMigration`) with a
+  migration test; schemas are exported to `shared/schemas/`.
 - Use the user's KMP skills for code (module structure, data layer, Koin, MVI, navigation, error
   handling), adapted to the module layout below.
 

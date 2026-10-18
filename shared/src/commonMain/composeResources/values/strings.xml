@@ -101,6 +101,11 @@
     <string name="login_window_preparing">Preparing the login browser…</string>
     <string name="login_window_downloading">Downloading the login browser (one time): %1$d %%</string>
 
+    <!-- Update hint -->
+    <string name="update_available">Version %1$s is available. Updating is optional; your listings stay on this computer.</string>
+    <string name="update_download">Download</string>
+    <string name="update_dismiss">Hide update hint</string>
+
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>

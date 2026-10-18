@@ -1,8 +1,11 @@
 package com.lerchenflo.willhabenupdater
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -14,6 +17,7 @@ import com.lerchenflo.willhabenupdater.app.navigation.NavigationAction
 import com.lerchenflo.willhabenupdater.app.navigation.Navigator
 import com.lerchenflo.willhabenupdater.app.navigation.ObserveAsEvents
 import com.lerchenflo.willhabenupdater.app.navigation.Route
+import com.lerchenflo.willhabenupdater.app.presentation.AppUpdateRoot
 import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
 import com.lerchenflo.willhabenupdater.listings.presentation.list.ListingsRoot
 import com.lerchenflo.willhabenupdater.settings.presentation.SettingsRoot
@@ -51,18 +55,21 @@ fun App() {
                 }
             }
 
-            NavDisplay(
-                backStack = backStack,
-                onBack = { if (backStack.size > 1) backStack.removeAt(backStack.size - 1) },
-                entryDecorators = listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator(),
-                ),
-                entryProvider = entryProvider {
-                    entry<Route.Listings> { ListingsRoot() }
-                    entry<Route.Settings> { SettingsRoot() }
-                },
-            )
+            Column(modifier = Modifier.fillMaxSize()) {
+                AppUpdateRoot()
+                NavDisplay(
+                    backStack = backStack,
+                    onBack = { if (backStack.size > 1) backStack.removeAt(backStack.size - 1) },
+                    entryDecorators = listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+                    entryProvider = entryProvider {
+                        entry<Route.Listings> { ListingsRoot() }
+                        entry<Route.Settings> { SettingsRoot() }
+                    },
+                )
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.lerchenflo.willhabenupdater.app.domain.AppVersionProvider
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
 import com.lerchenflo.willhabenupdater.datasource.preferences.SecureStorage
 import com.lerchenflo.willhabenupdater.di.createDataStore
@@ -30,4 +31,5 @@ fun testPlatformModule(dirs: TempAppDirectories): Module = module {
     single<ImagePicker> { object : ImagePicker { override suspend fun pickImages() = emptyList<String>() } }
     single<SecureStorage> { FakeSecureStorage() }
     single<WillhabenLoginBrowser> { FakeLoginBrowser() }
+    single<AppVersionProvider> { object : AppVersionProvider { override val currentVersion: String? = null } }
 }
