@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.lerchenflo.willhabenupdater.app.domain.AppVersionProvider
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
+import com.lerchenflo.willhabenupdater.datasource.network.ResponseCaptureSettings
 import com.lerchenflo.willhabenupdater.datasource.preferences.SecureStorage
 import com.lerchenflo.willhabenupdater.di.createDataStore
 import com.lerchenflo.willhabenupdater.listings.data.DesktopImageStorage
@@ -31,5 +32,6 @@ fun testPlatformModule(dirs: TempAppDirectories): Module = module {
     single<ImagePicker> { object : ImagePicker { override suspend fun pickImages() = emptyList<String>() } }
     single<SecureStorage> { FakeSecureStorage() }
     single<WillhabenLoginBrowser> { FakeLoginBrowser() }
+    single { ResponseCaptureSettings(null) }
     single<AppVersionProvider> { object : AppVersionProvider { override val currentVersion: String? = null } }
 }

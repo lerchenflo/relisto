@@ -72,3 +72,10 @@ compose.desktop {
         }
     }
 }
+
+// Development runs (`./gradlew :desktopApp:run`) record willhaben API responses for analysis
+tasks.withType<JavaExec>().configureEach {
+    if (name == "run") {
+        systemProperty("willhaben.captureDir", rootProject.layout.projectDirectory.dir("docs/api-samples").asFile.absolutePath)
+    }
+}

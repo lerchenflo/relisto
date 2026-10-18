@@ -44,18 +44,20 @@ Result: complete offline listing manager.
 
 ## Phase 3 – willhaben session
 
-- [ ] 3.1 `HttpClientFactory`: base URL `https://www.willhaben.at/webapi`, `Accept`, `X-WH-Client: api@willhaben.at;responsive_web;server;1.0.0;desktop`, browser `User-Agent`, timeouts.
-- [ ] 3.2 CSRF plugin: add `x-bbx-csrf-token` header (value from the cookie) to every non-GET request.
-- [ ] 3.3 `PersistentCookiesStorage` (Ktor `CookiesStorage`) backed by KSafe.
-- [ ] 3.4 Logging with redaction of cookies and CSRF; debug response capture into `docs/api-samples/`.
-- [ ] 3.5 `safeCall` + mapping of status codes and willhaben error bodies to `DataError` (incl. `API_CHANGED`, `PAID_PRODUCT`).
+- [x] 3.1 `HttpClientFactory`: base URL `https://www.willhaben.at/webapi`, `Accept`, `X-WH-Client: api@willhaben.at;responsive_web;server;1.0.0;desktop`, browser `User-Agent`, timeouts.
+- [x] 3.2 CSRF plugin: add `x-bbx-csrf-token` header (value from the cookie) to every non-GET request.
+- [x] 3.3 `PersistentCookiesStorage` (Ktor `CookiesStorage`) backed by KSafe.
+- [x] 3.4 Logging with redaction of cookies and CSRF; debug response capture into `docs/api-samples/` (only `./gradlew :desktopApp:run`).
+- [x] 3.5 `safeCall` + mapping of status codes and willhaben error bodies to `DataError` (`API_CHANGED`, `PAID_PRODUCT` follow with the write requests in Phase 5).
 - [ ] 3.6 Request throttling: 1 normal request at a time, 4 parallel image uploads, back-off on `429`/`503`.
-- [ ] 3.7 Ask: KCEF download vs. JetBrains Runtime's built-in JCEF. Then set up the embedded browser with a persistent cookie store in the app data folder.
-- [ ] 3.8 Login window: open `https://www.willhaben.at/iad/myprofile/login?r=/iad/myprofile/myadverts`, detect arrival on `/iad/myprofile/myadverts`, read cookies of `www.willhaben.at` and `sso.willhaben.at`, store them, close.
-- [ ] 3.9 Session check `GET /userprofile-service/userprofile/me` (204 = logged out); account chip in the top bar.
-- [ ] 3.10 On `401`: silent re-login via `/webapi/oauth2/authorization/sso` with the stored SSO cookies, repeat the request once; else show "login required" and offer the login window.
-- [ ] 3.11 Logout: `GET /webapi/logout?redirect_uri=https://www.willhaben.at/iad/logout`, clear KSafe cookies and the browser cookie store.
+- [x] 3.7 Ask: KCEF download vs. JetBrains Runtime's built-in JCEF. Then set up the embedded browser with a persistent cookie store in the app data folder.
+- [x] 3.8 Login window: open `https://www.willhaben.at/iad/myprofile/login?r=/iad/myprofile/myadverts`, detect arrival on `/iad/myprofile/myadverts`, read cookies of `www.willhaben.at` and `sso.willhaben.at`, store them, close.
+- [x] 3.9 Session check `GET /userprofile-service/userprofile/me` (204 = logged out); account chip in the top bar.
+- [x] 3.10 Silent re-login via `/webapi/oauth2/authorization/sso` with the stored SSO cookies when the session check fails. Open: automatic retry of other requests after `401` (Phase 4).
+- [x] 3.11 Logout: `GET /webapi/logout?redirect_uri=https://www.willhaben.at/iad/logout`, clear KSafe cookies and the browser cookie store.
 - [ ] 3.12 Verify and document in `docs/willhaben-api.md`: session lifetime, when the CSRF cookie appears, whether silent re-login works over plain HTTP.
+
+- [x] 3.13 Optional in-app hint when a newer GitHub release exists (data is kept on update).
 
 ## Phase 4 – Import my willhaben listings (read only)
 

@@ -7,6 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.lerchenflo.willhabenupdater.app.domain.AppVersionProvider
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
+import com.lerchenflo.willhabenupdater.datasource.network.ResponseCaptureSettings
 import com.lerchenflo.willhabenupdater.datasource.preferences.KSafeSecureStorage
 import com.lerchenflo.willhabenupdater.datasource.preferences.SecureStorage
 import com.lerchenflo.willhabenupdater.listings.data.AndroidImagePicker
@@ -43,6 +44,7 @@ val androidPlatformModule = module {
     singleOf(::AndroidImagePicker) { bind<ImagePicker>() }
     single<SecureStorage> { KSafeSecureStorage(KSafe(androidContext(), fileName = "willhabenupdater")) }
     singleOf(::AndroidWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
+    single { ResponseCaptureSettings(null) }
     single<AppVersionProvider> { AndroidAppVersionProvider(androidContext()) }
 }
 

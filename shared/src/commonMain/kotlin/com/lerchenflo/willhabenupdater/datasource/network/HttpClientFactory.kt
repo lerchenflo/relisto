@@ -12,6 +12,7 @@ import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.logging.SIMPLE
+import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 
@@ -28,10 +29,14 @@ private val SENSITIVE_HEADERS = setOf(HttpHeaders.Cookie, HttpHeaders.SetCookie,
 
 object HttpClientFactory {
 
-    /** [cookiesStorage] holds the willhaben session; the CSRF header is added for every write request. */
+    /**
+     * [cookiesStorage] holds the willhaben session; the CSRF header is added for every write request.
+     * With [captureDir] set, every API response is also written there (development only).
+     */
     fun createWillhabenClient(
         engine: HttpClientEngine,
         cookiesStorage: CookiesStorage = AcceptAllCookiesStorage(),
+        captureDir: String? = null,
     ): HttpClient = HttpClient(engine) {
         install(ContentNegotiation) {
             json(AppJson)
@@ -41,6 +46,11 @@ object HttpClientFactory {
         }
         install(WillhabenCsrf) {
             this.cookiesStorage = cookiesStorage
+        }
+        if (captureDir != null) {
+            install(ResponseObserver) {
+                ResponseCaptureWriter(captureDir).install(this)
+            }
         }
         install(HttpTimeout) {
             connectTimeoutMillis = 15_000

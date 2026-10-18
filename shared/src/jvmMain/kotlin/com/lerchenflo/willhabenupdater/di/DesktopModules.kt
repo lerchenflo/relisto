@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.lerchenflo.willhabenupdater.app.domain.AppVersionProvider
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
+import com.lerchenflo.willhabenupdater.datasource.network.ResponseCaptureSettings
 import com.lerchenflo.willhabenupdater.datasource.preferences.KSafeSecureStorage
 import com.lerchenflo.willhabenupdater.datasource.preferences.SecureStorage
 import com.lerchenflo.willhabenupdater.listings.data.DesktopImagePicker
@@ -44,5 +45,6 @@ val desktopPlatformModule = module {
         KSafeSecureStorage(KSafe(fileName = SECURE_STORE_NAME, baseDir = File(get<AppDirectories>().dataDir)))
     }
     singleOf(::KcefWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
+    single { ResponseCaptureSettings(System.getProperty("willhaben.captureDir")) }
     single<AppVersionProvider> { DesktopAppVersionProvider() }
 }

@@ -8,6 +8,7 @@ import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
 import com.lerchenflo.willhabenupdater.datasource.database.CreateAppDatabase
 import com.lerchenflo.willhabenupdater.datasource.network.HttpClientFactory
 import com.lerchenflo.willhabenupdater.datasource.network.PersistentCookiesStorage
+import com.lerchenflo.willhabenupdater.datasource.network.ResponseCaptureSettings
 import com.lerchenflo.willhabenupdater.datasource.preferences.Preferencemanager
 import com.lerchenflo.willhabenupdater.listings.data.RoomListingRepository
 import com.lerchenflo.willhabenupdater.listings.presentation.editor.ListingEditorViewModel
@@ -47,7 +48,9 @@ val datasourceModule = module {
     singleOf(::SystemTimeProvider) { bind<TimeProvider>() }
     singleOf(::Preferencemanager) { bind<SettingsDataSource>() }
     singleOf(::PersistentCookiesStorage)
-    single<HttpClient> { HttpClientFactory.createWillhabenClient(get(), get<PersistentCookiesStorage>()) }
+    single<HttpClient> {
+        HttpClientFactory.createWillhabenClient(get(), get<PersistentCookiesStorage>(), get<ResponseCaptureSettings>().directory)
+    }
 
     singleOf(::RoomListingRepository) { bind<ListingRepository>() }
     singleOf(::RoomWillhabenFieldsDataSource) { bind<WillhabenFieldsLocalDataSource>() }

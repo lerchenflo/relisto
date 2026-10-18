@@ -60,16 +60,17 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 
 ## Current status
 
-Phase 2 (offline listing manager) done and testable: `./gradlew :desktopApp:run`.
-134 tests green (data layer, ViewModels, Koin wiring, desktop E2E smoke test).
+Phase 3 (willhaben login) implemented; needs a real login test by the user:
+`./gradlew :desktopApp:run`, then "Log in to willhaben". The first login downloads the embedded
+Chromium (KCEF) into the app data folder. Development runs write every willhaben API response to
+`docs/api-samples/` (gitignored) for Phase 4.
 
-Open:
-- Release workflow `.github/workflows/release.yml` is committed locally but not pushed: the
-  GitHub token used for pushing lacks the `workflow` scope. Push it with a token that has the
-  `workflow` scope (or from an IDE/GitHub Desktop login).
-- Android: app runs with listings, but image import and file picker are stubs (desktop first).
+Releases: every push to `main` runs `.github/workflows/release.yml` (first green test run: #2).
 
-Next: Phase 3 (willhaben login in an embedded browser, KSafe cookie storage, session check).
+Open in Phase 3: throttling (3.6), automatic retry after `401` for API calls, verification of
+session lifetime and CSRF behaviour with real samples (3.12).
+
+Next: Phase 4 import, built from the captured samples of the first real login.
 
 ## Progress log
 
@@ -85,4 +86,4 @@ Next: Phase 3 (willhaben login in an embedded browser, KSafe cookie storage, ses
 - 2026-10-18 – Implementation started (autonomous run, usage cap lifted by the user).
   Switched to TDD on request: logic written before was deleted and rebuilt test-first.
   Pushed: project setup (4587cc1), data layer with 76 tests (21f1bdf), ViewModels (afdf5cf),
-  screens + app wiring + packaging (0fc7114). Release workflow commit local only (token scope).
+  screens + app wiring + packaging (0fc7114), login (2f8a16e), update hint, response capture.
