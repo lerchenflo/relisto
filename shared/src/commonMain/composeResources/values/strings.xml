@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Willhaben Updater</string>
+
+    <!-- Errors -->
+    <string name="error_no_internet">No internet connection.</string>
+    <string name="error_request_timeout">The request timed out. Please try again.</string>
+    <string name="error_unauthorized">Not logged in to willhaben or the session expired.</string>
+    <string name="error_not_found">Not found.</string>
+    <string name="error_too_many_requests">Too many requests. Please wait a moment.</string>
+    <string name="error_server">willhaben is not reachable right now. Please try again later.</string>
+    <string name="error_serialization">willhaben sent an unexpected response.</string>
+    <string name="error_disk_full">The disk is full.</string>
+    <string name="error_unknown">Something went wrong.</string>
+</resources>

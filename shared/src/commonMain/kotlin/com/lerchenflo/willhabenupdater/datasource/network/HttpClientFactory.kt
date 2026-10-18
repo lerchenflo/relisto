@@ -1,0 +1,48 @@
+package com.lerchenflo.willhabenupdater.datasource.network
+
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.SIMPLE
+import io.ktor.http.HttpHeaders
+import io.ktor.serialization.kotlinx.json.json
+
+const val WILLHABEN_BASE_URL = "https://www.willhaben.at/webapi"
+
+/** Client header the willhaben web app sends with every API call. */
+private const val WILLHABEN_CLIENT_HEADER = "api@willhaben.at;responsive_web;server;1.0.0;desktop"
+
+private const val BROWSER_USER_AGENT =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+
+/** Headers that carry credentials and must never show up in logs. */
+private val SENSITIVE_HEADERS = setOf(HttpHeaders.Cookie, HttpHeaders.SetCookie, "x-bbx-csrf-token")
+
+object HttpClientFactory {
+
+    fun createWillhabenClient(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
+        install(ContentNegotiation) {
+            json(AppJson)
+        }
+        install(HttpTimeout) {
+            connectTimeoutMillis = 15_000
+            requestTimeoutMillis = 60_000
+            socketTimeoutMillis = 60_000
+        }
+        install(Logging) {
+            logger = Logger.SIMPLE
+            level = LogLevel.INFO
+            sanitizeHeader { header -> header in SENSITIVE_HEADERS }
+        }
+        defaultRequest {
+            headers.append(HttpHeaders.Accept, "application/json")
+            headers.append(HttpHeaders.UserAgent, BROWSER_USER_AGENT)
+            headers.append("X-WH-Client", WILLHABEN_CLIENT_HEADER)
+        }
+    }
+}
