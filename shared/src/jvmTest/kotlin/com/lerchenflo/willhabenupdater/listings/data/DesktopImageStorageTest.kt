@@ -102,4 +102,22 @@ class DesktopImageStorageTest {
         assertThat(File(storage.absolutePath(stored.fileName)).exists()).isFalse()
         assertThat(storage.listFileNames().isEmpty()).isTrue()
     }
+
+    @Test
+    fun downloadedBytesAreStoredLikeFiles() = runTest {
+        val source = writeImage("photo.jpg", 30, 20, "jpg")
+
+        val result = storage.importImageBytes(source.readBytes(), "jpeg")
+
+        val hash = sha256(source)
+        assertThat(result).isEqualTo(Result.Success(StoredImage("$hash.jpg", hash, 30, 20)))
+        assertThat(File(dirs.imagesDir, "$hash.jpg").exists()).isTrue()
+    }
+
+    @Test
+    fun downloadedBytesThatAreNoImageAreRejected() = runTest {
+        val result = storage.importImageBytes("<html>".encodeToByteArray(), "jpg")
+
+        assertThat(result).isEqualTo(Result.Error(ImageImportError.UNSUPPORTED_FORMAT))
+    }
 }

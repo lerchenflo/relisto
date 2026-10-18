@@ -136,6 +136,29 @@ class RoomListingRepository(
         AddImagesResult(addedCount = added, failedFiles = failed)
     }
 
+    override suspend fun addImageBytes(
+        listingId: Long,
+        images: List<Pair<ByteArray, String>>
+    ): Result<Int, DataError.Local> = local {
+        var nextPosition = (imageDao.getByListingId(listingId).maxOfOrNull { it.position } ?: -1) + 1
+        var added = 0
+        images.forEach { (bytes, extension) ->
+            val stored = (imageStorage.importImageBytes(bytes, extension) as? Result.Success)?.data ?: return@forEach
+            imageDao.insert(
+                ListingImageEntity(
+                    listingId = listingId,
+                    position = nextPosition++,
+                    fileName = stored.fileName,
+                    sha256 = stored.sha256,
+                    width = stored.width,
+                    height = stored.height,
+                )
+            )
+            added++
+        }
+        added
+    }
+
     override suspend fun removeImage(imageId: Long): EmptyResult<DataError.Local> = local {
         val image = imageDao.getById(imageId) ?: return Result.Error(DataError.Local.NOT_FOUND)
         imageDao.delete(image)

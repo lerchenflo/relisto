@@ -104,7 +104,7 @@
     <!-- willhaben import -->
     <string name="import_button">Import from willhaben</string>
     <string name="import_running">Importing…</string>
-    <string name="import_done">%1$d willhaben marketplace listings found.</string>
+    <string name="import_done">%1$d willhaben marketplace listings found: %2$d new, %3$d updated.</string>
 
     <!-- Update hint -->
     <string name="update_available">Version %1$s is available. Updating is optional; your listings stay on this computer.</string>

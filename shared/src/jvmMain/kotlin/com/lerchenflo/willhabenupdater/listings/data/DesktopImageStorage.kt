@@ -25,30 +25,38 @@ class DesktopImageStorage(
         withContext(Dispatchers.IO) {
             val source = File(sourcePath)
             if (!source.isFile) return@withContext Result.Error(ImageImportError.FILE_NOT_FOUND)
-            val extension = source.extension.lowercase()
-            if (extension !in SUPPORTED_EXTENSIONS) return@withContext Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
-
-            try {
-                val bytes = source.readBytes()
-                val image = ImageIO.read(ByteArrayInputStream(bytes))
-                    ?: return@withContext Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
-
-                val sha256 = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
-                val fileName = "$sha256.${if (extension == "jpeg") "jpg" else extension}"
-                val target = File(imagesDir, fileName)
-                if (!target.exists()) target.writeBytes(bytes)
-
-                Result.Success(StoredImage(fileName, sha256, image.width, image.height))
+            val bytes = try {
+                source.readBytes()
             } catch (e: IOException) {
                 e.printStackTrace()
-                val diskFull = e.message?.contains("space", ignoreCase = true) == true
-                Result.Error(if (diskFull) ImageImportError.DISK_FULL else ImageImportError.UNKNOWN)
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                e.printStackTrace()
-                Result.Error(ImageImportError.UNKNOWN)
+                return@withContext Result.Error(ImageImportError.UNKNOWN)
             }
+            storeBytes(bytes, source.extension)
         }
+
+    override suspend fun importImageBytes(bytes: ByteArray, extension: String): Result<StoredImage, ImageImportError> =
+        withContext(Dispatchers.IO) { storeBytes(bytes, extension) }
+
+    private fun storeBytes(bytes: ByteArray, extension: String): Result<StoredImage, ImageImportError> {
+        val normalizedExtension = extension.lowercase().removePrefix(".").let { if (it == "jpeg") "jpg" else it }
+        if (normalizedExtension !in SUPPORTED_EXTENSIONS) return Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
+        return try {
+            val image = ImageIO.read(ByteArrayInputStream(bytes)) ?: return Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
+            val sha256 = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+            val fileName = "$sha256.$normalizedExtension"
+            val target = File(imagesDir, fileName)
+            if (!target.exists()) target.writeBytes(bytes)
+            Result.Success(StoredImage(fileName, sha256, image.width, image.height))
+        } catch (e: IOException) {
+            e.printStackTrace()
+            val diskFull = e.message?.contains("space", ignoreCase = true) == true
+            Result.Error(if (diskFull) ImageImportError.DISK_FULL else ImageImportError.UNKNOWN)
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            e.printStackTrace()
+            Result.Error(ImageImportError.UNKNOWN)
+        }
+    }
 
     override suspend fun deleteFile(fileName: String) {
         withContext(Dispatchers.IO) { File(imagesDir, fileName).delete() }

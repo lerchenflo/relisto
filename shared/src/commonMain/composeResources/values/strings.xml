@@ -104,7 +104,7 @@
     <!-- willhaben import -->
     <string name="import_button">Von willhaben importieren</string>
     <string name="import_running">Import läuft…</string>
-    <string name="import_done">%1$d willhaben-Marktplatzanzeigen gefunden.</string>
+    <string name="import_done">%1$d willhaben-Marktplatzanzeigen gefunden: %2$d neu, %3$d aktualisiert.</string>
 
     <!-- Update hint -->
     <string name="update_available">Version %1$s ist verfügbar. Das Update ist freiwillig; deine Anzeigen bleiben auf diesem Computer.</string>

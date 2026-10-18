@@ -10,13 +10,16 @@ import com.lerchenflo.willhabenupdater.datasource.network.HttpClientFactory
 import com.lerchenflo.willhabenupdater.datasource.network.PersistentCookiesStorage
 import com.lerchenflo.willhabenupdater.datasource.network.ResponseCaptureSettings
 import com.lerchenflo.willhabenupdater.datasource.preferences.Preferencemanager
+import com.lerchenflo.willhabenupdater.listings.data.KtorImageDownloader
 import com.lerchenflo.willhabenupdater.listings.data.RoomListingRepository
+import com.lerchenflo.willhabenupdater.listings.domain.ImageDownloader
 import com.lerchenflo.willhabenupdater.listings.presentation.editor.ListingEditorViewModel
 import com.lerchenflo.willhabenupdater.listings.presentation.list.ListingsViewModel
 import com.lerchenflo.willhabenupdater.listings.domain.ListingRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CachedWillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CookieWillhabenSessionRepository
-import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.FetchingWillhabenImporter
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.RoomWillhabenImporter
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.WillhabenListingsSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KtorWillhabenListingsDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.WillhabenListingsFetcher
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.WillhabenRequestRunner
@@ -66,8 +69,10 @@ val datasourceModule = module {
     singleOf(::CookieWillhabenSessionRepository) { bind<WillhabenSessionRepository>() }
     single { WillhabenRequestRunner(renewSession = { get<KtorWillhabenAccountDataSource>().renewSession() }, backoff = { delay(it) }) }
     singleOf(::KtorWillhabenListingsDataSource)
-    single { WillhabenListingsFetcher(get(), get()) }
-    singleOf(::FetchingWillhabenImporter) { bind<WillhabenImporter>() }
+    single<WillhabenListingsSource> { WillhabenListingsFetcher(get(), get()) }
+    single<HttpClient>(named(IMAGE_CLIENT)) { HttpClientFactory.createImageClient(get()) }
+    single<ImageDownloader> { KtorImageDownloader(get(named(IMAGE_CLIENT))) }
+    singleOf(::RoomWillhabenImporter) { bind<WillhabenImporter>() }
 
     // Separate plain client for the optional update hint (no willhaben headers or cookies)
     single<HttpClient>(named(GITHUB_CLIENT)) { HttpClientFactory.createGitHubClient(get()) }
@@ -77,6 +82,7 @@ val datasourceModule = module {
 }
 
 private const val GITHUB_CLIENT = "github"
+private const val IMAGE_CLIENT = "images"
 
 
 /** All ViewModels. */

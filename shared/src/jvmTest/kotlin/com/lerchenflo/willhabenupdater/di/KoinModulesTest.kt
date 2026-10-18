@@ -27,7 +27,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.koin.core.parameter.parametersOf
@@ -48,7 +48,8 @@ class KoinModulesTest {
     }.koin
 
     @BeforeTest
-    fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
+    // Work started by the ViewModels is queued and never run; this test only checks the wiring
+    fun setUp() = Dispatchers.setMain(StandardTestDispatcher())
 
     private val created = mutableListOf<ViewModel>()
 

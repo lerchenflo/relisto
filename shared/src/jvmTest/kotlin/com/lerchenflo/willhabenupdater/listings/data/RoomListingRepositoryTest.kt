@@ -42,6 +42,14 @@ class RoomListingRepositoryTest {
             return Result.Success(StoredImage(fileName = fileName, sha256 = hash, width = 800, height = 600))
         }
 
+        override suspend fun importImageBytes(bytes: ByteArray, extension: String): Result<StoredImage, ImageImportError> {
+            val text = bytes.decodeToString()
+            if (text == "broken") return Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
+            val hash = "sha-$text"
+            files += "$hash.$extension"
+            return Result.Success(StoredImage(fileName = "$hash.$extension", sha256 = hash, width = 800, height = 600))
+        }
+
         override suspend fun deleteFile(fileName: String) {
             files -= fileName
         }
@@ -293,5 +301,21 @@ class RoomListingRepositoryTest {
         repository.deleteUnusedImageFiles()
 
         assertThat(storage.files.toList()).containsExactly("sha-a.png")
+    }
+
+    @Test
+    fun downloadedImagesAreAppendedAndBrokenOnesSkipped() = runTest {
+        val id = create()
+        repository.addImages(id, listOf("a.png"))
+
+        val added = repository.addImageBytes(
+            id,
+            listOf("x".encodeToByteArray() to "jpg", "broken".encodeToByteArray() to "jpg", "y".encodeToByteArray() to "jpg"),
+        )
+
+        assertThat(added).isEqualTo(Result.Success(2))
+        assertThat(listing(id)!!.images.map { it.filePath }).containsExactly(
+            "/images/sha-a.png", "/images/sha-x.jpg", "/images/sha-y.jpg"
+        )
     }
 }

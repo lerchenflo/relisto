@@ -88,6 +88,12 @@ interface PublicationDao {
     @Query("SELECT * FROM listing_publications WHERE listingId = :listingId AND marketplace = :marketplace")
     fun getByListingAndMarketplaceAsFlow(listingId: Long, marketplace: String): Flow<ListingPublicationEntity?>
 
+    @Query("SELECT * FROM listing_publications WHERE marketplace = :marketplace AND remoteId = :remoteId")
+    suspend fun getByMarketplaceAndRemoteId(marketplace: String, remoteId: String): ListingPublicationEntity?
+
+    @Query("SELECT * FROM listing_publications WHERE marketplace = :marketplace AND remoteId = :remoteId")
+    fun getByMarketplaceAndRemoteIdAsFlow(marketplace: String, remoteId: String): Flow<ListingPublicationEntity?>
+
     @Query("SELECT * FROM listing_publications WHERE listingId = :listingId")
     suspend fun getByListingId(listingId: Long): List<ListingPublicationEntity>
 

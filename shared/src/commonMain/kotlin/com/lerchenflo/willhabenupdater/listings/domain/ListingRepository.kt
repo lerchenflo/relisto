@@ -18,6 +18,9 @@ interface ListingRepository {
 
     /** Copies the files into the image store and appends them to the listing. */
     suspend fun addImages(listingId: Long, sourcePaths: List<String>): Result<AddImagesResult, DataError.Local>
+    /** Stores downloaded images (bytes and file extension) and appends them; returns how many were added. */
+    suspend fun addImageBytes(listingId: Long, images: List<Pair<ByteArray, String>>): Result<Int, DataError.Local>
+
     suspend fun removeImage(imageId: Long): EmptyResult<DataError.Local>
 
     /** Saves the given image order; the first id becomes the cover. */

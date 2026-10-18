@@ -86,4 +86,11 @@ object HttpClientFactory {
             headers.append(HttpHeaders.Accept, "application/vnd.github+json")
         }
     }
+
+    /** Plain client for public listing images; no willhaben headers or cookies. */
+    fun createImageClient(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000
+        }
+    }
 }

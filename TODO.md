@@ -63,13 +63,13 @@ Result: complete offline listing manager.
 
 - [x] 4.1 Fetch `GET /myatz/atverz/showpagedadsfromuser` (marketplace only) with paging (`vertical=bap`); "Import from willhaben" button reports the count.
 - [x] 4.2a Fetch each listing with `GET /iad/bap/{adId}` (raw JSON).
-- [ ] 4.2b Store the raw JSON as `remoteSnapshotJson` of the willhaben publication.
-- [ ] 4.3 From the captured samples: document the JSON keys for title, description, price, category, attributes, location, delivery, images, status values and expiry date in `docs/willhaben-api.md`.
-- [ ] 4.4 Lenient DTOs (`ignoreUnknownKeys`) for the list response and context links; listing detail stays a `JsonObject`.
-- [ ] 4.5 Mapper remote → local: content into `ListingEntity`, willhaben fields + status + `expiresAt` into `ListingPublicationEntity`; snapshot hash of the managed fields.
-- [ ] 4.6 Download listing images into the image store; link them in `PublicationImageEntity` (`remoteReference` / `remoteUrl`).
-- [ ] 4.7 Matching by publication `remoteId`: new remote listing → new local listing + publication; known listing → update or mark `REMOTE_CHANGED` / `CONFLICT`; listing gone on willhaben → mark it.
-- [ ] 4.8 Import UI: button, progress, summary (new / updated / conflicts / expired), activity log entries.
+- [x] 4.2b Store the raw JSON as `remoteSnapshotJson` of the willhaben publication.
+- [x] 4.3 From the captured samples: document the JSON keys for title, description, price, category, attributes, location, delivery, images, status values and expiry date in `docs/willhaben-api.md`.
+- [x] 4.4 Lenient DTOs (`ignoreUnknownKeys`) for the list response and context links; listing detail stays a `JsonObject`.
+- [x] 4.5 Mapper remote → local: content into `ListingEntity`, willhaben fields + status + `expiresAt` into `ListingPublicationEntity`; snapshot hash of the managed fields.
+- [x] 4.6 Download listing images into the image store; link them in `PublicationImageEntity` (`remoteReference` / `remoteUrl`).
+- [x] 4.7 Matching by publication `remoteId`: new remote listing → new local listing + publication; known listing → update or mark `REMOTE_CHANGED` / `CONFLICT`; listing gone on willhaben → mark it.
+- [x] 4.8 Import UI: button, progress, summary (found / new / updated). Open: show willhaben status and expiry in list and editor, activity log.
 
 Result: all my willhaben listings are in the local database.
 

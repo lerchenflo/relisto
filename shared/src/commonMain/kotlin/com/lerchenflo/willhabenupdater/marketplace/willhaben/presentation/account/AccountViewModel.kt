@@ -82,7 +82,10 @@ class AccountViewModel(
         _state.update { it.copy(isImporting = true) }
         viewModelScope.launch {
             val message = when (val result = importer.importMyListings()) {
-                is Result.Success -> UiText.StringResourceText(Res.string.import_done, arrayOf(result.data.found))
+                is Result.Success -> UiText.StringResourceText(
+                    Res.string.import_done,
+                    arrayOf(result.data.found, result.data.created, result.data.updated),
+                )
                 is Result.Error -> result.error.toUiText()
             }
             _state.update { it.copy(isImporting = false) }

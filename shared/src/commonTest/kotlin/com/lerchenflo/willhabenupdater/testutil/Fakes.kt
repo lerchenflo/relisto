@@ -128,6 +128,13 @@ class FakeListingRepository : ListingRepository {
         return Result.Success(AddImagesResult(addedCount = sourcePaths.size - failed.size, failedFiles = failed))
     }
 
+    val addedImageBytes = mutableListOf<Pair<Long, Int>>()
+
+    override suspend fun addImageBytes(listingId: Long, images: List<Pair<ByteArray, String>>): Result<Int, DataError.Local> {
+        addedImageBytes += listingId to images.size
+        return Result.Success(images.size)
+    }
+
     override suspend fun removeImage(imageId: Long): EmptyResult<DataError.Local> {
         removedImageIds += imageId
         return Result.Success(Unit)
@@ -265,5 +272,38 @@ class FakeImporter : com.lerchenflo.willhabenupdater.marketplace.willhaben.domai
         calls++
         pending?.await()
         return result
+    }
+}
+
+/** Image store in memory: stored bytes are the "file", the hash is the text of the bytes. */
+class InMemoryImageStorage : com.lerchenflo.willhabenupdater.listings.domain.ImageStorage {
+    val files = mutableSetOf<String>()
+
+    override suspend fun importImage(sourcePath: String) =
+        importImageBytes(sourcePath.encodeToByteArray(), "jpg")
+
+    override suspend fun importImageBytes(
+        bytes: ByteArray,
+        extension: String
+    ): Result<com.lerchenflo.willhabenupdater.listings.domain.StoredImage, com.lerchenflo.willhabenupdater.listings.domain.ImageImportError> {
+        val hash = "h" + bytes.decodeToString().hashCode().toUInt().toString(16)
+        files += "$hash.$extension"
+        return Result.Success(com.lerchenflo.willhabenupdater.listings.domain.StoredImage("$hash.$extension", hash, 100, 100))
+    }
+
+    override suspend fun deleteFile(fileName: String) {
+        files -= fileName
+    }
+
+    override suspend fun listFileNames(): List<String> = files.toList()
+    override fun absolutePath(fileName: String): String = "/images/$fileName"
+}
+
+class FakeImageDownloader : com.lerchenflo.willhabenupdater.listings.domain.ImageDownloader {
+    val downloaded = mutableListOf<String>()
+
+    override suspend fun download(url: String): Result<Pair<ByteArray, String>, DataError.Network> {
+        downloaded += url
+        return if ("broken" in url) Result.Error(DataError.Network.NOT_FOUND) else Result.Success(url.encodeToByteArray() to "jpg")
     }
 }

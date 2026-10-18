@@ -9,6 +9,9 @@ import com.lerchenflo.willhabenupdater.app.domain.Result
  */
 interface ImageStorage {
     suspend fun importImage(sourcePath: String): Result<StoredImage, ImageImportError>
+
+    /** Stores image bytes, e.g. downloaded from a marketplace; [extension] like "jpg". */
+    suspend fun importImageBytes(bytes: ByteArray, extension: String): Result<StoredImage, ImageImportError>
     suspend fun deleteFile(fileName: String)
     suspend fun listFileNames(): List<String>
     fun absolutePath(fileName: String): String
@@ -31,4 +34,9 @@ enum class ImageImportError : Error {
 /** Opens the platform file chooser for images. Returns absolute paths; empty when cancelled. */
 interface ImagePicker {
     suspend fun pickImages(): List<String>
+}
+
+/** Downloads an image; the result is the bytes and the file extension ("jpg", "png", ...). */
+interface ImageDownloader {
+    suspend fun download(url: String): Result<Pair<ByteArray, String>, com.lerchenflo.willhabenupdater.app.domain.DataError.Network>
 }

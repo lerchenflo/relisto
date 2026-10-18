@@ -21,6 +21,9 @@ class AndroidImageStorage(
     override suspend fun importImage(sourcePath: String): Result<StoredImage, ImageImportError> =
         Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
 
+    override suspend fun importImageBytes(bytes: ByteArray, extension: String): Result<StoredImage, ImageImportError> =
+        Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
+
     override suspend fun deleteFile(fileName: String) {
         File(imagesDir, fileName).delete()
     }

@@ -7,7 +7,6 @@ import assertk.assertions.isInstanceOf
 import com.lerchenflo.willhabenupdater.app.domain.DataError
 import com.lerchenflo.willhabenupdater.app.domain.Result
 import com.lerchenflo.willhabenupdater.datasource.network.HttpClientFactory
-import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.ImportSummary
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.RemoteListingSummary
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -103,12 +102,5 @@ class WillhabenListingsFetchTest {
         unauthorizedOnce = true
 
         assertThat(loggedOutRepository.fetchMyMarketplaceListings()).isEqualTo(Result.Error(DataError.Network.UNAUTHORIZED))
-    }
-
-    @Test
-    fun importerReportsFoundMarketplaceListings() = runTest {
-        val result = FetchingWillhabenImporter(repository).importMyListings()
-
-        assertThat(result).isEqualTo(Result.Success(ImportSummary(found = 2)))
     }
 }

@@ -9,9 +9,9 @@ class WillhabenListingsFetcher(
     private val dataSource: KtorWillhabenListingsDataSource,
     private val runner: WillhabenRequestRunner,
     private val pageSize: Int = 30,
-) {
+) : WillhabenListingsSource {
 
-    suspend fun fetchMyMarketplaceListings(): Result<List<RemoteListing>, DataError.Network> {
+    override suspend fun fetchMyMarketplaceListings(): Result<List<RemoteListing>, DataError.Network> {
         val summaries = buildList {
             var page = 1
             while (true) {
@@ -31,4 +31,9 @@ class WillhabenListingsFetcher(
             }
         )
     }
+}
+
+/** The user's marketplace listings on willhaben with their full JSON. */
+interface WillhabenListingsSource {
+    suspend fun fetchMyMarketplaceListings(): Result<List<RemoteListing>, DataError.Network>
 }
