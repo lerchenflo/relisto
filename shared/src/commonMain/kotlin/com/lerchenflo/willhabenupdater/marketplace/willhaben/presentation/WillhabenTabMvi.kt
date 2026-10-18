@@ -1,6 +1,7 @@
 package com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation
 
 import androidx.compose.runtime.Stable
+import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
 import com.lerchenflo.willhabenupdater.utilities.UiText
 
 @Stable
@@ -26,6 +27,19 @@ data class WillhabenTabState(
     val shippingPriceText: String = "",
     val isShippingPriceInvalid: Boolean = false,
     val paylivery: Boolean = false,
+    /** The listing on willhaben; null while it exists only locally. */
+    val publication: PublicationUi? = null,
+    val isRepublishConfirmOpen: Boolean = false,
+    val isRepublishing: Boolean = false,
+)
+
+data class PublicationUi(
+    /** willhaben's status text, e.g. "Abgelaufen". */
+    val statusText: String?,
+    val expiresText: String?,
+    val syncState: SyncState,
+    /** Only expired listings can be published again; a running one would be duplicated. */
+    val canRepublish: Boolean,
 )
 
 data class CategoryOptionUi(
@@ -65,6 +79,9 @@ sealed interface WillhabenTabAction {
     data class OnShippingChange(val enabled: Boolean) : WillhabenTabAction
     data class OnShippingPriceChange(val priceText: String) : WillhabenTabAction
     data class OnPayliveryChange(val enabled: Boolean) : WillhabenTabAction
+    data object OnRepublishClick : WillhabenTabAction
+    data object OnRepublishConfirm : WillhabenTabAction
+    data object OnRepublishDismiss : WillhabenTabAction
 }
 
 sealed interface WillhabenTabEvent {

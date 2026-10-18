@@ -122,4 +122,24 @@
     <string name="settings_shipping">Versand</string>
     <string name="settings_shipping_price">Versandkosten (€)</string>
     <string name="settings_data_folder">Datenordner</string>
+    <string name="willhaben_listing_title">willhaben-Anzeige</string>
+    <string name="willhaben_listing_status">Status: %1$s</string>
+    <string name="willhaben_listing_expires">Läuft ab: %1$s</string>
+    <string name="willhaben_listing_sync">Abgleich: %1$s</string>
+    <string name="sync_state_local_only">Nur lokal</string>
+    <string name="sync_state_synced">Synchron</string>
+    <string name="sync_state_local_changes">Lokale Änderungen</string>
+    <string name="sync_state_remote_changed">Auf willhaben geändert</string>
+    <string name="sync_state_conflict">Konflikt</string>
+    <string name="sync_state_publishing">Wird veröffentlicht</string>
+    <string name="sync_state_error">Fehler</string>
+    <string name="republish_button">Neu veröffentlichen</string>
+    <string name="republish_confirm_title">Anzeige neu veröffentlichen?</string>
+    <string name="republish_confirm_text">Die abgelaufene Anzeige wird mit dem lokalen Titel, Text, Preis und den lokalen Bildern neu auf willhaben veröffentlicht. Es werden keine kostenpflichtigen Extras gebucht.</string>
+    <string name="republish_confirm">Veröffentlichen</string>
+    <string name="republish_running">Wird neu veröffentlicht …</string>
+    <string name="republish_done">Anzeige neu veröffentlicht</string>
+    <string name="republish_error_not_published">Diese Anzeige ist nicht auf willhaben.</string>
+    <string name="republish_error_paid">willhaben verlangt eine Zahlung. Abgebrochen, es wurde nichts gebucht.</string>
+    <string name="republish_error_api_changed">willhaben hat die Schnittstelle geändert (%1$s fehlt).</string>
 </resources>

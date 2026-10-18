@@ -6,6 +6,14 @@ import com.lerchenflo.willhabenupdater.app.domain.Result
 import com.lerchenflo.willhabenupdater.app.domain.onFailure
 import com.lerchenflo.willhabenupdater.app.domain.onSuccess
 import com.lerchenflo.willhabenupdater.listings.domain.ListingRepository
+import com.lerchenflo.willhabenupdater.marketplace.domain.Marketplace
+import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus
+import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatusRepository
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenImporter
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenPublisher
+import com.lerchenflo.willhabenupdater.utilities.TimeProvider
+import com.lerchenflo.willhabenupdater.utilities.UiText
+import com.lerchenflo.willhabenupdater.utilities.formatDateTime
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAttributeCodes
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCategory
@@ -26,6 +34,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import willhabenupdater.shared.generated.resources.Res
+import willhabenupdater.shared.generated.resources.republish_done
 
 /**
  * willhaben tab of the editor: category, category attributes, location and delivery options.
@@ -36,6 +46,10 @@ class WillhabenTabViewModel(
     private val catalogRepository: WillhabenCatalogRepository,
     private val fieldsDataSource: WillhabenFieldsLocalDataSource,
     private val listingRepository: ListingRepository,
+    private val publicationStatuses: PublicationStatusRepository,
+    private val publisher: WillhabenPublisher,
+    private val importer: WillhabenImporter,
+    private val timeProvider: TimeProvider,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WillhabenTabState())
@@ -57,6 +71,14 @@ class WillhabenTabViewModel(
                 ).withFields()
             }
             loadTree()
+        }
+        viewModelScope.launch {
+            publicationStatuses.getStatusesAsFlow()
+                .map { statuses -> statuses.firstOrNull { it.listingId == listingId && it.marketplace == Marketplace.WILLHABEN } }
+                .distinctUntilChanged()
+                .collect { status -> _state.update { it.copy(publication = status?.toUi()) } }
+        }
+        viewModelScope.launch {
             listingRepository.getListingByIdAsFlow(listingId)
                 .filterNotNull()
                 .map { it.postcode }
@@ -86,7 +108,38 @@ class WillhabenTabViewModel(
             is WillhabenTabAction.OnShippingChange -> saveFields(fields.copy(delivery = fields.delivery.copy(shipping = action.enabled)))
             is WillhabenTabAction.OnPayliveryChange -> saveFields(fields.copy(delivery = fields.delivery.copy(paylivery = action.enabled)))
             is WillhabenTabAction.OnShippingPriceChange -> onShippingPriceChange(action.priceText)
+            WillhabenTabAction.OnRepublishClick -> _state.update { it.copy(isRepublishConfirmOpen = true) }
+            WillhabenTabAction.OnRepublishDismiss -> _state.update { it.copy(isRepublishConfirmOpen = false) }
+            WillhabenTabAction.OnRepublishConfirm -> republish()
         }
+    }
+
+    private fun republish() {
+        _state.update { it.copy(isRepublishConfirmOpen = false, isRepublishing = true) }
+        viewModelScope.launch {
+            publisher.republish(listingId)
+                .onSuccess {
+                    // Reads the new listing's status and expiry from willhaben
+                    importer.importMyListings()
+                    _state.update { it.copy(isRepublishing = false) }
+                    _events.send(WillhabenTabEvent.ShowMessage(UiText.StringResourceText(Res.string.republish_done)))
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isRepublishing = false) }
+                    _events.send(WillhabenTabEvent.ShowMessage(error.toUiText()))
+                }
+        }
+    }
+
+    private fun PublicationStatus.toUi(): PublicationUi? {
+        if (statusText == null && expiresAt == null) return null
+        val expired = statusText == EXPIRED_STATUS || (expiresAt != null && expiresAt <= timeProvider.nowEpochMillis())
+        return PublicationUi(
+            statusText = statusText,
+            expiresText = expiresAt?.let(::formatDateTime),
+            syncState = syncState,
+            canRepublish = expired,
+        )
     }
 
     private suspend fun loadTree() {
@@ -237,5 +290,7 @@ class WillhabenTabViewModel(
         const val PATH_SEPARATOR = " › "
         const val MAX_CATEGORY_RESULTS = 50
         val POSTCODE = Regex("""\d{4}""")
+        /** willhaben's status name of an expired listing. */
+        const val EXPIRED_STATUS = "Abgelaufen"
     }
 }

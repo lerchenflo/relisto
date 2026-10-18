@@ -118,8 +118,7 @@ class RoomWillhabenImporter(
 
     private fun ImportedListing.fieldsJson(): String = AppJson.encodeToString(WillhabenFieldsDto.serializer(), fields.toDto())
 
-    /** Fingerprint of everything the app manages; status and expiry are not part of it. */
-    private fun ImportedListing.contentHash(): String = "$content|$fields".hashCode().toUInt().toString(16)
+    private fun ImportedListing.contentHash(): String = willhabenContentHash(content, fields)
 
     private companion object {
         val MARKETPLACE = Marketplace.WILLHABEN.name

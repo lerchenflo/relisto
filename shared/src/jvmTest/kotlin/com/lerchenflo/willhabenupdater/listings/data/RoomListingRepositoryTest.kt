@@ -50,6 +50,8 @@ class RoomListingRepositoryTest {
             return Result.Success(StoredImage(fileName = "$hash.$extension", sha256 = hash, width = 800, height = 600))
         }
 
+        override suspend fun readBytes(absolutePath: String): ByteArray? = null
+
         override suspend fun deleteFile(fileName: String) {
             files -= fileName
         }

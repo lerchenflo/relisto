@@ -1,15 +1,21 @@
 package com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation
 
+import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.lerchenflo.willhabenupdater.app.domain.DataError
 import com.lerchenflo.willhabenupdater.app.domain.Result
+import com.lerchenflo.willhabenupdater.marketplace.domain.Marketplace
+import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus
+import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAttribute
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAttributeReference
@@ -19,11 +25,16 @@ import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCat
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCategoryTree
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenListingFields
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLocation
+import com.lerchenflo.willhabenupdater.testutil.FakeImporter
 import com.lerchenflo.willhabenupdater.testutil.FakeListingRepository
+import com.lerchenflo.willhabenupdater.testutil.FakePublicationStatusRepository
+import com.lerchenflo.willhabenupdater.testutil.FakePublisher
+import com.lerchenflo.willhabenupdater.testutil.FakeTimeProvider
 import com.lerchenflo.willhabenupdater.testutil.FakeWillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.testutil.FakeWillhabenFieldsDataSource
 import com.lerchenflo.willhabenupdater.testutil.MainDispatcherTest
 import com.lerchenflo.willhabenupdater.testutil.listing
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -75,7 +86,19 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
         listings.value = listOf(listing(1, title = "Kinderfahrrad", postcode = ""))
     }
 
-    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings)
+    private val statuses = FakePublicationStatusRepository()
+    private val publisher = FakePublisher()
+    private val importer = FakeImporter()
+    private val time = FakeTimeProvider(now = 10_000L)
+
+    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, importer, time)
+
+    private fun publishedAs(statusText: String?, expiresAt: Long? = null) {
+        statuses.statuses.value = listOf(
+            PublicationStatus(listingId = 1, marketplace = Marketplace.WILLHABEN, statusText = statusText, expiresAt = expiresAt, syncState = SyncState.SYNCED),
+            PublicationStatus(listingId = 2, marketplace = Marketplace.WILLHABEN, statusText = "Online", expiresAt = null, syncState = SyncState.SYNCED),
+        )
+    }
     private fun savedFields(): WillhabenListingFields = fieldsSource.fields.value.getValue(1)
     private fun setPostcode(postcode: String) {
         listings.listings.value = listings.listings.value.map { it.copy(postcode = postcode) }
@@ -268,5 +291,86 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
         assertThat(state.pickup).isTrue()
         assertThat(state.shipping).isFalse()
         assertThat(state.categoryPathText).isNull()
+    }
+
+    @Test
+    fun localOnlyListingShowsNoWillhabenListing() = runTest {
+        assertThat(viewModel().state.value.publication).isNull()
+    }
+
+    @Test
+    fun expiredListingShowsStatusAndCanBeRepublished() = runTest {
+        publishedAs("Abgelaufen", expiresAt = 5_000L)
+
+        val publication = viewModel().state.value.publication!!
+
+        assertThat(publication.statusText).isEqualTo("Abgelaufen")
+        assertThat(publication.expiresText).isNotNull()
+        assertThat(publication.syncState).isEqualTo(SyncState.SYNCED)
+        assertThat(publication.canRepublish).isTrue()
+    }
+
+    @Test
+    fun runningListingCannotBeRepublished() = runTest {
+        publishedAs("Online", expiresAt = 20_000L)
+
+        assertThat(viewModel().state.value.publication!!.canRepublish).isFalse()
+    }
+
+    @Test
+    fun passedEndDateCountsAsExpired() = runTest {
+        publishedAs("Online", expiresAt = 9_000L)
+
+        assertThat(viewModel().state.value.publication!!.canRepublish).isTrue()
+    }
+
+    @Test
+    fun republishAsksForConfirmationFirst() = runTest {
+        publishedAs("Abgelaufen")
+        val viewModel = viewModel()
+
+        viewModel.onAction(WillhabenTabAction.OnRepublishClick)
+        assertThat(viewModel.state.value.isRepublishConfirmOpen).isTrue()
+        assertThat(publisher.republished).isEmpty()
+
+        viewModel.onAction(WillhabenTabAction.OnRepublishDismiss)
+        assertThat(viewModel.state.value.isRepublishConfirmOpen).isFalse()
+        assertThat(publisher.republished).isEmpty()
+    }
+
+    @Test
+    fun confirmedRepublishRenewsAndRefreshesStatus() = runTest {
+        publishedAs("Abgelaufen")
+        publisher.pending = CompletableDeferred()
+        val viewModel = viewModel()
+
+        viewModel.events.test {
+            viewModel.onAction(WillhabenTabAction.OnRepublishClick)
+            viewModel.onAction(WillhabenTabAction.OnRepublishConfirm)
+            assertThat(viewModel.state.value.isRepublishConfirmOpen).isFalse()
+            assertThat(viewModel.state.value.isRepublishing).isTrue()
+
+            publisher.pending!!.complete(Unit)
+
+            assertThat(awaitItem()).isInstanceOf(WillhabenTabEvent.ShowMessage::class)
+            assertThat(publisher.republished).containsExactly(1L)
+            assertThat(importer.calls).isEqualTo(1)
+            assertThat(viewModel.state.value.isRepublishing).isFalse()
+        }
+    }
+
+    @Test
+    fun failedRepublishShowsErrorAndSkipsRefresh() = runTest {
+        publishedAs("Abgelaufen")
+        publisher.result = Result.Error(PublishError.PaidProduct)
+        val viewModel = viewModel()
+
+        viewModel.events.test {
+            viewModel.onAction(WillhabenTabAction.OnRepublishConfirm)
+
+            assertThat(awaitItem()).isEqualTo(WillhabenTabEvent.ShowMessage(PublishError.PaidProduct.toUiText()))
+            assertThat(importer.calls).isEqualTo(0)
+            assertThat(viewModel.state.value.isRepublishing).isFalse()
+        }
     }
 }

@@ -12,6 +12,8 @@ interface ImageStorage {
 
     /** Stores image bytes, e.g. downloaded from a marketplace; [extension] like "jpg". */
     suspend fun importImageBytes(bytes: ByteArray, extension: String): Result<StoredImage, ImageImportError>
+    /** Bytes of a stored image by its absolute path, null when it cannot be read. */
+    suspend fun readBytes(absolutePath: String): ByteArray?
     suspend fun deleteFile(fileName: String)
     suspend fun listFileNames(): List<String>
     fun absolutePath(fileName: String): String

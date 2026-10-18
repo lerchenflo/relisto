@@ -20,7 +20,9 @@ import com.lerchenflo.willhabenupdater.marketplace.data.RoomPublicationStatusRep
 import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatusRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CachedWillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CookieWillhabenSessionRepository
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KtorWillhabenWriteDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.RoomWillhabenImporter
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.WillhabenRepublisher
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.WillhabenListingsSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KtorWillhabenListingsDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.WillhabenListingsFetcher
@@ -31,6 +33,7 @@ import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.RoomWillhabenF
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenImporter
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenPublisher
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenSessionRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.WillhabenTabViewModel
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountViewModel
@@ -76,6 +79,8 @@ val datasourceModule = module {
     single<HttpClient>(named(IMAGE_CLIENT)) { HttpClientFactory.createImageClient(get()) }
     single<ImageDownloader> { KtorImageDownloader(get(named(IMAGE_CLIENT))) }
     singleOf(::RoomWillhabenImporter) { bind<WillhabenImporter>() }
+    singleOf(::KtorWillhabenWriteDataSource)
+    singleOf(::WillhabenRepublisher) { bind<WillhabenPublisher>() }
 
     // Separate plain client for the optional update hint (no willhaben headers or cookies)
     single<HttpClient>(named(GITHUB_CLIENT)) { HttpClientFactory.createGitHubClient(get()) }

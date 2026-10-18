@@ -291,6 +291,9 @@ class InMemoryImageStorage : com.lerchenflo.willhabenupdater.listings.domain.Ima
         return Result.Success(com.lerchenflo.willhabenupdater.listings.domain.StoredImage("$hash.$extension", hash, 100, 100))
     }
 
+    override suspend fun readBytes(absolutePath: String): ByteArray? =
+        if (absolutePath.removePrefix("/images/") in files) "image:$absolutePath".encodeToByteArray() else null
+
     override suspend fun deleteFile(fileName: String) {
         files -= fileName
     }
@@ -311,4 +314,17 @@ class FakeImageDownloader : com.lerchenflo.willhabenupdater.listings.domain.Imag
 class FakePublicationStatusRepository : com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatusRepository {
     val statuses = MutableStateFlow<List<com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus>>(emptyList())
     override fun getStatusesAsFlow(): Flow<List<com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus>> = statuses
+}
+
+class FakePublisher : com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenPublisher {
+    var result: com.lerchenflo.willhabenupdater.app.domain.EmptyResult<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.PublishError> =
+        Result.Success(Unit)
+    val republished = mutableListOf<Long>()
+    var pending: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
+    override suspend fun republish(listingId: Long): com.lerchenflo.willhabenupdater.app.domain.EmptyResult<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.PublishError> {
+        republished += listingId
+        pending?.await()
+        return result
+    }
 }

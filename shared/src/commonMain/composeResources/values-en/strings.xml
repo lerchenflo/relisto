@@ -122,4 +122,24 @@
     <string name="settings_shipping">Shipping</string>
     <string name="settings_shipping_price">Shipping price (€)</string>
     <string name="settings_data_folder">Data folder</string>
+    <string name="willhaben_listing_title">willhaben listing</string>
+    <string name="willhaben_listing_status">Status: %1$s</string>
+    <string name="willhaben_listing_expires">Expires: %1$s</string>
+    <string name="willhaben_listing_sync">Sync: %1$s</string>
+    <string name="sync_state_local_only">Local only</string>
+    <string name="sync_state_synced">In sync</string>
+    <string name="sync_state_local_changes">Local changes</string>
+    <string name="sync_state_remote_changed">Changed on willhaben</string>
+    <string name="sync_state_conflict">Conflict</string>
+    <string name="sync_state_publishing">Publishing</string>
+    <string name="sync_state_error">Error</string>
+    <string name="republish_button">Republish</string>
+    <string name="republish_confirm_title">Republish listing?</string>
+    <string name="republish_confirm_text">The expired listing is published again on willhaben with the local title, text, price and images. No paid extras are booked.</string>
+    <string name="republish_confirm">Publish</string>
+    <string name="republish_running">Republishing …</string>
+    <string name="republish_done">Listing republished</string>
+    <string name="republish_error_not_published">This listing is not on willhaben.</string>
+    <string name="republish_error_paid">willhaben asks for a payment. Cancelled, nothing was bought.</string>
+    <string name="republish_error_api_changed">willhaben changed its interface (%1$s is missing).</string>
 </resources>

@@ -58,6 +58,9 @@ class DesktopImageStorage(
         }
     }
 
+    override suspend fun readBytes(absolutePath: String): ByteArray? =
+        withContext(Dispatchers.IO) { File(absolutePath).takeIf { it.isFile }?.readBytes() }
+
     override suspend fun deleteFile(fileName: String) {
         withContext(Dispatchers.IO) { File(imagesDir, fileName).delete() }
     }

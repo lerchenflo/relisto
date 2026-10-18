@@ -1,0 +1,199 @@
+package com.lerchenflo.willhabenupdater.marketplace.willhaben.data
+
+import assertk.assertThat
+import assertk.assertions.contains
+import assertk.assertions.containsExactly
+import assertk.assertions.doesNotContain
+import assertk.assertions.isEqualTo
+import com.lerchenflo.willhabenupdater.app.domain.DataError
+import com.lerchenflo.willhabenupdater.app.domain.Result
+import com.lerchenflo.willhabenupdater.datasource.network.HttpClientFactory
+import com.lerchenflo.willhabenupdater.listings.data.RoomListingRepository
+import com.lerchenflo.willhabenupdater.listings.domain.ListingContent
+import com.lerchenflo.willhabenupdater.marketplace.data.ListingPublicationEntity
+import com.lerchenflo.willhabenupdater.marketplace.domain.Marketplace
+import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.PublishError
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.PublishStep
+import com.lerchenflo.willhabenupdater.testutil.FakeTimeProvider
+import com.lerchenflo.willhabenupdater.testutil.InMemoryImageStorage
+import com.lerchenflo.willhabenupdater.testutil.inMemoryDatabase
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockRequestHandleScope
+import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.respondError
+import io.ktor.client.request.HttpResponseData
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
+import io.ktor.http.headersOf
+import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
+import kotlin.test.Test
+
+/** Republish flow against a fake willhaben that answers like the web client expects. */
+class WillhabenRepublisherTest {
+
+    private val database = inMemoryDatabase()
+    private val time = FakeTimeProvider(now = 1_000L)
+    private val imageStorage = InMemoryImageStorage()
+    private val listings = RoomListingRepository(
+        database.listingDao(), database.listingImageDao(), database.publicationDao(), imageStorage, time,
+    )
+    private val fields = RoomWillhabenFieldsDataSource(database.publicationDao())
+
+    private val calls = mutableListOf<String>()
+    private val bodies = mutableMapOf<String, String>()
+    private var withPayment = false
+    private var withPresaveLink = true
+    private var copyStatus = HttpStatusCode.OK
+
+    private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
+    private fun MockRequestHandleScope.json(body: String): HttpResponseData = respond(body, HttpStatusCode.OK, jsonHeaders)
+
+    private val engine = MockEngine { request ->
+        val call = "${request.method.value} ${request.url.encodedPath}"
+        calls += call
+        (request.body as? OutgoingContent.ByteArrayContent)?.let { bodies[call] = it.bytes().decodeToString() }
+        when (call) {
+            "POST /webapi/iad/bap/copy/111" ->
+                if (copyStatus != HttpStatusCode.OK) respondError(copyStatus)
+                else json(
+                    """{"heading":"Alt","description":"Alt","price":200.0,"adId":null,"productId":null,"phoneNo":"x",
+                       "treeAttributes":[],"contextLinkList":{"contextLink":[
+                       ${if (withPresaveLink) """{"id":"presave","serviceName":"iad","relativePath":"/bap/presave"}""" else ""}]}}"""
+                )
+            "POST /webapi/iad/bap/presave" -> json(
+                """{"adId":222,"adUuid":"uuid-222","productId":67,"contextLinkList":{"contextLink":[
+                   {"id":"selfLinkFinish","serviceName":"iad","relativePath":"/bap/finish"},
+                   {"id":"imageList","serviceName":"iad","relativePath":"/atimage/222"}]}}"""
+            )
+            "POST /webapi/iad-upload/atimage/temp" -> json("""{"reference":"temp-${calls.size}"}""")
+            "PUT /webapi/iad-upload/atimage/222/order-and-associate" -> json("""{"advertImage":[]}""")
+            "POST /webapi/iad/bap/finish" -> json("{}")
+            "GET /webapi/iad/bap/222" -> json(
+                """{"heading":"Rasentraktor Kart","description":"Gut erhalten","price":180.0,"postCode":"6850","adId":222,
+                   "adUuid":"uuid-222","endDate":"2026-12-02T10:00:00.000+00:00","treeAttributes":[],
+                   "contextLinkList":{"contextLink":[
+                   {"id":"selfLinkActivate","serviceName":"iad","relativePath":"/bap/activate/222"}
+                   ${if (withPayment) """,{"id":"paymentURI","serviceName":"iad","relativePath":"/payment/x"}""" else ""}]}}"""
+            )
+            "PUT /webapi/iad/bap/activate/222" -> respond("", HttpStatusCode.OK)
+            else -> respondError(HttpStatusCode.NotFound)
+        }
+    }
+
+    private val client = HttpClientFactory.createWillhabenClient(engine)
+    private val runner = WillhabenRequestRunner(renewSession = { false }, backoff = {})
+    private val republisher = WillhabenRepublisher(
+        writeDataSource = KtorWillhabenWriteDataSource(client),
+        listingsDataSource = KtorWillhabenListingsDataSource(client),
+        runner = runner,
+        listingRepository = listings,
+        fieldsDataSource = fields,
+        publicationDao = database.publicationDao(),
+        imageStorage = imageStorage,
+        timeProvider = time,
+    )
+
+    @AfterTest
+    fun tearDown() = database.close()
+
+    private suspend fun publishedListing(remoteId: String? = "111"): Long {
+        val id = (listings.createListing(ListingContent(title = "Rasentraktor Kart", description = "Gut erhalten", priceCents = 18000, postcode = "6850")) as Result.Success).data
+        database.publicationDao().insert(
+            ListingPublicationEntity(
+                listingId = id, marketplace = Marketplace.WILLHABEN.name, marketplaceFieldsJson = null,
+                remoteId = remoteId, remoteUuid = "uuid-111", remoteUrl = null, remoteStatus = "Abgelaufen",
+                expiresAt = 5L, remoteSnapshotJson = "{}", remoteSnapshotHash = "old", syncState = SyncState.SYNCED.name,
+                lastSyncedAt = 1L, lastError = null,
+            )
+        )
+        return id
+    }
+
+    @Test
+    fun expiredListingIsCopiedFinishedAndActivatedWithLocalContent() = runTest {
+        val id = publishedListing()
+
+        val result = republisher.republish(id)
+
+        assertThat(result).isEqualTo(Result.Success(Unit))
+        assertThat(calls).containsExactly(
+            "POST /webapi/iad/bap/copy/111",
+            "POST /webapi/iad/bap/presave",
+            "POST /webapi/iad/bap/finish",
+            "GET /webapi/iad/bap/222",
+            "PUT /webapi/iad/bap/activate/222",
+        )
+        val finishBody = bodies.getValue("POST /webapi/iad/bap/finish")
+        assertThat(finishBody).contains("\"heading\":\"Rasentraktor Kart\"")
+        assertThat(finishBody).contains("\"price\":180.0")
+        assertThat(finishBody).contains("\"adId\":222")
+        assertThat(finishBody).contains("\"productId\":67")
+    }
+
+    @Test
+    fun publicationPointsToTheNewListingAfterwards() = runTest {
+        val id = publishedListing()
+
+        republisher.republish(id)
+
+        val publication = database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!
+        assertThat(publication.remoteId).isEqualTo("222")
+        assertThat(publication.remoteUuid).isEqualTo("uuid-222")
+        assertThat(publication.syncState).isEqualTo(SyncState.SYNCED.name)
+        assertThat(publication.expiresAt).isEqualTo(1796205600000L)
+    }
+
+    @Test
+    fun localImagesAreUploadedAndOrdered() = runTest {
+        val id = publishedListing()
+        listings.addImageBytes(id, listOf("a".encodeToByteArray() to "jpg", "b".encodeToByteArray() to "jpg"))
+
+        republisher.republish(id)
+
+        assertThat(calls.filter { it.contains("atimage") }).containsExactly(
+            "POST /webapi/iad-upload/atimage/temp",
+            "POST /webapi/iad-upload/atimage/temp",
+            "PUT /webapi/iad-upload/atimage/222/order-and-associate",
+        )
+        assertThat(bodies.getValue("PUT /webapi/iad-upload/atimage/222/order-and-associate"))
+            .isEqualTo("""{"advertImage":[{"reference":"temp-3"},{"reference":"temp-4"}],"floorPlans":[]}""")
+    }
+
+    @Test
+    fun paidProductStopsBeforeActivation() = runTest {
+        withPayment = true
+        val id = publishedListing()
+
+        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.PaidProduct))
+        assertThat(calls).doesNotContain("PUT /webapi/iad/bap/activate/222")
+    }
+
+    @Test
+    fun missingPresaveLinkMeansApiChanged() = runTest {
+        withPresaveLink = false
+        val id = publishedListing()
+
+        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.MissingLink("presave")))
+    }
+
+    @Test
+    fun listingWithoutWillhabenListingCannotBeRenewed() = runTest {
+        val id = publishedListing(remoteId = null)
+
+        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.NotPublished))
+        assertThat(calls.isEmpty()).isEqualTo(true)
+    }
+
+    @Test
+    fun failedStepIsReported() = runTest {
+        copyStatus = HttpStatusCode.Unauthorized
+        val id = publishedListing()
+
+        assertThat(republisher.republish(id))
+            .isEqualTo(Result.Error(PublishError.Failed(PublishStep.COPY, DataError.Network.UNAUTHORIZED)))
+    }
+
+}
