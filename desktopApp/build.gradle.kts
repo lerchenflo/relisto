@@ -31,22 +31,14 @@ compose.desktop {
     application {
         mainClass = "com.lerchenflo.willhabenupdater.MainKt"
 
-        // The embedded Chromium (KCEF) of the login window needs access to AWT internals
-        jvmArgs += listOf(
-            "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
-            "--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED",
-            "--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED",
-            "--add-opens", "java.desktop/sun.awt.X11=ALL-UNNAMED",
-        )
-
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "Willhaben Updater"
             packageVersion = appVersion
             description = "Manage willhaben listings locally"
             vendor = "lerchenflo"
-            // OkHttp/TLS, bundled SQLite and DataStore need these on top of the default runtime
-            modules("java.instrument", "java.management", "java.naming", "java.net.http", "java.sql", "jdk.unsupported", "jdk.crypto.ec")
+            // OkHttp/TLS, bundled SQLite, DataStore and the JavaFX WebView need these on top of the default runtime
+            modules("java.instrument", "java.management", "java.naming", "java.net.http", "java.scripting", "java.sql", "jdk.unsupported", "jdk.crypto.ec", "jdk.xml.dom")
 
             linux {
                 // Lowercase without spaces for DEB/RPM package names
@@ -73,21 +65,9 @@ compose.desktop {
     }
 }
 
-// JetBrains Runtime (used by hot reload and the Gradle daemon) ships its own `jcef`, `jogl.all` and
-// `gluegen.rt` modules; they shadow the Chromium classes of KCEF and crash the login window.
-// Development runs therefore see only the standard modules. Installers bundle their own runtime
-// without these modules.
-val developmentModules = listOf(
-    "java.se", "jdk.accessibility", "jdk.attach", "jdk.charsets", "jdk.crypto.cryptoki", "jdk.crypto.ec",
-    "jdk.httpserver", "jdk.jdi", "jdk.jdwp.agent", "jdk.jfr", "jdk.localedata", "jdk.management",
-    "jdk.management.agent", "jdk.naming.dns", "jdk.net", "jdk.security.auth", "jdk.security.jgss",
-    "jdk.unsupported", "jdk.unsupported.desktop", "jdk.zipfs",
-).joinToString(",")
-
+// Development runs record willhaben API responses for analysis (gitignored folder)
 tasks.withType<JavaExec>().configureEach {
     if (name == "run" || name.startsWith("hotRun")) {
-        jvmArgs("--limit-modules", developmentModules)
-        // Development runs record willhaben API responses for analysis (gitignored folder)
         systemProperty("willhaben.captureDir", rootProject.layout.projectDirectory.dir("docs/api-samples").asFile.absolutePath)
     }
 }

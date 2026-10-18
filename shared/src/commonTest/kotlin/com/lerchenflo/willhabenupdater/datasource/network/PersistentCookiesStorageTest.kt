@@ -116,6 +116,15 @@ class PersistentCookiesStorageTest {
     }
 
     @Test
+    fun validCookiesAreListedForTheLoginBrowser() = runTest {
+        val storage = storage()
+        val sso = SessionCookie("KEYCLOAK_IDENTITY", "k", "willhaben.at", hostOnly = false, path = "/auth/realms/willhaben")
+        storage.replaceAll(listOf(sso, SessionCookie("OLD", "o", "www.willhaben.at", hostOnly = true, expiresAt = 1L)))
+
+        assertThat(storage.allCookies()).containsExactly(sso)
+    }
+
+    @Test
     fun clearRemovesEverything() = runTest {
         val storage = storage()
         storage.replaceAll(listOf(SessionCookie("A", "a", "www.willhaben.at", hostOnly = true)))

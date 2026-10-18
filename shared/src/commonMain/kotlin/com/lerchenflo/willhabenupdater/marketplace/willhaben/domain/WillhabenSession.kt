@@ -20,8 +20,6 @@ sealed interface SessionState {
 enum class LoginError : Error {
     CANCELLED,
     BROWSER_UNAVAILABLE,
-    /** The Java runtime brings its own, incompatible Chromium (JetBrains Runtime with JCEF). */
-    UNSUPPORTED_RUNTIME,
     NOT_LOGGED_IN,
     NETWORK
 }

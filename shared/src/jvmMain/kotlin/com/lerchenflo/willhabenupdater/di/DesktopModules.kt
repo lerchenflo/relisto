@@ -13,7 +13,7 @@ import com.lerchenflo.willhabenupdater.listings.data.DesktopImagePicker
 import com.lerchenflo.willhabenupdater.listings.data.DesktopImageStorage
 import com.lerchenflo.willhabenupdater.listings.domain.ImagePicker
 import com.lerchenflo.willhabenupdater.listings.domain.ImageStorage
-import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KcefWillhabenLoginBrowser
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.JavaFxWillhabenLoginBrowser
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLoginBrowser
 import com.lerchenflo.willhabenupdater.utilities.AppDirectories
 import com.lerchenflo.willhabenupdater.utilities.DesktopAppDirectories
@@ -44,7 +44,7 @@ val desktopPlatformModule = module {
     single<SecureStorage> {
         KSafeSecureStorage(KSafe(fileName = SECURE_STORE_NAME, baseDir = File(get<AppDirectories>().dataDir)))
     }
-    singleOf(::KcefWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
+    singleOf(::JavaFxWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
     single { ResponseCaptureSettings(System.getProperty("willhaben.captureDir")) }
     single<AppVersionProvider> { DesktopAppVersionProvider() }
 }

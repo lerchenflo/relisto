@@ -61,8 +61,8 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 ## Current status
 
 Phase 3 (willhaben login) implemented; needs a real login test by the user:
-`./gradlew :desktopApp:run`, then "Log in to willhaben". The first login downloads the embedded
-Chromium (KCEF) into the app data folder. Development runs write every willhaben API response to
+`./gradlew :desktopApp:run` (or the IDE hot run), then "Log in to willhaben". The login window is
+a JavaFX WebView (KCEF/Chromium was dropped because JetBrains Runtime ships a conflicting `libjcef`). Development runs write every willhaben API response to
 `docs/api-samples/` (gitignored) for Phase 4.
 
 Releases: every push to `main` runs `.github/workflows/release.yml` (first green test run: #2).

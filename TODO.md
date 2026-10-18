@@ -50,7 +50,7 @@ Result: complete offline listing manager.
 - [x] 3.4 Logging with redaction of cookies and CSRF; debug response capture into `docs/api-samples/` (only `./gradlew :desktopApp:run`).
 - [x] 3.5 `safeCall` + mapping of status codes and willhaben error bodies to `DataError` (`API_CHANGED`, `PAID_PRODUCT` follow with the write requests in Phase 5).
 - [ ] 3.6 Request throttling: 1 normal request at a time, 4 parallel image uploads, back-off on `429`/`503`.
-- [x] 3.7 Ask: KCEF download vs. JetBrains Runtime's built-in JCEF. Then set up the embedded browser with a persistent cookie store in the app data folder.
+- [x] 3.7 Login browser: JavaFX WebView (KCEF crashed on JetBrains Runtime); stored cookies are preloaded for "stay logged in".
 - [x] 3.8 Login window: open `https://www.willhaben.at/iad/myprofile/login?r=/iad/myprofile/myadverts`, detect arrival on `/iad/myprofile/myadverts`, read cookies of `www.willhaben.at` and `sso.willhaben.at`, store them, close.
 - [x] 3.9 Session check `GET /userprofile-service/userprofile/me` (204 = logged out); account chip in the top bar.
 - [x] 3.10 Silent re-login via `/webapi/oauth2/authorization/sso` with the stored SSO cookies when the session check fails. Open: automatic retry of other requests after `401` (Phase 4).

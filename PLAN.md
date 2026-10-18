@@ -255,7 +255,7 @@ Answers go into `docs/willhaben-api.md`.
 |---|---|
 | willhaben terms forbid robots/crawlers copying content and bulk messages. Automating my own account is not explicitly allowed either; the account could be flagged | Only my own listings, only user-triggered actions, no background loops, low request rate, normal browser behaviour. Accept the risk consciously |
 | Unofficial API changes without notice | Follow context links instead of hard-coded URLs, opaque JSON patching, lenient deserialization, clear "willhaben API changed" error when an expected link is missing, log the build ids |
-| Login blocked by reCAPTCHA/fingerprinting | Real login page in an embedded Chromium (KCEF), so fingerprint and reCAPTCHA run like in a normal browser |
+| Login blocked by reCAPTCHA/fingerprinting | Real login page in an embedded browser (JavaFX WebView), so fingerprint and reCAPTCHA run in a real browser engine |
 | Rate limiting / bot detection | Max 1 normal request at a time, max 4 parallel image uploads, back-off on `429`/`503` |
 | Untested write endpoints (no spike) damage a real listing | Implement reads first (Phase 4). Test every write endpoint first on one listing chosen for testing, with confirmation dialogs; keep the previous snapshot so content can be restored |
 | Duplicate or test listings break willhaben's listing rules | First publish test with a real item I want to sell; never re-create listings just to push them to the top |
@@ -278,7 +278,7 @@ All versions: latest stable at setup time, kept in `gradle/libs.versions.toml` (
 | Local DB | Room KMP + `sqlite-bundled` driver, KSP |
 | Preferences | DataStore (settings, defaults) |
 | Networking | Ktor client (OkHttp engine), content negotiation with kotlinx.serialization (`ignoreUnknownKeys`, `isLenient`), HttpCookies with a custom persistent storage, logging with redaction |
-| Login browser | `compose-webview-multiplatform` on KCEF (embedded Chromium, one-time download on first login). No manual cookie paste |
+| Login browser | JavaFX WebView (WebKit) in a Swing window. KCEF/Chromium was dropped: JetBrains Runtime (needed by hot reload) ships its own `libjcef` that crashes KCEF. No manual cookie paste |
 | Secret storage | KSafe (KMP encrypted key-value store) for the session cookies – check JVM desktop support in Phase 1 |
 | Images | Coil 3 for display, FileKit for the file picker, Compose drag-and-drop for dropping files, `javax.imageio` for resize/thumbnails |
 | Navigation | Navigation 3 with `@Serializable` routes |
@@ -292,11 +292,11 @@ Gradle modules as created by the KMP wizard (decision 2026-10-18):
 | Module | Content |
 |---|---|
 | `:shared` | All app code: features, data, UI. Targets `jvm()` (desktop) and `android`. |
-| `:desktopApp` | `main.kt` (window, KCEF init) and `compose.desktop` packaging only |
+| `:desktopApp` | `main.kt` (window) and `compose.desktop` packaging only |
 | `:androidApp` | Wizard's Android entry point, kept compiling, no features planned yet |
 
 Inside `:shared`, features are packages with `domain/`, `data/`, `presentation/`. Code goes to
-`commonMain` where possible; desktop-only code (app data dir, KCEF login window, image tools) to
+`commonMain` where possible; desktop-only code (app data dir, login window, image tools) to
 `jvmMain`; Android `actual`s to `androidMain`.
 
 Marketplaces are adapters behind one interface, so other marketplaces (section 7) plug in
@@ -329,11 +329,11 @@ shared/src/
     utilities/              UiText, price formatting (de-AT), hashing
     di/                     Koin modules
   jvmMain/kotlin/com/lerchenflo/willhabenupdater/
-    platform/               AppDirs (actual), ImageTools, KCEF login window
+    platform/               AppDirs (actual), ImageTools, login window
   androidMain/kotlin/com/lerchenflo/willhabenupdater/
     platform/               Android actuals (minimal stubs until Android features are planned)
 desktopApp/src/main/kotlin/com/lerchenflo/willhabenupdater/
-  main.kt                   window, KCEF init
+  main.kt                   window
 ```
 
 Root package: `com.lerchenflo.willhabenupdater`. App display name: "Willhaben Updater".
@@ -432,14 +432,15 @@ price, images, category, location). All writes are user-triggered (button per li
 
 ### 4.7 Login in the app
 
-1. "Log in to willhaben" opens a separate window with an embedded Chromium (KCEF) at
+1. "Log in to willhaben" opens a separate window with a JavaFX WebView at
    `https://www.willhaben.at/iad/myprofile/login?r=/iad/myprofile/myadverts`.
 2. The user logs in on the real page (reCAPTCHA / 2FA work as in a browser). "Eingeloggt bleiben"
    should stay checked.
 3. When the window URL reaches `https://www.willhaben.at/iad/myprofile/myadverts`, read all
    cookies for `www.willhaben.at` and `sso.willhaben.at`, store them, close the window.
 4. `GET /userprofile-service/userprofile/me` confirms the session; the account chip shows the user.
-5. The KCEF cookie store is persistent too, so a later login window often completes without
+5. The stored cookies (incl. the login server's "stay logged in" cookies) are preloaded into the
+   WebView, so a later login window often completes without
    typing the password (SSO "remember me").
 
 ### 4.8 UI
@@ -467,7 +468,7 @@ Single main window, master–detail:
 
 - No password is stored; only session cookies, encrypted.
 - Cookie and CSRF values never appear in logs or in the activity log.
-- Log out calls `/webapi/logout`, clears the cookie store and the KCEF cookie store.
+- Log out calls `/webapi/logout`, clears the cookie store and the WebView data folder.
 - Recorded API samples (`docs/api-samples/`) contain personal data → listed in `.gitignore`.
 
 ---
@@ -480,7 +481,7 @@ Detailed, ordered checklist: [TODO.md](TODO.md).
 |---|---|---|
 | 1 | Project bootstrap | Empty desktop app with DI, DB, network, navigation, error handling |
 | 2 | Local listings | Fully working offline listing manager (title, description, price, images, category, condition/attributes, location, delivery) |
-| 3 | willhaben session | KCEF login window, KSafe cookie storage, session check, silent re-login, logout |
+| 3 | willhaben session | JavaFX WebView login window, KSafe cookie storage, session check, silent re-login, logout |
 | 4 | Import (read only) | All my marketplace listings imported with images and status; JSON shapes documented |
 | 5 | Edit and status actions | Push edits and images; deactivate/activate/reserve/sold/delete/republish |
 | 6 | Create and publish | New free marketplace listing published from a local entry |
@@ -504,7 +505,7 @@ Made (all 2026-10-18, confirmed by me in the interview):
 - Generic data model now: content in `ListingEntity`, marketplace data in `ListingPublicationEntity`.
 - No paid extras, payments, upselling; private marketplace only.
 - Root package `com.lerchenflo.willhabenupdater`, app name "Willhaben Updater".
-- Login only through the KCEF embedded browser; no manual cookie paste; no password storage.
+- Login only through an embedded browser (now JavaFX WebView, see 4.1); no manual cookie paste; no password storage.
 - Session cookies stored with KSafe.
 - Local DB is master for content (conflict dialog when both sides changed); willhaben is master
   for status.
@@ -528,8 +529,6 @@ Technical defaults (decided during implementation):
 
 Open (asked via interview when the phase starts):
 - Exact attribute fields shown per category (Phase 2/4, after the first import samples).
-- Login browser: KCEF download vs. the JCEF that JetBrains Runtime 25 already contains
-  (`jbrsdk_jcef-25` is provisioned locally) (Phase 3).
 - Which listing to use for the first write tests (Phase 5).
 - Order of the other marketplaces and per-marketplace login approach (Phase 8).
 

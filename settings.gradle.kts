@@ -24,8 +24,6 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
-        // OpenGL bindings needed by the embedded Chromium (KCEF) of the login window
-        maven("https://jogamp.org/deployment/maven")
     }
 }
 

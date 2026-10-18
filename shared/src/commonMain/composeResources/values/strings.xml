@@ -95,12 +95,9 @@
     <string name="account_logged_in_as">willhaben: %1$s</string>
     <string name="account_logout">Log out</string>
     <string name="login_error_browser">The login browser could not be started.</string>
-    <string name="login_error_runtime">The login browser cannot run in this Java runtime (JetBrains Runtime with its own Chromium). Start the app with ./gradlew :desktopApp:run or use an installed release.</string>
     <string name="login_error_not_logged_in">willhaben did not confirm the login. Please try again.</string>
     <string name="login_error_network">willhaben could not be reached to check the login.</string>
     <string name="login_window_title">willhaben login</string>
-    <string name="login_window_preparing">Preparing the login browser…</string>
-    <string name="login_window_downloading">Downloading the login browser (one time): %1$d %%</string>
 
     <!-- Update hint -->
     <string name="update_available">Version %1$s is available. Updating is optional; your listings stay on this computer.</string>

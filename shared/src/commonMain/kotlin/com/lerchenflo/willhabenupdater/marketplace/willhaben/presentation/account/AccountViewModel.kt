@@ -18,9 +18,8 @@ import willhabenupdater.shared.generated.resources.Res
 import willhabenupdater.shared.generated.resources.login_error_browser
 import willhabenupdater.shared.generated.resources.login_error_network
 import willhabenupdater.shared.generated.resources.login_error_not_logged_in
-import willhabenupdater.shared.generated.resources.login_error_runtime
 
-/** willhaben login state for the top bar; login runs in the embedded browser. */
+/** willhaben login state for the top bar; login runs in the login browser window. */
 class AccountViewModel(
     private val sessionRepository: WillhabenSessionRepository,
     private val loginBrowser: WillhabenLoginBrowser,
@@ -77,7 +76,6 @@ class AccountViewModel(
     private fun LoginError.toUiText(): UiText? = when (this) {
         LoginError.CANCELLED -> null
         LoginError.BROWSER_UNAVAILABLE -> UiText.StringResourceText(Res.string.login_error_browser)
-        LoginError.UNSUPPORTED_RUNTIME -> UiText.StringResourceText(Res.string.login_error_runtime)
         LoginError.NOT_LOGGED_IN -> UiText.StringResourceText(Res.string.login_error_not_logged_in)
         LoginError.NETWORK -> UiText.StringResourceText(Res.string.login_error_network)
     }

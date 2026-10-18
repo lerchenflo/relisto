@@ -55,6 +55,12 @@ class PersistentCookiesStorage(
 
     suspend fun valueOf(name: String, requestUrl: Url): String? = get(requestUrl).firstOrNull { it.name == name }?.value
 
+    /** All valid cookies, e.g. to preload the login browser. */
+    suspend fun allCookies(): List<SessionCookie> = mutex.withLock {
+        val now = timeProvider.nowEpochMillis()
+        loaded().filter { it.isValidAt(now) }.map { it.toSessionCookie() }
+    }
+
     suspend fun hasCookies(): Boolean = mutex.withLock { loaded().isNotEmpty() }
 
     suspend fun clear() = mutex.withLock {
@@ -111,6 +117,17 @@ class PersistentCookiesStorage(
             httpOnly = httpOnly,
         )
     }
+
+    private fun StoredCookie.toSessionCookie() = SessionCookie(
+        name = name,
+        value = value,
+        domain = domain,
+        hostOnly = hostOnly,
+        path = path,
+        secure = secure,
+        httpOnly = httpOnly,
+        expiresAt = expiresAt,
+    )
 
     private fun SessionCookie.toStoredCookie() = StoredCookie(
         name = name,

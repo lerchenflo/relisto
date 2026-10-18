@@ -8,6 +8,17 @@ plugins {
     alias(libs.plugins.room)
 }
 
+// JavaFX classifier of the OS and CPU this build runs on (each release job builds on its own OS)
+val javafxPlatform: String = run {
+    val os = System.getProperty("os.name").lowercase()
+    val arm = System.getProperty("os.arch").lowercase() in setOf("aarch64", "arm64")
+    when {
+        os.contains("mac") -> if (arm) "mac-aarch64" else "mac"
+        os.contains("win") -> "win"
+        else -> if (arm) "linux-aarch64" else "linux"
+    }
+}
+
 kotlin {
     jvmToolchain(25)
 
@@ -100,8 +111,13 @@ kotlin {
             // Networking - OkHttp engine for Ktor
             implementation(libs.ktor.client.okhttp)
 
-            // Login - embedded Chromium shows the real willhaben login page
-            implementation(libs.kcef)
+            // Login - JavaFX WebView shows the real willhaben login page. JavaFX jars are per OS;
+            // their POMs pick the platform with Maven profiles Gradle ignores, so modules are listed
+            // one by one with the classifier of the OS this build runs on.
+            listOf("base", "graphics", "controls", "media", "swing", "web").forEach { module ->
+                implementation("org.openjfx:javafx-$module:${libs.versions.javafx.get()}:$javafxPlatform") { isTransitive = false }
+            }
+            implementation("org.openjfx:jdk-jsobject:${libs.versions.javafx.get()}:$javafxPlatform") { isTransitive = false }
         }
         commonTest.dependencies {
             // Testing - kotlin.test, coroutines-test, Turbine, AssertK, Ktor MockEngine
