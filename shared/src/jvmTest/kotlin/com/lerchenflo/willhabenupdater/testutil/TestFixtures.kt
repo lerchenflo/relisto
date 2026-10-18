@@ -4,7 +4,6 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
 import com.lerchenflo.willhabenupdater.utilities.AppDirectories
-import com.lerchenflo.willhabenupdater.utilities.TimeProvider
 import kotlinx.coroutines.Dispatchers
 import java.io.File
 import java.nio.file.Files
@@ -24,9 +23,4 @@ class TempAppDirectories : AppDirectories {
     fun delete() {
         root.deleteRecursively()
     }
-}
-
-/** Time that only moves when the test says so. */
-class FakeTimeProvider(var now: Long = 1_000L) : TimeProvider {
-    override fun nowEpochMillis(): Long = now
 }

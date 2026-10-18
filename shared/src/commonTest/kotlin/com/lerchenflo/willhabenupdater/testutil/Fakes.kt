@@ -183,3 +183,20 @@ class FakeWillhabenCatalogRepository(
 class FakeImagePicker(var result: List<String> = emptyList()) : ImagePicker {
     override suspend fun pickImages(): List<String> = result
 }
+
+/** Time that only moves when the test says so. */
+class FakeTimeProvider(var now: Long = 1_000L) : com.lerchenflo.willhabenupdater.utilities.TimeProvider {
+    override fun nowEpochMillis(): Long = now
+}
+
+/** Encrypted storage stand-in: a plain map. */
+class FakeSecureStorage : com.lerchenflo.willhabenupdater.datasource.preferences.SecureStorage {
+    val values = mutableMapOf<String, String>()
+    override suspend fun getString(key: String): String? = values[key]
+    override suspend fun putString(key: String, value: String) {
+        values[key] = value
+    }
+    override suspend fun delete(key: String) {
+        values.remove(key)
+    }
+}
