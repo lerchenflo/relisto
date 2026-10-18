@@ -49,6 +49,11 @@ class KtorWillhabenListingsDataSource(
             remoteUuid = text("uuid"),
             adTypeId = (this["adTypeId"] as? JsonPrimitive)?.intOrNull,
             title = text("description"),
+            // The edit status name is what the web app shows ("Online", "Abgelaufen", ...)
+            statusText = (this["advertEditStatusActionsList"] as? JsonObject)?.text("statusName")
+                ?: (this["advertStatus"] as? JsonObject)?.text("description"),
+            imageUrls = ((this["advertImageList"] as? JsonObject)?.get("advertImage") as? JsonArray).orEmpty()
+                .mapNotNull { (it as? JsonObject)?.text("mainImageUrl") },
         )
     }
 

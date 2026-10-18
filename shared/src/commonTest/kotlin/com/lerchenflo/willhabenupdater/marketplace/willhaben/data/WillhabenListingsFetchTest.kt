@@ -28,7 +28,9 @@ class WillhabenListingsFetchTest {
 
     private fun advert(id: Long, adTypeId: Int, title: String) =
         """{"id":$id,"uuid":"uuid-$id","adTypeId":$adTypeId,"verticalId":5,"description":"$title",
-           "advertEditStatusActionsList":{"contextLinkList":{"contextLink":[{"id":"2","serviceName":"iad","relativePath":"/x"}]}}}"""
+           "advertStatus":{"description":"Aktiv","id":"active","statusId":50},
+           "advertImageList":{"advertImage":[{"mainImageUrl":"https://cache.willhaben.at/$id.jpg"},{"mainImageUrl":null}]},
+           "advertEditStatusActionsList":{"statusId":50,"statusName":"Online","contextLinkList":{"contextLink":[{"id":"2","serviceName":"iad","relativePath":"/x"}]}}}"""
 
     private val page1 = """{"totalNumberOfAdvertDetails":3,"verticalList":[{"advertDetails":[${advert(1, 67, "Rad")},${advert(2, 20, "Auto")}]}]}"""
     private val page2 = """{"totalNumberOfAdvertDetails":3,"verticalList":[{"advertDetails":[${advert(3, 67, "Tisch")}]}]}"""
@@ -59,8 +61,8 @@ class WillhabenListingsFetchTest {
 
         assertThat(result.data.total).isEqualTo(3)
         assertThat(result.data.adverts).containsExactly(
-            RemoteListingSummary(remoteId = "1", remoteUuid = "uuid-1", adTypeId = 67, title = "Rad"),
-            RemoteListingSummary(remoteId = "2", remoteUuid = "uuid-2", adTypeId = 20, title = "Auto"),
+            RemoteListingSummary("1", "uuid-1", 67, "Rad", statusText = "Online", imageUrls = listOf("https://cache.willhaben.at/1.jpg")),
+            RemoteListingSummary("2", "uuid-2", 20, "Auto", statusText = "Online", imageUrls = listOf("https://cache.willhaben.at/2.jpg")),
         )
         assertThat(requests.single()).isEqualTo("/webapi/myatz/atverz/showpagedadsfromuser?page=1&rows=2&vertical=bap")
     }
