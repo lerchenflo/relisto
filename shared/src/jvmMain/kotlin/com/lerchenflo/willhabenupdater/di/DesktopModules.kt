@@ -6,7 +6,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
 import com.lerchenflo.willhabenupdater.listings.data.DesktopImagePicker
+import com.lerchenflo.willhabenupdater.listings.data.DesktopImageStorage
 import com.lerchenflo.willhabenupdater.listings.domain.ImagePicker
+import com.lerchenflo.willhabenupdater.listings.domain.ImageStorage
 import com.lerchenflo.willhabenupdater.utilities.AppDirectories
 import com.lerchenflo.willhabenupdater.utilities.DesktopAppDirectories
 import io.ktor.client.engine.HttpClientEngine
@@ -26,5 +28,6 @@ val desktopPlatformModule = module {
         createDataStore { File(get<AppDirectories>().dataDir, DATA_STORE_FILE_NAME).absolutePath }
     }
     single<HttpClientEngine> { OkHttp.create() }
+    singleOf(::DesktopImageStorage) { bind<ImageStorage>() }
     singleOf(::DesktopImagePicker) { bind<ImagePicker>() }
 }

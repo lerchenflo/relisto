@@ -1,8 +1,8 @@
 [versions]
 # Build tooling
 agp = "9.4.1"                           # Android Gradle Plugin
-kotlin = "2.4.20"                       # Kotlin compiler
-ksp = "2.3.9"                           # Kotlin Symbol Processing (Room compiler)
+kotlin = "2.4.21"                       # Kotlin compiler
+ksp = "2.3.12"                           # Kotlin Symbol Processing (Room compiler)
 
 # Android
 android-compileSdk = "37"
@@ -15,7 +15,7 @@ androidx-espresso = "3.7.0"
 androidx-testExt = "1.3.0"
 
 # Compose
-composeMultiplatform = "1.12.1"         # JetBrains Compose Multiplatform
+composeMultiplatform = "1.12.2"         # JetBrains Compose Multiplatform
 material3 = "1.12.0-alpha03"            # Compose Material 3
 materialIconsExtended = "1.7.3"         # Material icon set
 androidx-lifecycle = "2.11.0"           # ViewModel + lifecycle-aware Compose helpers

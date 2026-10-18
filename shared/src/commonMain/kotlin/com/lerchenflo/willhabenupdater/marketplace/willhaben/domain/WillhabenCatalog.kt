@@ -9,7 +9,24 @@ import kotlinx.coroutines.flow.Flow
 data class WillhabenCategoryTree(
     val root: WillhabenCategory,
     val attributesByCode: Map<String, WillhabenAttribute>,
-)
+) {
+    /** Every leaf category with its path from the top category (the root itself is not part of a path). */
+    fun leaves(): List<List<WillhabenCategory>> = pathsByTreeId.values.filter { it.last().children.isEmpty() }
+
+    /** Path from the top category down to the category with [treeId], or null if unknown. */
+    fun pathOf(treeId: Int): List<WillhabenCategory>? = pathsByTreeId[treeId]
+
+    private val pathsByTreeId: Map<Int, List<WillhabenCategory>> by lazy {
+        buildMap {
+            fun walk(node: WillhabenCategory, parentPath: List<WillhabenCategory>) {
+                val path = parentPath + node
+                put(node.treeId, path)
+                node.children.forEach { walk(it, path) }
+            }
+            root.children.forEach { walk(it, emptyList()) }
+        }
+    }
+}
 
 data class WillhabenCategory(
     val treeId: Int,
