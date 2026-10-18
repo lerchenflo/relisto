@@ -12,9 +12,13 @@ import com.lerchenflo.willhabenupdater.app.navigation.NavigationAction
 import com.lerchenflo.willhabenupdater.app.navigation.Navigator
 import com.lerchenflo.willhabenupdater.app.navigation.Route
 import com.lerchenflo.willhabenupdater.listings.domain.Condition
+import com.lerchenflo.willhabenupdater.marketplace.domain.Marketplace
+import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus
+import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.willhabenupdater.settings.domain.AppSettings
 import com.lerchenflo.willhabenupdater.testutil.FakeListingRepository
+import com.lerchenflo.willhabenupdater.testutil.FakePublicationStatusRepository
 import com.lerchenflo.willhabenupdater.testutil.FakeSettingsDataSource
 import com.lerchenflo.willhabenupdater.testutil.FakeWillhabenFieldsDataSource
 import com.lerchenflo.willhabenupdater.testutil.MainDispatcherTest
@@ -29,8 +33,9 @@ class ListingsViewModelTest : MainDispatcherTest() {
     private val settings = FakeSettingsDataSource()
     private val willhabenFields = FakeWillhabenFieldsDataSource()
     private val navigator = Navigator()
+    private val statuses = FakePublicationStatusRepository()
 
-    private fun viewModel() = ListingsViewModel(repository, settings, willhabenFields, navigator)
+    private fun viewModel() = ListingsViewModel(repository, settings, willhabenFields, navigator, statuses)
 
     @Test
     fun activeListingsAreShownNewestFirstWithFormattedPriceAndCover() = runTest {
@@ -154,5 +159,19 @@ class ListingsViewModelTest : MainDispatcherTest() {
     @Test
     fun loadingEndsAfterFirstListEmission() = runTest {
         assertThat(viewModel().state.value.isLoading).isFalse()
+    }
+
+    @Test
+    fun willhabenStatusIsShownForPublishedListings() = runTest {
+        repository.listings.value = listOf(listing(1), listing(2))
+        statuses.statuses.value = listOf(
+            PublicationStatus(1, Marketplace.WILLHABEN, "Abgelaufen", expiresAt = 5L, syncState = SyncState.SYNCED),
+            PublicationStatus(2, Marketplace.WILLHABEN, statusText = null, expiresAt = null, syncState = SyncState.LOCAL_ONLY),
+        )
+
+        val items = viewModel().state.value.listings.associateBy { it.id }
+
+        assertThat(items.getValue(1).willhabenStatus).isEqualTo("Abgelaufen")
+        assertThat(items.getValue(2).willhabenStatus).isNull()
     }
 }

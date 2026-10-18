@@ -307,3 +307,8 @@ class FakeImageDownloader : com.lerchenflo.willhabenupdater.listings.domain.Imag
         return if ("broken" in url) Result.Error(DataError.Network.NOT_FOUND) else Result.Success(url.encodeToByteArray() to "jpg")
     }
 }
+
+class FakePublicationStatusRepository : com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatusRepository {
+    val statuses = MutableStateFlow<List<com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus>>(emptyList())
+    override fun getStatusesAsFlow(): Flow<List<com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus>> = statuses
+}

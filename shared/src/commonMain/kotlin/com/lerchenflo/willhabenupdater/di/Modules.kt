@@ -16,6 +16,8 @@ import com.lerchenflo.willhabenupdater.listings.domain.ImageDownloader
 import com.lerchenflo.willhabenupdater.listings.presentation.editor.ListingEditorViewModel
 import com.lerchenflo.willhabenupdater.listings.presentation.list.ListingsViewModel
 import com.lerchenflo.willhabenupdater.listings.domain.ListingRepository
+import com.lerchenflo.willhabenupdater.marketplace.data.RoomPublicationStatusRepository
+import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatusRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CachedWillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CookieWillhabenSessionRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.RoomWillhabenImporter
@@ -62,6 +64,7 @@ val datasourceModule = module {
     }
 
     singleOf(::RoomListingRepository) { bind<ListingRepository>() }
+    singleOf(::RoomPublicationStatusRepository) { bind<PublicationStatusRepository>() }
     singleOf(::RoomWillhabenFieldsDataSource) { bind<WillhabenFieldsLocalDataSource>() }
     singleOf(::KtorWillhabenCatalogDataSource)
     singleOf(::CachedWillhabenCatalogRepository) { bind<WillhabenCatalogRepository>() }

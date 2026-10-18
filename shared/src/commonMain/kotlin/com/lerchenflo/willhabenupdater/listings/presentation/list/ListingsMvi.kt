@@ -19,6 +19,8 @@ data class ListingListItemUi(
     val coverImagePath: String?,
     val imageCount: Int,
     val updatedText: String,
+    /** willhaben's status text for published listings, e.g. "Abgelaufen". */
+    val willhabenStatus: String? = null,
 )
 
 enum class ListingFilter {

@@ -65,18 +65,16 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 
 ## Current status
 
-Phase 3 done and tested by the user: login works (JavaFX WebView login window, account name in
-the account bar). Phase 4 step A done: "Import from willhaben" (account bar) loads the user's
-marketplace listings and their details and only reports the count; dev runs capture these listing
-responses to `docs/api-samples/` (gitignored, listing endpoints only).
+Phase 4 (import) done: "Von willhaben importieren" creates/updates local listings from the user's
+willhaben marketplace listings (content, category, attributes, location, delivery, expiry, images)
+with a willhaben publication (SYNCED / LOCAL_CHANGES / CONFLICT). The list shows willhaben's
+status text ("willhaben: Abgelaufen"). Confirmed JSON keys: `docs/willhaben-api.md`.
 
-Next (Phase 4 step B):
-1. Ask the user to press "Import from willhaben" once in a dev run (`hotRun` or
-   `./gradlew :desktopApp:run`) so `docs/api-samples/` gets `GET_myatz_atverz_showpagedadsfromuser`
-   and `GET_iad_bap_<id>` samples.
-2. From those samples (listing data only): document the JSON keys in `docs/willhaben-api.md`,
-   then map remote listings to local listings + willhaben publications (TDD with sanitised
-   fixtures), download images, match by remote id, conflict handling.
+Next (Phase 5, first writes - ask the user which listing to test with before any write):
+1. Editor willhaben tab: show status, expiry and sync state; conflict dialog (keep local / take willhaben).
+2. Push changes: reload `GET /iad/bap/{id}`, patch managed fields into the JSON (description back to
+   HTML via `HtmlText.fromPlainText`), `PUT` link `selfLinkEdit` (`/bap/edit`).
+3. Renew expired listings (status action `6` "Neu veröffentlichen"), status actions, images.
 
 ## Progress log
 
@@ -96,3 +94,4 @@ Next (Phase 4 step B):
 - 2026-10-18 – KCEF replaced by JavaFX WebView (JetBrains Runtime crash). Login tested OK by the
   user. Privacy rules added (no personal data or secrets in logs/captures), German default UI,
   import step A (fetch + count).
+- 2026-10-18 – Import step B: listings, images and willhaben fields stored locally, status in list.

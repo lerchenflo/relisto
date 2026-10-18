@@ -28,6 +28,7 @@
     <string name="listings_image_count">%1$d Bilder</string>
     <string name="listings_updated">Geändert %1$s</string>
     <string name="listings_cover_image">Titelbild von %1$s</string>
+    <string name="listings_willhaben_status">willhaben: %1$s</string>
     <string name="listings_select_hint">Wähle links eine Anzeige aus oder erstelle eine neue.</string>
 
     <!-- Editor -->

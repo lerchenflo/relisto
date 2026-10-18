@@ -69,6 +69,7 @@ import willhabenupdater.shared.generated.resources.listings_select_hint
 import willhabenupdater.shared.generated.resources.listings_settings
 import willhabenupdater.shared.generated.resources.listings_untitled
 import willhabenupdater.shared.generated.resources.listings_updated
+import willhabenupdater.shared.generated.resources.listings_willhaben_status
 
 @Composable
 fun ListingsRoot(
@@ -227,7 +228,24 @@ private fun ListingListItem(
                 modifier = Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)),
             )
             Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    item.willhabenStatus?.let { status ->
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(Res.string.listings_willhaben_status, status),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            maxLines = 1,
+                        )
+                    }
+                }
                 Text(
                     text = item.formattedPrice ?: stringResource(Res.string.listings_no_price),
                     style = MaterialTheme.typography.bodyMedium,
@@ -253,7 +271,7 @@ private fun ListingsScreenPreview() {
         ListingsScreen(
             state = ListingsState(
                 listings = listOf(
-                    ListingListItemUi(1, "Kinderfahrrad 20 Zoll", "45 €", null, 4, "18.10.2026 19:05"),
+                    ListingListItemUi(1, "Kinderfahrrad 20 Zoll", "45 €", null, 4, "18.10.2026 19:05", willhabenStatus = "Online"),
                     ListingListItemUi(2, "Esstisch Eiche massiv", "120 €", null, 2, "17.10.2026 08:30"),
                     ListingListItemUi(3, "", null, null, 0, "16.10.2026 21:12"),
                 ),

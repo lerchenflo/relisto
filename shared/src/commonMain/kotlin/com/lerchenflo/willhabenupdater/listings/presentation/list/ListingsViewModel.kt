@@ -9,6 +9,8 @@ import com.lerchenflo.willhabenupdater.app.navigation.Route
 import com.lerchenflo.willhabenupdater.listings.domain.Listing
 import com.lerchenflo.willhabenupdater.listings.domain.ListingContent
 import com.lerchenflo.willhabenupdater.listings.domain.ListingRepository
+import com.lerchenflo.willhabenupdater.marketplace.domain.Marketplace
+import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatusRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenListingFields
@@ -28,6 +30,7 @@ class ListingsViewModel(
     private val settingsDataSource: SettingsDataSource,
     private val willhabenFields: WillhabenFieldsLocalDataSource,
     private val navigator: Navigator,
+    private val publicationStatuses: PublicationStatusRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ListingsState())
@@ -37,10 +40,19 @@ class ListingsViewModel(
     val events = _events.receiveAsFlow()
 
     private var allListings: List<Listing> = emptyList()
+    private var willhabenStatusByListing: Map<Long, String> = emptyMap()
 
     init {
         viewModelScope.launch {
             listingRepository.deleteUnusedImageFiles()
+        }
+        viewModelScope.launch {
+            publicationStatuses.getStatusesAsFlow().collect { statuses ->
+                willhabenStatusByListing = statuses
+                    .filter { it.marketplace == Marketplace.WILLHABEN && it.statusText != null }
+                    .associate { it.listingId to it.statusText!! }
+                _state.update { it.withVisibleListings() }
+            }
         }
         viewModelScope.launch {
             listingRepository.getListingsAsFlow().collect { listings ->
@@ -112,5 +124,6 @@ class ListingsViewModel(
         coverImagePath = images.firstOrNull()?.filePath,
         imageCount = images.size,
         updatedText = formatDateTime(updatedAt),
+        willhabenStatus = willhabenStatusByListing[id],
     )
 }

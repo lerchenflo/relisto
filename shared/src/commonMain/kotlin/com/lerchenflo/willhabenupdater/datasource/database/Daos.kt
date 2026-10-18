@@ -94,6 +94,12 @@ interface PublicationDao {
     @Query("SELECT * FROM listing_publications WHERE marketplace = :marketplace AND remoteId = :remoteId")
     fun getByMarketplaceAndRemoteIdAsFlow(marketplace: String, remoteId: String): Flow<ListingPublicationEntity?>
 
+    @Query("SELECT * FROM listing_publications")
+    suspend fun getAll(): List<ListingPublicationEntity>
+
+    @Query("SELECT * FROM listing_publications")
+    fun getAllAsFlow(): Flow<List<ListingPublicationEntity>>
+
     @Query("SELECT * FROM listing_publications WHERE listingId = :listingId")
     suspend fun getByListingId(listingId: Long): List<ListingPublicationEntity>
 
