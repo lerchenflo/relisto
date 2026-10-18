@@ -12,6 +12,10 @@ java {
     targetCompatibility = JavaVersion.VERSION_25
 }
 
+// Set by the release workflow; local builds use the defaults
+val appVersion = providers.gradleProperty("appVersion").getOrElse("1.0.0")
+val appVersionCode = providers.gradleProperty("appVersionCode").getOrElse("1").toInt()
+
 dependencies {
     implementation(project(":shared"))
 
@@ -29,8 +33,18 @@ android {
         applicationId = "com.lerchenflo.willhabenupdater"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersion
+    }
+    signingConfigs {
+        // Fixed key committed to the repo so every release APK installs over the previous one
+        // without managing secrets. Only for sideloading, never for a store upload.
+        create("sideload") {
+            storeFile = file("sideload.keystore")
+            storePassword = "willhaben-sideload"
+            keyAlias = "sideload"
+            keyPassword = "willhaben-sideload"
+        }
     }
     packaging {
         resources {
@@ -40,6 +54,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("sideload")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

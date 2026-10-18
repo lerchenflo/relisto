@@ -13,6 +13,89 @@
     <string name="error_disk_full">The disk is full.</string>
     <string name="error_unknown">Something went wrong.</string>
 
+    <!-- Listing list -->
+    <string name="listings_new">New listing</string>
+    <string name="listings_settings">Settings</string>
+    <string name="listings_search">Search listings</string>
+    <string name="listings_filter_active">Active</string>
+    <string name="listings_filter_archived">Archived</string>
+    <string name="listings_empty_active">No listings yet. Create your first one.</string>
+    <string name="listings_empty_archived">No archived listings.</string>
+    <string name="listings_empty_search">No listing matches your search.</string>
+    <string name="listings_untitled">Untitled</string>
+    <string name="listings_no_price">No price</string>
+    <string name="listings_image_count">%1$d images</string>
+    <string name="listings_updated">Changed %1$s</string>
+    <string name="listings_cover_image">Cover image of %1$s</string>
+    <string name="listings_select_hint">Select a listing on the left or create a new one.</string>
+
     <!-- Editor -->
+    <string name="editor_title">Title</string>
+    <string name="editor_title_counter">%1$d characters</string>
+    <string name="editor_description">Description</string>
+    <string name="editor_price">Price (€)</string>
+    <string name="editor_price_invalid">Enter a price like 45 or 12,50</string>
+    <string name="editor_condition">Condition</string>
+    <string name="editor_condition_none">Not set</string>
+    <string name="condition_new">New</string>
+    <string name="condition_like_new">Like new</string>
+    <string name="condition_used">Used</string>
+    <string name="condition_defective">Defective</string>
+    <string name="editor_postcode">Postcode</string>
+    <string name="editor_images">Images</string>
+    <string name="editor_images_hint">Drop image files here or add them. Drag to reorder; the first image is the cover.</string>
+    <string name="editor_images_add">Add images</string>
+    <string name="editor_image_remove">Remove image</string>
+    <string name="editor_image_cover">Cover</string>
+    <string name="editor_image">Listing image %1$d</string>
     <string name="editor_images_failed">These files are no supported images and were skipped: %1$s</string>
+    <string name="editor_archive">Archive</string>
+    <string name="editor_unarchive">Restore</string>
+    <string name="editor_duplicate">Duplicate</string>
+    <string name="editor_delete">Delete</string>
+    <string name="editor_delete_title">Delete listing?</string>
+    <string name="editor_delete_text">The listing and its images are removed from this computer. Listings on willhaben are not changed.</string>
+    <string name="editor_delete_confirm">Delete</string>
+    <string name="editor_delete_cancel">Cancel</string>
+    <string name="editor_not_found">This listing does not exist any more.</string>
+    <string name="editor_archived_badge">Archived</string>
+    <string name="editor_marketplaces">Marketplaces</string>
+
+    <!-- willhaben tab -->
+    <string name="willhaben_tab">willhaben</string>
+    <string name="willhaben_category">Category</string>
+    <string name="willhaben_category_none">No category chosen</string>
+    <string name="willhaben_category_choose">Choose category</string>
+    <string name="willhaben_category_suggest">Suggest from title</string>
+    <string name="willhaben_category_suggestions">Suggestions</string>
+    <string name="willhaben_category_no_suggestions">No suggestions for this title.</string>
+    <string name="willhaben_category_search">Search category</string>
+    <string name="willhaben_category_no_results">No category found.</string>
+    <string name="willhaben_category_close">Close</string>
+    <string name="willhaben_tree_loading">Loading willhaben categories…</string>
+    <string name="willhaben_tree_retry">Retry</string>
+    <string name="willhaben_attributes">Details</string>
+    <string name="willhaben_attributes_hint">Condition and handover come from the listing fields and delivery options.</string>
+    <string name="willhaben_attribute_required">%1$s *</string>
+    <string name="willhaben_attribute_choose">Choose…</string>
+    <string name="willhaben_attribute_search">Search %1$s</string>
+    <string name="willhaben_location">Location</string>
+    <string name="willhaben_location_need_postcode">Enter a 4-digit postcode in the listing fields.</string>
+    <string name="willhaben_location_none">No location found for postcode %1$s.</string>
+    <string name="willhaben_delivery">Delivery</string>
+    <string name="willhaben_pickup">Pickup</string>
+    <string name="willhaben_shipping">Shipping</string>
+    <string name="willhaben_shipping_price">Shipping price (€)</string>
+    <string name="willhaben_paylivery">PayLivery (pay and ship via willhaben)</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_defaults">Defaults for new listings</string>
+    <string name="settings_postcode">Postcode</string>
+    <string name="settings_condition">Condition</string>
+    <string name="settings_pickup">Pickup</string>
+    <string name="settings_shipping">Shipping</string>
+    <string name="settings_shipping_price">Shipping price (€)</string>
+    <string name="settings_data_folder">Data folder</string>
 </resources>

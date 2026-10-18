@@ -1,0 +1,393 @@
+package com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.lerchenflo.willhabenupdater.app.navigation.ObserveAsEvents
+import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
+import willhabenupdater.shared.generated.resources.Res
+import willhabenupdater.shared.generated.resources.editor_price_invalid
+import willhabenupdater.shared.generated.resources.willhaben_attribute_choose
+import willhabenupdater.shared.generated.resources.willhaben_attribute_required
+import willhabenupdater.shared.generated.resources.willhaben_attributes
+import willhabenupdater.shared.generated.resources.willhaben_attributes_hint
+import willhabenupdater.shared.generated.resources.willhaben_category
+import willhabenupdater.shared.generated.resources.willhaben_category_choose
+import willhabenupdater.shared.generated.resources.willhaben_category_close
+import willhabenupdater.shared.generated.resources.willhaben_category_no_results
+import willhabenupdater.shared.generated.resources.willhaben_category_none
+import willhabenupdater.shared.generated.resources.willhaben_category_search
+import willhabenupdater.shared.generated.resources.willhaben_category_suggest
+import willhabenupdater.shared.generated.resources.willhaben_category_suggestions
+import willhabenupdater.shared.generated.resources.willhaben_delivery
+import willhabenupdater.shared.generated.resources.willhaben_location
+import willhabenupdater.shared.generated.resources.willhaben_location_need_postcode
+import willhabenupdater.shared.generated.resources.willhaben_location_none
+import willhabenupdater.shared.generated.resources.willhaben_paylivery
+import willhabenupdater.shared.generated.resources.willhaben_pickup
+import willhabenupdater.shared.generated.resources.willhaben_shipping
+import willhabenupdater.shared.generated.resources.willhaben_shipping_price
+import willhabenupdater.shared.generated.resources.willhaben_tree_loading
+import willhabenupdater.shared.generated.resources.willhaben_tree_retry
+
+/** Option lists up to this size are shown as chips, longer ones as a dropdown. */
+private const val MAX_CHIP_OPTIONS = 12
+
+@Composable
+fun WillhabenTabRoot(
+    listingId: Long,
+    snackbarHostState: SnackbarHostState,
+    viewModel: WillhabenTabViewModel = koinViewModel(key = "willhaben-$listingId") { parametersOf(listingId) },
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            is WillhabenTabEvent.ShowMessage -> scope.launch {
+                snackbarHostState.showSnackbar(event.message.resolve())
+            }
+        }
+    }
+
+    WillhabenTabScreen(state = state, onAction = viewModel::onAction)
+}
+
+@Composable
+fun WillhabenTabScreen(
+    state: WillhabenTabState,
+    onAction: (WillhabenTabAction) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
+        CategorySection(state = state, onAction = onAction)
+        if (state.attributeFields.isNotEmpty()) {
+            AttributesSection(state = state, onAction = onAction)
+        }
+        LocationSection(state = state, onAction = onAction)
+        DeliverySection(state = state, onAction = onAction)
+    }
+
+    if (state.isCategoryPickerOpen) {
+        CategoryPickerDialog(state = state, onAction = onAction)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CategorySection(state: WillhabenTabState, onAction: (WillhabenTabAction) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(Res.string.willhaben_category), style = MaterialTheme.typography.titleSmall)
+        when {
+            state.isTreeLoading -> Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.willhaben_tree_loading))
+            }
+            state.treeError != null -> Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(state.treeError.asString(), color = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+                TextButton(onClick = { onAction(WillhabenTabAction.OnRetryLoadTreeClick) }) {
+                    Text(stringResource(Res.string.willhaben_tree_retry))
+                }
+            }
+            else -> {
+                Text(
+                    text = state.categoryPathText ?: stringResource(Res.string.willhaben_category_none),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (state.categoryPathText == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onAction(WillhabenTabAction.OnOpenCategoryPickerClick) }) {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(Res.string.willhaben_category_choose))
+                    }
+                    OutlinedButton(
+                        onClick = { onAction(WillhabenTabAction.OnSuggestCategoriesClick) },
+                        enabled = !state.isSuggesting,
+                    ) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(Res.string.willhaben_category_suggest))
+                    }
+                }
+                if (state.suggestions.isNotEmpty()) {
+                    Text(stringResource(Res.string.willhaben_category_suggestions), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        state.suggestions.forEach { suggestion ->
+                            AssistChip(
+                                onClick = { onAction(WillhabenTabAction.OnCategorySelect(suggestion.treeId)) },
+                                label = { Text(suggestion.pathText) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttributesSection(state: WillhabenTabState, onAction: (WillhabenTabAction) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(stringResource(Res.string.willhaben_attributes), style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(Res.string.willhaben_attributes_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        state.attributeFields.forEach { field ->
+            AttributeField(field = field, onToggle = { value -> onAction(WillhabenTabAction.OnAttributeValueToggle(field.code, value)) })
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AttributeField(field: AttributeFieldUi, onToggle: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = if (field.required) stringResource(Res.string.willhaben_attribute_required, field.label) else field.label,
+            style = MaterialTheme.typography.labelLarge,
+        )
+        if (field.options.size <= MAX_CHIP_OPTIONS) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                field.options.forEach { option ->
+                    FilterChip(
+                        selected = option.code in field.selectedCodes,
+                        onClick = { onToggle(option.code) },
+                        label = { Text(option.label) },
+                    )
+                }
+            }
+        } else {
+            AttributeDropdown(field = field, onToggle = onToggle)
+        }
+    }
+}
+
+@Composable
+private fun AttributeDropdown(field: AttributeFieldUi, onToggle: (String) -> Unit) {
+    // Open/closed is pure UI chrome; the selection itself lives in the ViewModel
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabels = field.options.filter { it.code in field.selectedCodes }.joinToString { it.label }
+    Box {
+        OutlinedButton(onClick = { expanded = true }) {
+            Text(selectedLabels.ifEmpty { stringResource(Res.string.willhaben_attribute_choose) })
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.heightIn(max = 400.dp)) {
+            field.options.forEach { option ->
+                val selected = option.code in field.selectedCodes
+                DropdownMenuItem(
+                    text = { Text(option.label) },
+                    leadingIcon = if (selected) {
+                        { Icon(Icons.Default.Check, contentDescription = null) }
+                    } else {
+                        null
+                    },
+                    onClick = {
+                        onToggle(option.code)
+                        if (!field.multiSelect) expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LocationSection(state: WillhabenTabState, onAction: (WillhabenTabAction) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(Res.string.willhaben_location), style = MaterialTheme.typography.titleSmall)
+        when {
+            state.postcode.length != 4 -> Text(
+                stringResource(Res.string.willhaben_location_need_postcode),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            state.isLoadingLocations -> CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            state.locations.isEmpty() -> Text(
+                stringResource(Res.string.willhaben_location_none, state.postcode),
+                color = MaterialTheme.colorScheme.error,
+            )
+            else -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                state.locations.forEach { location ->
+                    FilterChip(
+                        selected = location.id == state.selectedLocationId,
+                        onClick = { onAction(WillhabenTabAction.OnLocationSelect(location.id)) },
+                        label = { Text(location.label) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeliverySection(state: WillhabenTabState, onAction: (WillhabenTabAction) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(Res.string.willhaben_delivery), style = MaterialTheme.typography.titleSmall)
+        CheckboxRow(
+            label = stringResource(Res.string.willhaben_pickup),
+            checked = state.pickup,
+            onCheckedChange = { onAction(WillhabenTabAction.OnPickupChange(it)) },
+        )
+        CheckboxRow(
+            label = stringResource(Res.string.willhaben_shipping),
+            checked = state.shipping,
+            onCheckedChange = { onAction(WillhabenTabAction.OnShippingChange(it)) },
+        )
+        if (state.shipping) {
+            OutlinedTextField(
+                value = state.shippingPriceText,
+                onValueChange = { onAction(WillhabenTabAction.OnShippingPriceChange(it)) },
+                label = { Text(stringResource(Res.string.willhaben_shipping_price)) },
+                isError = state.isShippingPriceInvalid,
+                supportingText = if (state.isShippingPriceInvalid) {
+                    { Text(stringResource(Res.string.editor_price_invalid)) }
+                } else {
+                    null
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.padding(start = 48.dp).width(220.dp),
+            )
+            CheckboxRow(
+                label = stringResource(Res.string.willhaben_paylivery),
+                checked = state.paylivery,
+                onCheckedChange = { onAction(WillhabenTabAction.OnPayliveryChange(it)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CheckboxRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clickable { onCheckedChange(!checked) }.padding(end = 8.dp),
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Text(label)
+    }
+}
+
+@Composable
+private fun CategoryPickerDialog(state: WillhabenTabState, onAction: (WillhabenTabAction) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onAction(WillhabenTabAction.OnCloseCategoryPicker) },
+        title = { Text(stringResource(Res.string.willhaben_category_choose)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = state.categoryQuery,
+                    onValueChange = { onAction(WillhabenTabAction.OnCategoryQueryChange(it)) },
+                    placeholder = { Text(stringResource(Res.string.willhaben_category_search)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (state.categoryResults.isEmpty()) {
+                    Text(stringResource(Res.string.willhaben_category_no_results), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                        items(items = state.categoryResults, key = { it.treeId }) { option ->
+                            Text(
+                                text = option.pathText,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onAction(WillhabenTabAction.OnCategorySelect(option.treeId)) }
+                                    .padding(vertical = 10.dp, horizontal = 4.dp),
+                            )
+                            HorizontalDivider()
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onAction(WillhabenTabAction.OnCloseCategoryPicker) }) {
+                Text(stringResource(Res.string.willhaben_category_close))
+            }
+        },
+    )
+}
+
+@Preview
+@Composable
+private fun WillhabenTabScreenPreview() {
+    WillhabenUpdaterTheme {
+        WillhabenTabScreen(
+            state = WillhabenTabState(
+                isTreeLoading = false,
+                categoryPathText = "Sport / Sportgeräte › Fahrräder › Kinderfahrräder",
+                attributeFields = listOf(
+                    AttributeFieldUi(
+                        code = "COLOR",
+                        label = "Farbe",
+                        required = true,
+                        multiSelect = true,
+                        options = listOf(AttributeOptionUi("RED", "Rot"), AttributeOptionUi("BLUE", "Blau")),
+                        selectedCodes = listOf("RED"),
+                    )
+                ),
+                postcode = "6850",
+                locations = listOf(LocationOptionUi(1, "Dornbirn")),
+                selectedLocationId = 1,
+                pickup = true,
+                shipping = true,
+                shippingPriceText = "5,90",
+            ),
+            onAction = {},
+        )
+    }
+}
