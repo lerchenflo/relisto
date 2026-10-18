@@ -12,4 +12,7 @@
     <string name="error_serialization">willhaben sent an unexpected response.</string>
     <string name="error_disk_full">The disk is full.</string>
     <string name="error_unknown">Something went wrong.</string>
+
+    <!-- Editor -->
+    <string name="editor_images_failed">These files are no supported images and were skipped: %1$s</string>
 </resources>

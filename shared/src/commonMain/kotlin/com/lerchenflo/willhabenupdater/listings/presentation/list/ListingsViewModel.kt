@@ -1,0 +1,116 @@
+package com.lerchenflo.willhabenupdater.listings.presentation.list
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.lerchenflo.willhabenupdater.app.domain.onFailure
+import com.lerchenflo.willhabenupdater.app.domain.onSuccess
+import com.lerchenflo.willhabenupdater.app.navigation.Navigator
+import com.lerchenflo.willhabenupdater.app.navigation.Route
+import com.lerchenflo.willhabenupdater.listings.domain.Listing
+import com.lerchenflo.willhabenupdater.listings.domain.ListingContent
+import com.lerchenflo.willhabenupdater.listings.domain.ListingRepository
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.DeliveryOptions
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenListingFields
+import com.lerchenflo.willhabenupdater.settings.domain.SettingsDataSource
+import com.lerchenflo.willhabenupdater.utilities.PriceFormatter
+import com.lerchenflo.willhabenupdater.utilities.formatDateTime
+import com.lerchenflo.willhabenupdater.utilities.toUiText
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class ListingsViewModel(
+    private val listingRepository: ListingRepository,
+    private val settingsDataSource: SettingsDataSource,
+    private val willhabenFields: WillhabenFieldsLocalDataSource,
+    private val navigator: Navigator,
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(ListingsState())
+    val state = _state.asStateFlow()
+
+    private val _events = Channel<ListingsEvent>()
+    val events = _events.receiveAsFlow()
+
+    private var allListings: List<Listing> = emptyList()
+
+    init {
+        viewModelScope.launch {
+            listingRepository.deleteUnusedImageFiles()
+        }
+        viewModelScope.launch {
+            listingRepository.getListingsAsFlow().collect { listings ->
+                allListings = listings
+                _state.update { state ->
+                    val selectedStillExists = listings.any { it.id == state.selectedListingId }
+                    state.copy(
+                        isLoading = false,
+                        selectedListingId = state.selectedListingId.takeIf { selectedStillExists },
+                    ).withVisibleListings()
+                }
+            }
+        }
+    }
+
+    fun onAction(action: ListingsAction) {
+        when (action) {
+            is ListingsAction.OnSearchQueryChange -> _state.update {
+                it.copy(searchQuery = action.query).withVisibleListings()
+            }
+            is ListingsAction.OnFilterChange -> _state.update {
+                it.copy(filter = action.filter).withVisibleListings()
+            }
+            is ListingsAction.OnListingClick -> _state.update { it.copy(selectedListingId = action.listingId) }
+            ListingsAction.OnNewListingClick -> createListing()
+            ListingsAction.OnSettingsClick -> viewModelScope.launch { navigator.navigate(Route.Settings) }
+        }
+    }
+
+    private fun createListing() {
+        viewModelScope.launch {
+            val settings = settingsDataSource.getSettings()
+            listingRepository.createListing(
+                ListingContent(postcode = settings.defaultPostcode, condition = settings.defaultCondition)
+            ).onSuccess { newId ->
+                willhabenFields.saveFields(
+                    newId,
+                    WillhabenListingFields(
+                        delivery = DeliveryOptions(
+                            pickup = settings.defaultPickup,
+                            shipping = settings.defaultShipping,
+                            shippingPriceCents = settings.defaultShippingPriceCents,
+                        )
+                    )
+                )
+                // Show the new listing even if a search or the archive view would hide it
+                _state.update {
+                    it.copy(selectedListingId = newId, searchQuery = "", filter = ListingFilter.ACTIVE).withVisibleListings()
+                }
+            }.onFailure { error ->
+                _events.send(ListingsEvent.ShowMessage(error.toUiText()))
+            }
+        }
+    }
+
+    private fun ListingsState.withVisibleListings(): ListingsState {
+        val query = searchQuery.trim()
+        val visible = allListings
+            .filter { it.archived == (filter == ListingFilter.ARCHIVED) }
+            .filter { query.isEmpty() || it.title.contains(query, ignoreCase = true) || it.description.contains(query, ignoreCase = true) }
+            .map { it.toListItemUi() }
+        return copy(listings = visible)
+    }
+
+    private fun Listing.toListItemUi() = ListingListItemUi(
+        id = id,
+        title = title,
+        formattedPrice = priceCents?.let(PriceFormatter::format),
+        coverImagePath = images.firstOrNull()?.filePath,
+        imageCount = images.size,
+        updatedText = formatDateTime(updatedAt),
+    )
+}
