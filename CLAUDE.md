@@ -56,31 +56,26 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 
 ## Current status
 
-Phase 1/2 in progress (first implementation run, 2026-10-18, stopped at the 90 % usage cap).
+Phase 1/2 in progress (first implementation run, 2026-10-18).
 
-Done, not compiled yet:
+Done and pushed (compile green, 76 tests green):
 - Version catalog (versions from SchneaggchatV3), `:shared` build with Room/KSP, Koin, Ktor,
-  DataStore, Navigation 3, Coil, Reorderable, serialization.
+  DataStore, Navigation 3, Coil, Reorderable, serialization, kotlinx-io, test stack.
 - Core: `app/domain` (Result, DataError), `utilities` (UiText, DataErrorText, PriceFormatter,
-  TimeUtils, AppDirectories), theme, navigation (Route, Navigator, ObserveAsEvents).
-- Data: Room entities + DAOs + AppDatabase, RoomListingRepository, Preferencemanager (settings),
-  willhaben catalog (category tree cache, suggestions, locations) + willhaben fields data source,
-  Ktor client + safe call helpers, Koin `datasourceModule`, desktop platform module, `onAppStart()`.
+  TimeUtils, TimeProvider, AppDirectories), theme, navigation (Route, Navigator, ObserveAsEvents).
+- Data (test-first): RoomListingRepository + DesktopImageStorage, Preferencemanager (settings),
+  CachedWillhabenCatalogRepository (category tree cache, suggestions, locations),
+  RoomWillhabenFieldsDataSource, Ktor helpers; Koin `datasourceModule` + desktop module.
 
-Next, in this order:
-1. Add `kotlinx-io-core` (0.9.1) to the catalog (used by the category tree cache).
-2. Load the test-driven-development + android-testing skills; add test deps (kotlin-test,
-   coroutines-test, turbine, assertk, ktor-client-mock); write tests first for PriceFormatter,
-   RoomListingRepository (fake DAOs/ImageStorage), catalog repository (MockEngine), ViewModels.
-3. Presentation: ListingsViewModel/Screen (list + selection), ListingEditorViewModel/Screen
-   (autosave, images with drag-to-reorder + drop target), WillhabenTabViewModel/Screen
-   (category picker, attributes, location, delivery), SettingsViewModel/Screen; `strings.xml`;
-   `App.kt` with NavDisplay; `presentationModule`.
-4. Android: `androidMain` platform module (DB builder, DataStore, ImageStorage, picker stub),
-   `initKoin(context)` from `MainActivity`.
-5. `desktopApp/main.kt`: call `onAppStart()`, window title/size; packaging config.
-6. Compile check green → commit → push.
-7. Release workflow (like SchneaggchatV3, but on every push to `main`): macOS DMG, Windows MSI,
+Next, in this order (TDD: tests first, `./gradlew :shared:jvmTest`):
+1. ViewModels with fakes + Turbine: ListingsViewModel (list, search, filter, select, new with
+   defaults), ListingEditorViewModel (autosave, price parsing, images, archive/duplicate/delete),
+   WillhabenTabViewModel (category picker, suggestions, attributes, location, delivery),
+   SettingsViewModel.
+2. Screens (Root + Screen + preview), `strings.xml`, `App.kt` with NavDisplay, `presentationModule`.
+3. Android: `androidMain` platform module, `initKoin(context)` from `MainActivity`.
+4. `desktopApp/main.kt`: `onAppStart()`, window title/size; packaging config.
+5. Release workflow (like SchneaggchatV3, on every push to `main`): macOS DMG, Windows MSI,
    Linux DEB/RPM/Arch, Android APK signed with a committed sideload keystore; version
    `1.0.<run number>`, tag `v1.0.<run number>`.
 
@@ -95,6 +90,6 @@ Next, in this order:
 - 2026-10-18 – Plan updated: "refresh" = renew expired listings; generic data model
   (`ListingEntity` + `ListingPublicationEntity`); Phase 8 other marketplaces added.
 - 2026-10-18 – `CLAUDE.md` added; git repository initialised with remote `origin`.
-- 2026-10-18 – Implementation started (autonomous run): dependencies, core, data layer for
-  listings/settings/willhaben catalog. Stopped at the 90 % usage cap before the UI; WIP commit
-  local only (not pushed, does not compile yet).
+- 2026-10-18 – Implementation started (autonomous run, usage cap lifted by the user).
+  Switched to TDD on request: logic written before was deleted and rebuilt test-first.
+  Pushed: project setup (4587cc1), data layer with 76 tests (21f1bdf).
