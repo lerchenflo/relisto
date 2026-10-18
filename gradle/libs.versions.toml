@@ -30,6 +30,7 @@ koin-core = "4.2.2"                     # Koin DI framework
 
 # Local storage
 datastore = "1.2.1"                     # Jetpack DataStore
+ksafe = "3.3.0"                         # Encrypted key-value storage (session cookies)
 
 # Async / time
 kotlinx-coroutines = "1.11.0"           # Coroutines core + Swing main dispatcher
@@ -38,6 +39,7 @@ kotlinxIo = "0.9.1"                     # Multiplatform file IO (category tree c
 
 # Networking
 ktor = "3.6.0"                          # Ktor HTTP client
+kcef = "2025.03.23"                     # Embedded Chromium for the willhaben login (desktop)
 
 # Images
 coilCompose = "3.6.3"                   # Coil image loader for Compose
@@ -97,6 +99,7 @@ koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin-cor
 # --- Local storage (DataStore) ---
 datastore = { module = "androidx.datastore:datastore", version.ref = "datastore" }                       # DataStore core
 datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" } # Key-value settings
+ksafe = { module = "eu.anifantakis:ksafe", version.ref = "ksafe" }                                       # Encrypted storage for the willhaben session cookies
 
 # --- Async / time ---
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }    # Structured concurrency
@@ -110,6 +113,8 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }   # JSON bodies via kotlinx.serialization
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }                           # Request logging (redacted)
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }   # kotlinx.serialization JSON adapter
+
+kcef = { module = "dev.datlag:kcef", version.ref = "kcef" }                                                   # Embedded Chromium login window (desktop only)
 
 # --- Images ---
 coil3-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCompose" } # Async loading of local listing images

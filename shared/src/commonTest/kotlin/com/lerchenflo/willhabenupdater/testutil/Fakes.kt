@@ -200,3 +200,58 @@ class FakeSecureStorage : com.lerchenflo.willhabenupdater.datasource.preferences
         values.remove(key)
     }
 }
+
+class FakeSessionRepository(
+    var refreshResult: com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState =
+        com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState.LoggedOut,
+) : com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenSessionRepository {
+    private val state = MutableStateFlow<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState>(
+        com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState.Unknown
+    )
+    override val sessionState = state
+    var completeLoginResult: Result<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount, com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError> =
+        Result.Success(com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount(null, "Flo"))
+    val completedLogins = mutableListOf<List<com.lerchenflo.willhabenupdater.app.domain.SessionCookie>>()
+    var logoutCalls = 0
+
+    override suspend fun refreshSession(): com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState {
+        state.value = refreshResult
+        return refreshResult
+    }
+
+    override suspend fun completeLogin(
+        cookies: List<com.lerchenflo.willhabenupdater.app.domain.SessionCookie>
+    ): Result<com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenAccount, com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError> {
+        completedLogins += cookies
+        val result = completeLoginResult
+        if (result is Result.Success) {
+            state.value = com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState.LoggedIn(result.data)
+        }
+        return result
+    }
+
+    override suspend fun logout() {
+        logoutCalls++
+        state.value = com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState.LoggedOut
+    }
+}
+
+class FakeLoginBrowser(
+    var result: Result<List<com.lerchenflo.willhabenupdater.app.domain.SessionCookie>, com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError> =
+        Result.Success(listOf(com.lerchenflo.willhabenupdater.app.domain.SessionCookie("BBX_JSESSIONID", "s", "www.willhaben.at", hostOnly = true))),
+) : com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLoginBrowser {
+    var loginCalls = 0
+    var clearCalls = 0
+    /** When set, login() waits until the test completes it. */
+    var pending: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
+    override suspend fun login(): Result<List<com.lerchenflo.willhabenupdater.app.domain.SessionCookie>, com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError> {
+        loginCalls++
+        pending?.await()
+        return result
+    }
+
+    override suspend fun clearSession() {
+        clearCalls++
+    }
+}

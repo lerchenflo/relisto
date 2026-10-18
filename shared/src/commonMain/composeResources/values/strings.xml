@@ -88,6 +88,19 @@
     <string name="willhaben_shipping_price">Shipping price (€)</string>
     <string name="willhaben_paylivery">PayLivery (pay and ship via willhaben)</string>
 
+    <!-- willhaben account -->
+    <string name="account_login">Log in to willhaben</string>
+    <string name="account_logging_in">Login window open…</string>
+    <string name="account_checking">Checking willhaben login…</string>
+    <string name="account_logged_in_as">willhaben: %1$s</string>
+    <string name="account_logout">Log out</string>
+    <string name="login_error_browser">The login browser could not be started.</string>
+    <string name="login_error_not_logged_in">willhaben did not confirm the login. Please try again.</string>
+    <string name="login_error_network">willhaben could not be reached to check the login.</string>
+    <string name="login_window_title">willhaben login</string>
+    <string name="login_window_preparing">Preparing the login browser…</string>
+    <string name="login_window_downloading">Downloading the login browser (one time): %1$d %%</string>
+
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_back">Back</string>

@@ -18,7 +18,14 @@ kotlin {
 
     jvm {
         testRuns.named("test") {
-            executionTask.configure { useJUnitPlatform() }
+            executionTask.configure {
+                useJUnitPlatform()
+                // Show the cause of failing tests in the build output (CI logs)
+                testLogging {
+                    events("failed")
+                    exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                }
+            }
         }
     }
 
@@ -70,8 +77,9 @@ kotlin {
             // Database - Room for the local listing database
             implementation(libs.bundles.room)
 
-            // Local storage - DataStore for settings
+            // Local storage - DataStore for settings, KSafe for the encrypted session cookies
             api(libs.bundles.datastore)
+            implementation(libs.ksafe)
 
             // Networking - Ktor for willhaben requests
             implementation(libs.bundles.ktor)
@@ -91,6 +99,9 @@ kotlin {
 
             // Networking - OkHttp engine for Ktor
             implementation(libs.ktor.client.okhttp)
+
+            // Login - embedded Chromium shows the real willhaben login page
+            implementation(libs.kcef)
         }
         commonTest.dependencies {
             // Testing - kotlin.test, coroutines-test, Turbine, AssertK, Ktor MockEngine

@@ -4,17 +4,22 @@ import com.lerchenflo.willhabenupdater.app.navigation.Navigator
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
 import com.lerchenflo.willhabenupdater.datasource.database.CreateAppDatabase
 import com.lerchenflo.willhabenupdater.datasource.network.HttpClientFactory
+import com.lerchenflo.willhabenupdater.datasource.network.PersistentCookiesStorage
 import com.lerchenflo.willhabenupdater.datasource.preferences.Preferencemanager
 import com.lerchenflo.willhabenupdater.listings.data.RoomListingRepository
 import com.lerchenflo.willhabenupdater.listings.presentation.editor.ListingEditorViewModel
 import com.lerchenflo.willhabenupdater.listings.presentation.list.ListingsViewModel
 import com.lerchenflo.willhabenupdater.listings.domain.ListingRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CachedWillhabenCatalogRepository
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.CookieWillhabenSessionRepository
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KtorWillhabenAccountDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.KtorWillhabenCatalogDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.RoomWillhabenFieldsDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCatalogRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenSessionRepository
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.WillhabenTabViewModel
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountViewModel
 import com.lerchenflo.willhabenupdater.settings.domain.SettingsDataSource
 import com.lerchenflo.willhabenupdater.settings.presentation.SettingsViewModel
 import com.lerchenflo.willhabenupdater.utilities.SystemTimeProvider
@@ -25,7 +30,10 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
-/** All data-layer singletons. Platform modules provide the database builder, DataStore, engine and file access. */
+/**
+ * All data-layer singletons. Platform modules provide the database builder, DataStore, HTTP engine,
+ * file access, secure storage and the login browser.
+ */
 val datasourceModule = module {
     single<AppDatabase> { CreateAppDatabase(get()).getDatabase() }
     single { get<AppDatabase>().listingDao() }
@@ -34,12 +42,15 @@ val datasourceModule = module {
 
     singleOf(::SystemTimeProvider) { bind<TimeProvider>() }
     singleOf(::Preferencemanager) { bind<SettingsDataSource>() }
-    single<HttpClient> { HttpClientFactory.createWillhabenClient(get()) }
+    singleOf(::PersistentCookiesStorage)
+    single<HttpClient> { HttpClientFactory.createWillhabenClient(get(), get<PersistentCookiesStorage>()) }
 
     singleOf(::RoomListingRepository) { bind<ListingRepository>() }
     singleOf(::RoomWillhabenFieldsDataSource) { bind<WillhabenFieldsLocalDataSource>() }
     singleOf(::KtorWillhabenCatalogDataSource)
     singleOf(::CachedWillhabenCatalogRepository) { bind<WillhabenCatalogRepository>() }
+    singleOf(::KtorWillhabenAccountDataSource)
+    singleOf(::CookieWillhabenSessionRepository) { bind<WillhabenSessionRepository>() }
 
     singleOf(::Navigator)
 }
@@ -51,4 +62,5 @@ val presentationModule = module {
     viewModelOf(::ListingEditorViewModel)
     viewModelOf(::WillhabenTabViewModel)
     viewModelOf(::SettingsViewModel)
+    viewModelOf(::AccountViewModel)
 }

@@ -30,23 +30,32 @@ suspend inline fun <reified Response : Any> HttpClient.get(
 suspend inline fun <reified T> safeCall(
     execute: () -> HttpResponse
 ): Result<T, DataError.Network> {
-    val response = try {
-        execute()
+    return when (val response = safeResponse(execute)) {
+        is Result.Error -> response
+        is Result.Success -> responseToResult(response.data)
+    }
+}
+
+/** Runs the request and maps connection problems to [DataError.Network]; any HTTP status is a success here. */
+suspend inline fun safeResponse(
+    execute: () -> HttpResponse
+): Result<HttpResponse, DataError.Network> {
+    return try {
+        Result.Success(execute())
     } catch (e: UnresolvedAddressException) {
         e.printStackTrace()
-        return Result.Error(DataError.Network.NO_INTERNET)
+        Result.Error(DataError.Network.NO_INTERNET)
     } catch (e: HttpRequestTimeoutException) {
         e.printStackTrace()
-        return Result.Error(DataError.Network.REQUEST_TIMEOUT)
+        Result.Error(DataError.Network.REQUEST_TIMEOUT)
     } catch (e: SerializationException) {
         e.printStackTrace()
-        return Result.Error(DataError.Network.SERIALIZATION)
+        Result.Error(DataError.Network.SERIALIZATION)
     } catch (e: Exception) {
         if (e is CancellationException) throw e
         e.printStackTrace()
-        return Result.Error(DataError.Network.UNKNOWN)
+        Result.Error(DataError.Network.UNKNOWN)
     }
-    return responseToResult(response)
 }
 
 suspend inline fun <reified T> responseToResult(

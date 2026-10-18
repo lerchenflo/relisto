@@ -6,13 +6,18 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.lerchenflo.willhabenupdater.datasource.database.AppDatabase
+import com.lerchenflo.willhabenupdater.datasource.preferences.KSafeSecureStorage
+import com.lerchenflo.willhabenupdater.datasource.preferences.SecureStorage
 import com.lerchenflo.willhabenupdater.listings.data.AndroidImagePicker
 import com.lerchenflo.willhabenupdater.listings.data.AndroidImageStorage
 import com.lerchenflo.willhabenupdater.listings.domain.ImagePicker
 import com.lerchenflo.willhabenupdater.listings.domain.ImageStorage
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.AndroidWillhabenLoginBrowser
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLoginBrowser
 import com.lerchenflo.willhabenupdater.utilities.AndroidAppDirectories
 import com.lerchenflo.willhabenupdater.utilities.AppDirectories
 import io.ktor.client.engine.HttpClientEngine
+import eu.anifantakis.lib.ksafe.KSafe
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
@@ -34,6 +39,8 @@ val androidPlatformModule = module {
     single<HttpClientEngine> { OkHttp.create() }
     singleOf(::AndroidImageStorage) { bind<ImageStorage>() }
     singleOf(::AndroidImagePicker) { bind<ImagePicker>() }
+    single<SecureStorage> { KSafeSecureStorage(KSafe(androidContext(), fileName = "willhabenupdater")) }
+    singleOf(::AndroidWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
 }
 
 /** Starts Koin once; called from the Android entry point. */

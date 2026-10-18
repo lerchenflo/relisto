@@ -48,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lerchenflo.willhabenupdater.app.navigation.ObserveAsEvents
 import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
 import com.lerchenflo.willhabenupdater.listings.presentation.editor.ListingEditorRoot
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountRoot
 import com.lerchenflo.willhabenupdater.sharedUi.ListingImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -89,6 +90,7 @@ fun ListingsRoot(
         state = state,
         onAction = viewModel::onAction,
         snackbarHostState = snackbarHostState,
+        accountContent = { AccountRoot(snackbarHostState = snackbarHostState) },
         editorContent = { listingId ->
             ListingEditorRoot(
                 listingId = listingId,
@@ -105,6 +107,7 @@ fun ListingsScreen(
     state: ListingsState,
     onAction: (ListingsAction) -> Unit,
     snackbarHostState: SnackbarHostState,
+    accountContent: @Composable () -> Unit,
     editorContent: @Composable (listingId: Long) -> Unit,
 ) {
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
@@ -112,6 +115,7 @@ fun ListingsScreen(
             ListingListPane(
                 state = state,
                 onAction = onAction,
+                accountContent = accountContent,
                 modifier = Modifier.width(380.dp).fillMaxHeight(),
             )
             VerticalDivider()
@@ -137,6 +141,7 @@ fun ListingsScreen(
 private fun ListingListPane(
     state: ListingsState,
     onAction: (ListingsAction) -> Unit,
+    accountContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -150,6 +155,7 @@ private fun ListingListPane(
                 Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.listings_settings))
             }
         }
+        accountContent()
         Button(onClick = { onAction(ListingsAction.OnNewListingClick) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(Modifier.width(8.dp))
@@ -256,6 +262,7 @@ private fun ListingsScreenPreview() {
             ),
             onAction = {},
             snackbarHostState = SnackbarHostState(),
+            accountContent = {},
             editorContent = {},
         )
     }

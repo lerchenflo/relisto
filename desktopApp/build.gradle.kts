@@ -31,6 +31,14 @@ compose.desktop {
     application {
         mainClass = "com.lerchenflo.willhabenupdater.MainKt"
 
+        // The embedded Chromium (KCEF) of the login window needs access to AWT internals
+        jvmArgs += listOf(
+            "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+            "--add-opens", "java.desktop/sun.lwawt=ALL-UNNAMED",
+            "--add-opens", "java.desktop/sun.lwawt.macosx=ALL-UNNAMED",
+            "--add-opens", "java.desktop/sun.awt.X11=ALL-UNNAMED",
+        )
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "Willhaben Updater"
