@@ -21,3 +21,4 @@ node_modules/
 # Willhaben Updater
 docs/api-samples/
 *.har
+hs_err_pid*.log
