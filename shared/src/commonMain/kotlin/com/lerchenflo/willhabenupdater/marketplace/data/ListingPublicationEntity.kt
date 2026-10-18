@@ -41,4 +41,6 @@ data class ListingPublicationEntity(
     val syncState: String,
     val lastSyncedAt: Long?,
     val lastError: String?,
+    /** Comma-separated remote ids this listing replaced by republishing; the importer skips them. */
+    val replacedRemoteIds: String? = null,
 )

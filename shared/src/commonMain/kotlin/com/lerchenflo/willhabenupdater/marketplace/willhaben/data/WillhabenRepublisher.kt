@@ -117,6 +117,7 @@ class WillhabenRepublisher(
         publicationDao.update(
             old.copy(
                 remoteId = newId,
+                replacedRemoteIds = listOfNotNull(old.replacedRemoteIds, old.remoteId).joinToString(","),
                 remoteUuid = imported?.remoteUuid,
                 remoteUrl = "https://www.willhaben.at/iad/object?adId=$newId",
                 remoteStatus = null,

@@ -73,6 +73,7 @@ import willhabenupdater.shared.generated.resources.listings_willhaben_status
 
 @Composable
 fun ListingsRoot(
+    headerActions: @Composable () -> Unit = {},
     viewModel: ListingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -92,6 +93,7 @@ fun ListingsRoot(
         onAction = viewModel::onAction,
         snackbarHostState = snackbarHostState,
         accountContent = { AccountRoot(snackbarHostState = snackbarHostState) },
+        headerActions = headerActions,
         editorContent = { listingId ->
             ListingEditorRoot(
                 listingId = listingId,
@@ -110,6 +112,7 @@ fun ListingsScreen(
     snackbarHostState: SnackbarHostState,
     accountContent: @Composable () -> Unit,
     editorContent: @Composable (listingId: Long) -> Unit,
+    headerActions: @Composable () -> Unit = {},
 ) {
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Row(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -117,6 +120,7 @@ fun ListingsScreen(
                 state = state,
                 onAction = onAction,
                 accountContent = accountContent,
+                headerActions = headerActions,
                 modifier = Modifier.width(380.dp).fillMaxHeight(),
             )
             VerticalDivider()
@@ -143,6 +147,7 @@ private fun ListingListPane(
     state: ListingsState,
     onAction: (ListingsAction) -> Unit,
     accountContent: @Composable () -> Unit,
+    headerActions: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -152,6 +157,7 @@ private fun ListingListPane(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f),
             )
+            headerActions()
             IconButton(onClick = { onAction(ListingsAction.OnSettingsClick) }) {
                 Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.listings_settings))
             }

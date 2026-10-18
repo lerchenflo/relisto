@@ -80,6 +80,21 @@ class RoomWillhabenImporterTest {
     }
 
     @Test
+    fun listingReplacedByRepublishIsNotImportedAgain() = runTest {
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor", status = "Abgelaufen")))
+        importer.importMyListings()
+        val listing = allListings().single()
+        database.publicationDao().update(publication(listing.id).copy(remoteId = "2", replacedRemoteIds = "1"))
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor", status = "Abgelaufen"), remoteListing("2", "Rasentraktor")))
+
+        val result = importer.importMyListings()
+
+        assertThat(result).isEqualTo(Result.Success(ImportSummary(found = 1, created = 0, updated = 0)))
+        assertThat(allListings().size).isEqualTo(1)
+        assertThat(publication(listing.id).remoteStatus).isEqualTo("Online")
+    }
+
+    @Test
     fun repeatedImportWithoutChangesChangesNothing() = runTest {
         remote = Result.Success(listOf(remoteListing("1", "Rasentraktor", images = listOf("https://img/1.jpg"))))
         importer.importMyListings()

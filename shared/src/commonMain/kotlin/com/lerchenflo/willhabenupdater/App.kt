@@ -17,7 +17,9 @@ import com.lerchenflo.willhabenupdater.app.navigation.NavigationAction
 import com.lerchenflo.willhabenupdater.app.navigation.Navigator
 import com.lerchenflo.willhabenupdater.app.navigation.ObserveAsEvents
 import com.lerchenflo.willhabenupdater.app.navigation.Route
+import com.lerchenflo.willhabenupdater.app.presentation.AppUpdateButtonRoot
 import com.lerchenflo.willhabenupdater.app.presentation.AppUpdateRoot
+import com.lerchenflo.willhabenupdater.app.presentation.AppUpdateViewModel
 import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
 import com.lerchenflo.willhabenupdater.listings.presentation.list.ListingsRoot
 import com.lerchenflo.willhabenupdater.settings.presentation.SettingsRoot
@@ -25,6 +27,7 @@ import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 private val backStackConfiguration = SavedStateConfiguration {
     serializersModule = SerializersModule {
@@ -55,8 +58,11 @@ fun App() {
                 }
             }
 
+            // One instance for banner and header button, so GitHub is asked once per start
+            val appUpdateViewModel = koinViewModel<AppUpdateViewModel>()
+
             Column(modifier = Modifier.fillMaxSize()) {
-                AppUpdateRoot()
+                AppUpdateRoot(viewModel = appUpdateViewModel)
                 NavDisplay(
                     backStack = backStack,
                     onBack = { if (backStack.size > 1) backStack.removeAt(backStack.size - 1) },
@@ -65,7 +71,7 @@ fun App() {
                         rememberViewModelStoreNavEntryDecorator(),
                     ),
                     entryProvider = entryProvider {
-                        entry<Route.Listings> { ListingsRoot() }
+                        entry<Route.Listings> { ListingsRoot(headerActions = { AppUpdateButtonRoot(appUpdateViewModel) }) }
                         entry<Route.Settings> { SettingsRoot() }
                     },
                 )

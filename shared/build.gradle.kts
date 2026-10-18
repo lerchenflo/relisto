@@ -128,6 +128,9 @@ kotlin {
             // Testing - JUnit 5 runner for desktop tests
             implementation(libs.kotlin.test.junit5)
 
+            // Testing - Room migration tests against the exported schemas
+            implementation(libs.room.testing)
+
             // Testing - Compose UI tests on the desktop renderer
             implementation(libs.compose.uiTest)
             implementation(compose.desktop.currentOs)

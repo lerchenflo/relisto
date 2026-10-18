@@ -34,10 +34,15 @@ class RoomWillhabenImporter(
 ) : WillhabenImporter {
 
     override suspend fun importMyListings(): Result<ImportSummary, DataError> {
-        val remoteListings = when (val fetched = source.fetchMyMarketplaceListings()) {
+        val fetchedListings = when (val fetched = source.fetchMyMarketplaceListings()) {
             is Result.Error -> return fetched
             is Result.Success -> fetched.data
         }
+        // The old listing of a republish stays on willhaben as expired; it is not imported again
+        val replacedIds = publicationDao.getAll()
+            .flatMap { it.replacedRemoteIds?.split(REMOTE_ID_SEPARATOR).orEmpty() }
+            .toSet()
+        val remoteListings = fetchedListings.filter { it.summary.remoteId !in replacedIds }
         val tree = (catalogRepository.getCategoryTree() as? Result.Success)?.data
         val categoryPathOf: (Int) -> List<WillhabenCategoryRef>? = { treeId ->
             tree?.pathOf(treeId)?.map { WillhabenCategoryRef(treeId = it.treeId, code = it.code, label = it.label) }
@@ -122,5 +127,6 @@ class RoomWillhabenImporter(
 
     private companion object {
         val MARKETPLACE = Marketplace.WILLHABEN.name
+        const val REMOTE_ID_SEPARATOR = ","
     }
 }

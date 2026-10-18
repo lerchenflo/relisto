@@ -20,9 +20,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -50,12 +52,27 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lerchenflo.willhabenupdater.app.navigation.ObserveAsEvents
 import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
+import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import willhabenupdater.shared.generated.resources.Res
+import willhabenupdater.shared.generated.resources.editor_delete_cancel
 import willhabenupdater.shared.generated.resources.editor_price_invalid
+import willhabenupdater.shared.generated.resources.republish_button
+import willhabenupdater.shared.generated.resources.republish_confirm
+import willhabenupdater.shared.generated.resources.republish_confirm_text
+import willhabenupdater.shared.generated.resources.republish_confirm_title
+import willhabenupdater.shared.generated.resources.republish_running
+import willhabenupdater.shared.generated.resources.sync_state_conflict
+import willhabenupdater.shared.generated.resources.sync_state_error
+import willhabenupdater.shared.generated.resources.sync_state_local_changes
+import willhabenupdater.shared.generated.resources.sync_state_local_only
+import willhabenupdater.shared.generated.resources.sync_state_publishing
+import willhabenupdater.shared.generated.resources.sync_state_remote_changed
+import willhabenupdater.shared.generated.resources.sync_state_synced
 import willhabenupdater.shared.generated.resources.willhaben_attribute_choose
 import willhabenupdater.shared.generated.resources.willhaben_attribute_required
 import willhabenupdater.shared.generated.resources.willhaben_attributes
@@ -69,6 +86,10 @@ import willhabenupdater.shared.generated.resources.willhaben_category_search
 import willhabenupdater.shared.generated.resources.willhaben_category_suggest
 import willhabenupdater.shared.generated.resources.willhaben_category_suggestions
 import willhabenupdater.shared.generated.resources.willhaben_delivery
+import willhabenupdater.shared.generated.resources.willhaben_listing_expires
+import willhabenupdater.shared.generated.resources.willhaben_listing_status
+import willhabenupdater.shared.generated.resources.willhaben_listing_sync
+import willhabenupdater.shared.generated.resources.willhaben_listing_title
 import willhabenupdater.shared.generated.resources.willhaben_location
 import willhabenupdater.shared.generated.resources.willhaben_location_need_postcode
 import willhabenupdater.shared.generated.resources.willhaben_location_none
@@ -108,6 +129,9 @@ fun WillhabenTabScreen(
     onAction: (WillhabenTabAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
+        state.publication?.let { publication ->
+            PublicationSection(publication = publication, isRepublishing = state.isRepublishing, onAction = onAction)
+        }
         CategorySection(state = state, onAction = onAction)
         if (state.attributeFields.isNotEmpty()) {
             AttributesSection(state = state, onAction = onAction)
@@ -119,6 +143,66 @@ fun WillhabenTabScreen(
     if (state.isCategoryPickerOpen) {
         CategoryPickerDialog(state = state, onAction = onAction)
     }
+    if (state.isRepublishConfirmOpen) {
+        RepublishConfirmDialog(onAction = onAction)
+    }
+}
+
+@Composable
+private fun PublicationSection(publication: PublicationUi, isRepublishing: Boolean, onAction: (WillhabenTabAction) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(Res.string.willhaben_listing_title), style = MaterialTheme.typography.titleSmall)
+        publication.statusText?.let { Text(stringResource(Res.string.willhaben_listing_status, it)) }
+        publication.expiresText?.let { Text(stringResource(Res.string.willhaben_listing_expires, it)) }
+        Text(
+            stringResource(Res.string.willhaben_listing_sync, stringResource(publication.syncState.label())),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (isRepublishing) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.republish_running))
+            }
+        } else if (publication.canRepublish) {
+            Button(onClick = { onAction(WillhabenTabAction.OnRepublishClick) }, modifier = Modifier.padding(top = 8.dp)) {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.republish_button))
+            }
+        }
+        HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
+    }
+}
+
+@Composable
+private fun RepublishConfirmDialog(onAction: (WillhabenTabAction) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onAction(WillhabenTabAction.OnRepublishDismiss) },
+        title = { Text(stringResource(Res.string.republish_confirm_title)) },
+        text = { Text(stringResource(Res.string.republish_confirm_text)) },
+        confirmButton = {
+            Button(onClick = { onAction(WillhabenTabAction.OnRepublishConfirm) }) {
+                Text(stringResource(Res.string.republish_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onAction(WillhabenTabAction.OnRepublishDismiss) }) {
+                Text(stringResource(Res.string.editor_delete_cancel))
+            }
+        },
+    )
+}
+
+private fun SyncState.label(): StringResource = when (this) {
+    SyncState.LOCAL_ONLY -> Res.string.sync_state_local_only
+    SyncState.SYNCED -> Res.string.sync_state_synced
+    SyncState.LOCAL_CHANGES -> Res.string.sync_state_local_changes
+    SyncState.REMOTE_CHANGED -> Res.string.sync_state_remote_changed
+    SyncState.CONFLICT -> Res.string.sync_state_conflict
+    SyncState.PUBLISHING -> Res.string.sync_state_publishing
+    SyncState.ERROR -> Res.string.sync_state_error
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -369,6 +453,12 @@ private fun WillhabenTabScreenPreview() {
         WillhabenTabScreen(
             state = WillhabenTabState(
                 isTreeLoading = false,
+                publication = PublicationUi(
+                    statusText = "Abgelaufen",
+                    expiresText = "02.12.2026 10:00",
+                    syncState = SyncState.SYNCED,
+                    canRepublish = true,
+                ),
                 categoryPathText = "Sport / Sportgeräte › Fahrräder › Kinderfahrräder",
                 attributeFields = listOf(
                     AttributeFieldUi(

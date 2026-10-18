@@ -88,6 +88,7 @@ jetbrains-lifecycle-viewmodel-nav3 = { module = "org.jetbrains.androidx.lifecycl
 # --- Database (Room) ---
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }           # Room ORM runtime - entity/DAO definitions
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }         # Room KSP annotation processor - generates DAO impls
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }           # Room migration tests (MigrationTestHelper)
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }   # Bundled SQLite so behavior is the same on every OS
 
 # --- DI (Koin) ---

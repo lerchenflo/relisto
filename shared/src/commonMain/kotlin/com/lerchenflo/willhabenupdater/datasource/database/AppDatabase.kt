@@ -1,5 +1,6 @@
 package com.lerchenflo.willhabenupdater.datasource.database
 
+import androidx.room.AutoMigration
 import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -11,7 +12,11 @@ import com.lerchenflo.willhabenupdater.marketplace.data.ListingPublicationEntity
 @Database(
     entities = [ListingEntity::class, ListingImageEntity::class, ListingPublicationEntity::class],
     exportSchema = true,
-    version = 1
+    version = 2,
+    // Never destructive: every version step keeps the user's data
+    autoMigrations = [
+        AutoMigration(from = 1, to = 2), // listing_publications.replacedRemoteIds
+    ],
 )
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {

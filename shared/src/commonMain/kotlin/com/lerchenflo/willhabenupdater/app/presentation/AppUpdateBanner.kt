@@ -45,13 +45,36 @@ fun AppUpdateRoot(
     AppUpdateBanner(state = state, onAction = viewModel::onAction)
 }
 
-/** Thin hint above the app; shown only when a newer release exists. */
+/** Icon in the home header while a newer release exists; opens the release page. */
+@Composable
+fun AppUpdateButton(
+    state: AppUpdateState,
+    onAction: (AppUpdateAction) -> Unit,
+) {
+    val version = state.availableVersion ?: return
+    IconButton(onClick = { onAction(AppUpdateAction.OnDownloadClick) }) {
+        Icon(
+            Icons.Default.NewReleases,
+            contentDescription = stringResource(Res.string.update_available, version),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
+fun AppUpdateButtonRoot(viewModel: AppUpdateViewModel) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    AppUpdateButton(state = state, onAction = viewModel::onAction)
+}
+
+/** Thin hint above the app; shown only when a newer release exists and until dismissed. */
 @Composable
 fun AppUpdateBanner(
     state: AppUpdateState,
     onAction: (AppUpdateAction) -> Unit,
 ) {
     val version = state.availableVersion ?: return
+    if (!state.isBannerVisible) return
     Surface(color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             Icon(Icons.Default.NewReleases, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)

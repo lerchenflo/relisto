@@ -144,6 +144,18 @@ class WillhabenRepublisherTest {
         assertThat(publication.remoteUuid).isEqualTo("uuid-222")
         assertThat(publication.syncState).isEqualTo(SyncState.SYNCED.name)
         assertThat(publication.expiresAt).isEqualTo(1796205600000L)
+        assertThat(publication.replacedRemoteIds).isEqualTo("111")
+    }
+
+    @Test
+    fun earlierReplacedListingsAreKept() = runTest {
+        val id = publishedListing()
+        val publicationDao = database.publicationDao()
+        publicationDao.update(publicationDao.getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!.copy(replacedRemoteIds = "100"))
+
+        republisher.republish(id)
+
+        assertThat(publicationDao.getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!.replacedRemoteIds).isEqualTo("100,111")
     }
 
     @Test
