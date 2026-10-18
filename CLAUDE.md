@@ -40,7 +40,10 @@ listings on other marketplaces (Kleinanzeigen, Shpock, Facebook Marketplace).
   (`values-en/`); the desktop app starts in German.
 - Never drop or reset the local database on updates: no `fallbackToDestructiveMigration`. Every
   schema change raises the version and ships a Room migration (prefer `AutoMigration`) with a
-  migration test; schemas are exported to `shared/schemas/`.
+  migration test (`AppDatabaseMigrationTest`, room-testing); schemas are exported to `shared/schemas/`.
+  Exception until the first production release (after Phase 7): the user allows dropping the
+  database, but cheap real migrations are still preferred. Never edit an exported schema JSON; a
+  red test run with a changed entity and an unchanged version overwrites it - restore it from git.
 - Use the user's KMP skills for code (module structure, data layer, Koin, MVI, navigation, error
   handling), adapted to the module layout below.
 
@@ -65,16 +68,17 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 
 ## Current status
 
-Phase 4 (import) done: "Von willhaben importieren" creates/updates local listings from the user's
-willhaben marketplace listings (content, category, attributes, location, delivery, expiry, images)
-with a willhaben publication (SYNCED / LOCAL_CHANGES / CONFLICT). The list shows willhaben's
-status text ("willhaben: Abgelaufen"). Confirmed JSON keys: `docs/willhaben-api.md`.
+Phases 1-4 done. Phase 5 in progress: renewing expired listings is built, not yet tested live.
+- Single renew: editor willhaben tab shows status / expiry / sync state, "Neu veröffentlichen" with
+  confirmation (`WillhabenRepublisher`: copy → presave → images → finish → reload → stop on
+  `paymentURI` → activate).
+- Bulk renew: checkboxes on expired listings in the list, "Ausgewählte erneuern".
+- Auto renew: setting "Abgelaufene Anzeigen beim Start automatisch erneuern" (default off), runs
+  once per app run at the first login (`WillhabenRenewer.renewAllExpired`).
+- The expired original of a renewed listing is skipped by the import (`replacedRemoteIds`, DB v2).
+- Update icon in the home header opens the GitHub release page.
 
-Next (Phase 5, first writes - ask the user which listing to test with before any write):
-1. Editor willhaben tab: show status, expiry and sync state; conflict dialog (keep local / take willhaben).
-2. Push changes: reload `GET /iad/bap/{id}`, patch managed fields into the JSON (description back to
-   HTML via `HtmlText.fromPlainText`), `PUT` link `selfLinkEdit` (`/bap/edit`).
-3. Renew expired listings (status action `6` "Neu veröffentlichen"), status actions, images.
+Next: see "Next session" in TODO.md (product name, live renew test, bulk delete scope).
 
 ## Progress log
 
@@ -95,3 +99,6 @@ Next (Phase 5, first writes - ask the user which listing to test with before any
   user. Privacy rules added (no personal data or secrets in logs/captures), German default UI,
   import step A (fetch + count).
 - 2026-10-18 – Import step B: listings, images and willhaben fields stored locally, status in list.
+- 2026-10-18 – Phase 5 part 1: republish (single, bulk, automatic on start), status section in the
+  willhaben tab, replaced-listing guard with DB migration 1 → 2, update icon in the header.
+  TODO.md cleaned up to open work only. 275 tests green.
