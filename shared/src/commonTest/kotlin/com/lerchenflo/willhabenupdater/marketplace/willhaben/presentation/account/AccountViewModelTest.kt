@@ -93,6 +93,17 @@ class AccountViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun unsupportedJavaRuntimeShowsMessage() = runTest {
+        browser.result = Result.Error(LoginError.UNSUPPORTED_RUNTIME)
+        val viewModel = viewModel()
+
+        viewModel.events.test {
+            viewModel.onAction(AccountAction.OnLoginClick)
+            assertThat(awaitItem()).isInstanceOf(AccountEvent.ShowMessage::class)
+        }
+    }
+
+    @Test
     fun loginNotConfirmedByWillhabenShowsMessage() = runTest {
         sessions.completeLoginResult = Result.Error(LoginError.NOT_LOGGED_IN)
         val viewModel = viewModel()

@@ -73,9 +73,21 @@ compose.desktop {
     }
 }
 
-// Development runs (`./gradlew :desktopApp:run`) record willhaben API responses for analysis
+// JetBrains Runtime (used by hot reload and the Gradle daemon) ships its own `jcef`, `jogl.all` and
+// `gluegen.rt` modules; they shadow the Chromium classes of KCEF and crash the login window.
+// Development runs therefore see only the standard modules. Installers bundle their own runtime
+// without these modules.
+val developmentModules = listOf(
+    "java.se", "jdk.accessibility", "jdk.attach", "jdk.charsets", "jdk.crypto.cryptoki", "jdk.crypto.ec",
+    "jdk.httpserver", "jdk.jdi", "jdk.jdwp.agent", "jdk.jfr", "jdk.localedata", "jdk.management",
+    "jdk.management.agent", "jdk.naming.dns", "jdk.net", "jdk.security.auth", "jdk.security.jgss",
+    "jdk.unsupported", "jdk.unsupported.desktop", "jdk.zipfs",
+).joinToString(",")
+
 tasks.withType<JavaExec>().configureEach {
-    if (name == "run") {
+    if (name == "run" || name.startsWith("hotRun")) {
+        jvmArgs("--limit-modules", developmentModules)
+        // Development runs record willhaben API responses for analysis (gitignored folder)
         systemProperty("willhaben.captureDir", rootProject.layout.projectDirectory.dir("docs/api-samples").asFile.absolutePath)
     }
 }

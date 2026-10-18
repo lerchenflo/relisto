@@ -52,6 +52,8 @@ class KcefWillhabenLoginBrowser(
     private var initialized = false
 
     override suspend fun login(): Result<List<SessionCookie>, LoginError> {
+        // JetBrains Runtime's own JCEF module shadows the KCEF classes and crashes the JVM on start
+        if (ModuleLayer.boot().findModule("jcef").isPresent) return Result.Error(LoginError.UNSUPPORTED_RUNTIME)
         val window = withContext(Dispatchers.Main) {
             LoginWindow(getString(Res.string.login_window_title), getString(Res.string.login_window_preparing))
         }
