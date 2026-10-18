@@ -4,6 +4,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.AcceptAllCookiesStorage
+import io.ktor.client.plugins.cookies.CookiesStorage
+import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -21,13 +24,23 @@ private const val BROWSER_USER_AGENT =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
 
 /** Headers that carry credentials and must never show up in logs. */
-private val SENSITIVE_HEADERS = setOf(HttpHeaders.Cookie, HttpHeaders.SetCookie, "x-bbx-csrf-token")
+private val SENSITIVE_HEADERS = setOf(HttpHeaders.Cookie, HttpHeaders.SetCookie, CSRF_HEADER)
 
 object HttpClientFactory {
 
-    fun createWillhabenClient(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
+    /** [cookiesStorage] holds the willhaben session; the CSRF header is added for every write request. */
+    fun createWillhabenClient(
+        engine: HttpClientEngine,
+        cookiesStorage: CookiesStorage = AcceptAllCookiesStorage(),
+    ): HttpClient = HttpClient(engine) {
         install(ContentNegotiation) {
             json(AppJson)
+        }
+        install(HttpCookies) {
+            storage = cookiesStorage
+        }
+        install(WillhabenCsrf) {
+            this.cookiesStorage = cookiesStorage
         }
         install(HttpTimeout) {
             connectTimeoutMillis = 15_000
