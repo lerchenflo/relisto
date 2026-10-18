@@ -100,6 +100,10 @@ kotlin {
         jvmTest.dependencies {
             // Testing - JUnit 5 runner for desktop tests
             implementation(libs.kotlin.test.junit5)
+
+            // Testing - Compose UI tests on the desktop renderer
+            implementation(libs.compose.uiTest)
+            implementation(compose.desktop.currentOs)
         }
     }
 }

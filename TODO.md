@@ -13,32 +13,32 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 - [x] 1.2 Java 25 everywhere like SchneaggchatV3: `jvmToolchain(25)` + `java { VERSION_25 }` in all three modules, Gradle daemon JetBrains Runtime 25. Compile check passed.
 - [x] 1.3 `CLAUDE.md` with project rules and progress log.
 - [x] 1.4 Git repository with remote `origin` (https://github.com/lerchenflo/willhabenupdater.git), local `main` tracks `origin/main`; `.gitignore` extended (`docs/api-samples/`, `*.har`).
-- [ ] 1.4b First commit + push (only when asked); decide README: remote one-liner vs. wizard README.
+- [x] 1.4b First commit + push; README rewritten for the project.
 - [x] 1.5 Remove wizard sample code (`Greeting`, `GreetingUtil`, sample tests).
-- [ ] 1.5b Release workflow on every push to `main` (like SchneaggchatV3): macOS DMG, Windows MSI, Linux DEB/RPM/Arch, Android APK (sideload keystore in repo, no release keys needed).
-- [ ] 1.5c Test setup for TDD (kotlin-test, coroutines-test, Turbine, AssertK, Ktor MockEngine).
-- [ ] 1.6 Run the `android-project-init` skill, adapted to the `:shared` / `:desktopApp` / `:androidApp` layout: version catalog, Koin, Room KMP + KSP + `sqlite-bundled`, DataStore, Ktor (OkHttp engine, content negotiation, logging, cookies), Coil 3, Navigation 3, `Result`/`DataError`, `UiText`.
-- [ ] 1.7 Add KSafe, FileKit and the login web view library to the catalog; check that KSafe supports the JVM desktop target.
-- [ ] 1.8 `AppDirs` for the app data folder (macOS / Windows / Linux) with `images/`, `thumbs/`, database file; Android `actual` stub.
-- [ ] 1.9 Main window: minimum size, remembered size/position, light/dark theme, app icon placeholder.
-- [ ] 1.10 Empty master–detail screen wired through Navigation 3 and Koin.
+- [x] 1.5b Release workflow on every push to `main` (like SchneaggchatV3): macOS DMG, Windows MSI, Linux DEB/RPM/Arch, Android APK (sideload keystore in repo, no release keys needed).
+- [x] 1.5c Test setup for TDD (kotlin-test, coroutines-test, Turbine, AssertK, Ktor MockEngine).
+- [x] 1.6 Run the `android-project-init` skill, adapted to the `:shared` / `:desktopApp` / `:androidApp` layout: version catalog, Koin, Room KMP + KSP + `sqlite-bundled`, DataStore, Ktor (OkHttp engine, content negotiation, logging, cookies), Coil 3, Navigation 3, `Result`/`DataError`, `UiText`.
+- [ ] 1.7 Add KSafe and the login web view library to the catalog (moved to Phase 3). FileKit not needed: native AWT file dialog is used.
+- [x] 1.8 `AppDirs` for the app data folder (macOS / Windows / Linux) with `images/`, `thumbs/`, database file; Android `actual` stub.
+- [x] 1.9 Main window: size, minimum size, light/dark theme. Open: remembered size/position, app icon.
+- [x] 1.10 Empty master–detail screen wired through Navigation 3 and Koin.
 
 ## Phase 2 – Local listings (no login needed)
 
-- [ ] 2.1 Room entities + DAOs: `ListingEntity` (content), `ListingImageEntity`, `ListingPublicationEntity` (one row per listing + marketplace), `PublicationImageEntity`, `ActivityLogEntity`; `AppDatabase` with schema export.
-- [ ] 2.2 Domain models (`Listing`, `ListingImage`, `Price`, `Condition`, `Marketplace`, `Publication`, `SyncState`, `RemoteStatus`) + `ListingRepository` and `PublicationRepository` (Flow-based) + mappers.
-- [ ] 2.3 `MarketplaceAdapter` interface (see PLAN.md section 7); willhaben is the only implementation for now.
-- [ ] 2.4 Image store: copy added files into `images/` named by SHA-256, read size, create thumbnails, orphan cleanup on start.
-- [ ] 2.5 Listing list (left pane): thumbnail, title, price, status chip, sync badge; search; filters (status, sync state, archived, expired).
-- [ ] 2.6 Editor (right pane): title with character counter, description, price in de-AT format (euro cents in the DB), condition, postcode.
-- [ ] 2.7 Image grid in the editor: file picker (FileKit), drag-and-drop from Finder, reorder by drag, remove, first image = cover.
-- [ ] 2.8 willhaben tab in the editor – category picker: load the public category tree (`/iad/categorytree/withattributes/67`), cache it, suggestions from the title (`/iad/bap/categorysuggestion/attributetree`).
-- [ ] 2.9 willhaben tab – category attributes: dynamic form built from the cached category tree attributes.
-- [ ] 2.10 willhaben tab – location: postcode lookup (`/iad/locations/{postcode}?isoCountryCode=AT`); default postcode in settings.
-- [ ] 2.11 willhaben tab – delivery options: local model (pickup, shipping, shipping price, PayLivery on/off), stored in `marketplaceFieldsJson`.
-- [ ] 2.12 Validation, unsaved-changes tracking, "save locally".
-- [ ] 2.13 New, duplicate, archive and delete listings locally (delete with confirmation).
-- [ ] 2.14 Settings screen (DataStore): default postcode, default condition, default delivery options.
+- [x] 2.1 Room entities + DAOs: `ListingEntity`, `ListingImageEntity`, `ListingPublicationEntity`; `AppDatabase` with schema export. `PublicationImageEntity` and `ActivityLogEntity` follow when first used (Phase 4/5).
+- [x] 2.2 Domain models (`Listing`, `ListingImage`, `Price`, `Condition`, `Marketplace`, `Publication`, `SyncState`, `RemoteStatus`) + `ListingRepository` and `PublicationRepository` (Flow-based) + mappers.
+- [ ] 2.3 `MarketplaceAdapter` interface (see PLAN.md section 7) - moved to Phase 4, when the first implementation exists.
+- [x] 2.4 Image store: copy added files into `images/` named by SHA-256, read size, create thumbnails, orphan cleanup on start.
+- [x] 2.5 Listing list (left pane): thumbnail, title, price, status chip, sync badge; search; filters (status, sync state, archived, expired).
+- [x] 2.6 Editor (right pane): title with character counter, description, price in de-AT format (euro cents in the DB), condition, postcode.
+- [x] 2.7 Image grid in the editor: file picker (FileKit), drag-and-drop from Finder, reorder by drag, remove, first image = cover.
+- [x] 2.8 willhaben tab in the editor – category picker: load the public category tree (`/iad/categorytree/withattributes/67`), cache it, suggestions from the title (`/iad/bap/categorysuggestion/attributetree`).
+- [x] 2.9 willhaben tab – category attributes: dynamic form built from the cached category tree attributes.
+- [x] 2.10 willhaben tab – location: postcode lookup (`/iad/locations/{postcode}?isoCountryCode=AT`); default postcode in settings.
+- [x] 2.11 willhaben tab – delivery options: local model (pickup, shipping, shipping price, PayLivery on/off), stored in `marketplaceFieldsJson`.
+- [x] 2.12 Validation, unsaved-changes tracking, "save locally".
+- [x] 2.13 New, duplicate, archive and delete listings locally (delete with confirmation).
+- [x] 2.14 Settings screen (DataStore): default postcode, default condition, default delivery options.
 
 Result: complete offline listing manager.
 

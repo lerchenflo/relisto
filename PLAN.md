@@ -512,8 +512,19 @@ Made (all 2026-10-18, confirmed by me in the interview):
   location, delivery options.
 - No separate API spike; endpoints are verified while implementing, reads before writes.
 
-Technical defaults (from the analysis, not user decisions):
+- Every push to `main` creates a release (DMG, MSI, DEB, RPM, Arch, APK), like SchneaggchatV3.
+- Android APKs are signed with a sideload key committed to the repo (no release keys to manage).
+- Test-driven development for all logic.
+
+Technical defaults (decided during implementation):
 - Listing JSON is patched, not rebuilt.
+- Every edit is saved immediately (no save button); text fields are filled from the database
+  only once so database updates never overwrite typing.
+- Images: native AWT file dialog and drag-and-drop on desktop, stored by SHA-256 hash; Coil
+  scales thumbnails, no separate thumbnail folder.
+- willhaben condition ("Zustand") and handover ("Übergabe") attributes are derived from the
+  neutral condition and the delivery options, so the willhaben tab does not show them.
+- Android uses stubs for image import and file picker until Android features are planned.
 
 Open (asked via interview when the phase starts):
 - Exact attribute fields shown per category (Phase 2/4, after the first import samples).

@@ -25,6 +25,7 @@ listings on other marketplaces (Kleinanzeigen, Shpock, Facebook Marketplace).
   failing test first, then the code. Running `./gradlew :shared:jvmTest` is allowed.
 - Commit regularly. Push to `origin main` only when the compile check below passes (every push to
   `main` will create a release).
+- Running the app (`:desktopApp:run`) and packaging tasks still need an explicit request.
 - Use SchneaggchatV3 (`~/Desktop/SchneaggchatV3`) as the reference for versions, Gradle setup and
   release workflows.
 - After each work step: tick the item in `TODO.md` and add a line to the progress log below.
@@ -56,28 +57,16 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 
 ## Current status
 
-Phase 1/2 in progress (first implementation run, 2026-10-18).
+Phase 2 (offline listing manager) done and testable: `./gradlew :desktopApp:run`.
+134 tests green (data layer, ViewModels, Koin wiring, desktop E2E smoke test).
 
-Done and pushed (compile green, 76 tests green):
-- Version catalog (versions from SchneaggchatV3), `:shared` build with Room/KSP, Koin, Ktor,
-  DataStore, Navigation 3, Coil, Reorderable, serialization, kotlinx-io, test stack.
-- Core: `app/domain` (Result, DataError), `utilities` (UiText, DataErrorText, PriceFormatter,
-  TimeUtils, TimeProvider, AppDirectories), theme, navigation (Route, Navigator, ObserveAsEvents).
-- Data (test-first): RoomListingRepository + DesktopImageStorage, Preferencemanager (settings),
-  CachedWillhabenCatalogRepository (category tree cache, suggestions, locations),
-  RoomWillhabenFieldsDataSource, Ktor helpers; Koin `datasourceModule` + desktop module.
+Open:
+- Release workflow `.github/workflows/release.yml` is committed locally but not pushed: the
+  GitHub token used for pushing lacks the `workflow` scope. Push it with a token that has the
+  `workflow` scope (or from an IDE/GitHub Desktop login).
+- Android: app runs with listings, but image import and file picker are stubs (desktop first).
 
-Next, in this order (TDD: tests first, `./gradlew :shared:jvmTest`):
-1. ViewModels with fakes + Turbine: ListingsViewModel (list, search, filter, select, new with
-   defaults), ListingEditorViewModel (autosave, price parsing, images, archive/duplicate/delete),
-   WillhabenTabViewModel (category picker, suggestions, attributes, location, delivery),
-   SettingsViewModel.
-2. Screens (Root + Screen + preview), `strings.xml`, `App.kt` with NavDisplay, `presentationModule`.
-3. Android: `androidMain` platform module, `initKoin(context)` from `MainActivity`.
-4. `desktopApp/main.kt`: `onAppStart()`, window title/size; packaging config.
-5. Release workflow (like SchneaggchatV3, on every push to `main`): macOS DMG, Windows MSI,
-   Linux DEB/RPM/Arch, Android APK signed with a committed sideload keystore; version
-   `1.0.<run number>`, tag `v1.0.<run number>`.
+Next: Phase 3 (willhaben login in an embedded browser, KSafe cookie storage, session check).
 
 ## Progress log
 
@@ -92,4 +81,5 @@ Next, in this order (TDD: tests first, `./gradlew :shared:jvmTest`):
 - 2026-10-18 – `CLAUDE.md` added; git repository initialised with remote `origin`.
 - 2026-10-18 – Implementation started (autonomous run, usage cap lifted by the user).
   Switched to TDD on request: logic written before was deleted and rebuilt test-first.
-  Pushed: project setup (4587cc1), data layer with 76 tests (21f1bdf).
+  Pushed: project setup (4587cc1), data layer with 76 tests (21f1bdf), ViewModels (afdf5cf),
+  screens + app wiring + packaging (0fc7114). Release workflow commit local only (token scope).
