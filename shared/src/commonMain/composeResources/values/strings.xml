@@ -148,4 +148,8 @@
     <string name="renew_clear">Auswahl aufheben</string>
     <string name="renew_running">Wird erneuert …</string>
     <string name="renew_check_description">Zum Erneuern auswählen</string>
+    <string name="auto_renew_done">Automatisch erneuert: %1$d, fehlgeschlagen: %2$d</string>
+    <string name="settings_auto_renew">Abgelaufene Anzeigen beim Start automatisch erneuern</string>
+    <string name="settings_auto_renew_hint">Nach dem Anmelden werden alle abgelaufenen willhaben-Anzeigen mit dem lokalen Inhalt neu veröffentlicht. Kostenpflichtige Extras werden nie gebucht.</string>
+    <string name="settings_willhaben">willhaben</string>
 </resources>

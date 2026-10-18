@@ -109,4 +109,15 @@ class SettingsViewModelTest : MainDispatcherTest() {
             assertThat(awaitItem()).isEqualTo(NavigationAction.NavigateBack())
         }
     }
+
+    @Test
+    fun autoRenewIsShownAndSaved() = runTest {
+        val viewModel = viewModel()
+        assertThat(viewModel.state.value.autoRenewExpired).isFalse()
+
+        viewModel.onAction(SettingsAction.OnAutoRenewChange(true))
+
+        assertThat(viewModel.state.value.autoRenewExpired).isTrue()
+        assertThat(settings.settings.value.autoRenewExpired).isTrue()
+    }
 }

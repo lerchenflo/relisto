@@ -148,4 +148,8 @@
     <string name="renew_clear">Clear selection</string>
     <string name="renew_running">Renewing …</string>
     <string name="renew_check_description">Select for renewing</string>
+    <string name="auto_renew_done">Renewed automatically: %1$d, failed: %2$d</string>
+    <string name="settings_auto_renew">Renew expired listings automatically on start</string>
+    <string name="settings_auto_renew_hint">After login, every expired willhaben listing is published again with the local content. Paid extras are never booked.</string>
+    <string name="settings_willhaben">willhaben</string>
 </resources>

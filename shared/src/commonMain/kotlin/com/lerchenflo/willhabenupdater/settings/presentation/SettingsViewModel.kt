@@ -31,6 +31,7 @@ class SettingsViewModel(
                     pickup = settings.defaultPickup,
                     shipping = settings.defaultShipping,
                     shippingPriceText = settings.defaultShippingPriceCents?.let(PriceFormatter::formatAmount).orEmpty(),
+                    autoRenewExpired = settings.autoRenewExpired,
                 )
             }
         }
@@ -60,6 +61,10 @@ class SettingsViewModel(
                 val invalid = action.priceText.isNotBlank() && parsed == null
                 _state.update { it.copy(shippingPriceText = action.priceText, isShippingPriceInvalid = invalid) }
                 if (!invalid) save { it.copy(defaultShippingPriceCents = parsed) }
+            }
+            is SettingsAction.OnAutoRenewChange -> {
+                _state.update { it.copy(autoRenewExpired = action.enabled) }
+                save { it.copy(autoRenewExpired = action.enabled) }
             }
             SettingsAction.OnBackClick -> viewModelScope.launch { navigator.navigateBack() }
         }

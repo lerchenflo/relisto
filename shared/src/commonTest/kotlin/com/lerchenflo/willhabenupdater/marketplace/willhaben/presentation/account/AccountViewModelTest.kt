@@ -2,6 +2,8 @@ package com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.accou
 
 import app.cash.turbine.test
 import assertk.assertThat
+import assertk.assertions.containsExactly
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isInstanceOf
@@ -11,9 +13,18 @@ import com.lerchenflo.willhabenupdater.app.domain.Result
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.ImportSummary
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState
+import com.lerchenflo.willhabenupdater.marketplace.domain.Marketplace
+import com.lerchenflo.willhabenupdater.marketplace.domain.PublicationStatus
+import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenRenewer
+import com.lerchenflo.willhabenupdater.settings.domain.AppSettings
 import com.lerchenflo.willhabenupdater.testutil.FakeImporter
 import com.lerchenflo.willhabenupdater.testutil.FakeLoginBrowser
+import com.lerchenflo.willhabenupdater.testutil.FakePublicationStatusRepository
+import com.lerchenflo.willhabenupdater.testutil.FakePublisher
 import com.lerchenflo.willhabenupdater.testutil.FakeSessionRepository
+import com.lerchenflo.willhabenupdater.testutil.FakeSettingsDataSource
+import com.lerchenflo.willhabenupdater.testutil.FakeTimeProvider
 import com.lerchenflo.willhabenupdater.testutil.MainDispatcherTest
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
@@ -25,7 +36,16 @@ class AccountViewModelTest : MainDispatcherTest() {
     private val browser = FakeLoginBrowser()
     private val importer = FakeImporter()
 
-    private fun viewModel() = AccountViewModel(sessions, browser, importer)
+    private val settings = FakeSettingsDataSource()
+    private val publisher = FakePublisher()
+    private val statuses = FakePublicationStatusRepository()
+    private val renewer = WillhabenRenewer(publisher, importer, statuses, FakeTimeProvider(now = 10_000L))
+
+    private fun viewModel() = AccountViewModel(sessions, browser, importer, settings, renewer)
+
+    private fun expiredListing() {
+        statuses.statuses.value = listOf(PublicationStatus(1, Marketplace.WILLHABEN, "Abgelaufen", null, SyncState.SYNCED))
+    }
 
     @Test
     fun storedSessionIsCheckedOnStart() = runTest {
@@ -153,5 +173,45 @@ class AccountViewModelTest : MainDispatcherTest() {
             viewModel.onAction(AccountAction.OnImportClick)
             assertThat(awaitItem()).isInstanceOf(AccountEvent.ShowMessage::class)
         }
+    }
+
+    @Test
+    fun autoRenewRenewsExpiredListingsOnceLoggedInAtStart() = runTest {
+        settings.settings.value = AppSettings(autoRenewExpired = true)
+        sessions.refreshResult = SessionState.LoggedIn(displayName = null)
+        expiredListing()
+
+        val viewModel = viewModel()
+
+        viewModel.events.test {
+            assertThat(awaitItem()).isInstanceOf(AccountEvent.ShowMessage::class)
+        }
+        assertThat(publisher.republished).containsExactly(1L)
+        assertThat(viewModel.state.value.isImporting).isFalse()
+    }
+
+    @Test
+    fun autoRenewRunsAfterLoginLaterInTheSameRunOnlyOnce() = runTest {
+        settings.settings.value = AppSettings(autoRenewExpired = true)
+        expiredListing()
+        val viewModel = viewModel()
+        assertThat(publisher.republished).isEmpty()
+
+        viewModel.onAction(AccountAction.OnLoginClick)
+        viewModel.onAction(AccountAction.OnLogoutClick)
+        viewModel.onAction(AccountAction.OnLoginClick)
+
+        assertThat(publisher.republished).containsExactly(1L)
+    }
+
+    @Test
+    fun withoutAutoRenewNothingIsRenewed() = runTest {
+        sessions.refreshResult = SessionState.LoggedIn(displayName = null)
+        expiredListing()
+
+        viewModel()
+
+        assertThat(publisher.republished).isEmpty()
+        assertThat(importer.calls).isEqualTo(0)
     }
 }

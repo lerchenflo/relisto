@@ -7,7 +7,9 @@ import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.LoginError
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.SessionState
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenImporter
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLoginBrowser
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenRenewer
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenSessionRepository
+import com.lerchenflo.willhabenupdater.settings.domain.SettingsDataSource
 import com.lerchenflo.willhabenupdater.utilities.UiText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +18,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.lerchenflo.willhabenupdater.utilities.toUiText
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.toUiText
 import willhabenupdater.shared.generated.resources.Res
+import willhabenupdater.shared.generated.resources.auto_renew_done
 import willhabenupdater.shared.generated.resources.import_done
 import willhabenupdater.shared.generated.resources.login_error_browser
 import willhabenupdater.shared.generated.resources.login_error_network
@@ -27,6 +31,8 @@ class AccountViewModel(
     private val sessionRepository: WillhabenSessionRepository,
     private val loginBrowser: WillhabenLoginBrowser,
     private val importer: WillhabenImporter,
+    private val settingsDataSource: SettingsDataSource,
+    private val renewer: WillhabenRenewer,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AccountState())
@@ -35,9 +41,16 @@ class AccountViewModel(
     private val _events = Channel<AccountEvent>()
     val events = _events.receiveAsFlow()
 
+    /** Automatic renewal runs at most once per app run, at the first login. */
+    private var autoRenewChecked = false
+
     init {
         viewModelScope.launch {
             sessionRepository.sessionState.collect { session ->
+                if (session is SessionState.LoggedIn && !autoRenewChecked) {
+                    autoRenewChecked = true
+                    viewModelScope.launch { autoRenew() }
+                }
                 _state.update {
                     it.copy(
                         isChecking = session is SessionState.Unknown && it.isChecking,
@@ -91,6 +104,27 @@ class AccountViewModel(
             _state.update { it.copy(isImporting = false) }
             _events.send(AccountEvent.ShowMessage(message))
         }
+    }
+
+    private suspend fun autoRenew() {
+        if (!settingsDataSource.getSettings().autoRenewExpired) return
+        _state.update { it.copy(isImporting = true) }
+        val messages = when (val result = renewer.renewAllExpired()) {
+            is Result.Error -> listOf(result.error.toUiText())
+            is Result.Success -> {
+                val summary = result.data
+                if (summary.renewed + summary.failed == 0) {
+                    emptyList()
+                } else {
+                    listOfNotNull(
+                        UiText.StringResourceText(Res.string.auto_renew_done, arrayOf(summary.renewed, summary.failed)),
+                        summary.firstError?.toUiText(),
+                    )
+                }
+            }
+        }
+        _state.update { it.copy(isImporting = false) }
+        messages.forEach { _events.send(AccountEvent.ShowMessage(it)) }
     }
 
     /** Null for errors that need no message, such as closing the login window. */

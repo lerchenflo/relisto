@@ -30,6 +30,7 @@ class PreferencemanagerTest {
                 defaultPickup = true,
                 defaultShipping = false,
                 defaultShippingPriceCents = null,
+                autoRenewExpired = false,
             )
         )
     }
@@ -42,6 +43,7 @@ class PreferencemanagerTest {
             defaultPickup = false,
             defaultShipping = true,
             defaultShippingPriceCents = 590,
+            autoRenewExpired = true,
         )
 
         preferencemanager.updateSettings { wanted }

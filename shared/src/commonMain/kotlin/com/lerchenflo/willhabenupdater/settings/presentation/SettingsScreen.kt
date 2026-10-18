@@ -34,6 +34,8 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import willhabenupdater.shared.generated.resources.Res
 import willhabenupdater.shared.generated.resources.editor_price_invalid
+import willhabenupdater.shared.generated.resources.settings_auto_renew
+import willhabenupdater.shared.generated.resources.settings_auto_renew_hint
 import willhabenupdater.shared.generated.resources.settings_back
 import willhabenupdater.shared.generated.resources.settings_condition
 import willhabenupdater.shared.generated.resources.settings_data_folder
@@ -43,6 +45,7 @@ import willhabenupdater.shared.generated.resources.settings_postcode
 import willhabenupdater.shared.generated.resources.settings_shipping
 import willhabenupdater.shared.generated.resources.settings_shipping_price
 import willhabenupdater.shared.generated.resources.settings_title
+import willhabenupdater.shared.generated.resources.settings_willhaben
 
 @Composable
 fun SettingsRoot(
@@ -97,6 +100,15 @@ fun SettingsScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.width(220.dp),
+            )
+            Text(stringResource(Res.string.settings_willhaben), style = MaterialTheme.typography.titleMedium)
+            CheckboxRow(stringResource(Res.string.settings_auto_renew), state.autoRenewExpired) {
+                onAction(SettingsAction.OnAutoRenewChange(it))
+            }
+            Text(
+                stringResource(Res.string.settings_auto_renew_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(stringResource(Res.string.settings_data_folder), style = MaterialTheme.typography.titleMedium)
             Text(state.dataFolder, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

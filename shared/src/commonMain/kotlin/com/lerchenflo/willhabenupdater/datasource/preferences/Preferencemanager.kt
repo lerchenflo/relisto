@@ -25,6 +25,7 @@ class Preferencemanager(
         val DEFAULT_PICKUP = booleanPreferencesKey("default_pickup")
         val DEFAULT_SHIPPING = booleanPreferencesKey("default_shipping")
         val DEFAULT_SHIPPING_PRICE_CENTS = longPreferencesKey("default_shipping_price_cents")
+        val AUTO_RENEW_EXPIRED = booleanPreferencesKey("auto_renew_expired")
     }
 
     override fun getSettingsAsFlow(): Flow<AppSettings> = prefs.data.map { it.toAppSettings() }
@@ -45,6 +46,7 @@ class Preferencemanager(
             defaultPickup = this[Keys.DEFAULT_PICKUP] ?: defaults.defaultPickup,
             defaultShipping = this[Keys.DEFAULT_SHIPPING] ?: defaults.defaultShipping,
             defaultShippingPriceCents = this[Keys.DEFAULT_SHIPPING_PRICE_CENTS],
+            autoRenewExpired = this[Keys.AUTO_RENEW_EXPIRED] ?: defaults.autoRenewExpired,
         )
     }
 
@@ -52,6 +54,7 @@ class Preferencemanager(
         this[Keys.DEFAULT_POSTCODE] = settings.defaultPostcode
         this[Keys.DEFAULT_PICKUP] = settings.defaultPickup
         this[Keys.DEFAULT_SHIPPING] = settings.defaultShipping
+        this[Keys.AUTO_RENEW_EXPIRED] = settings.autoRenewExpired
         val condition = settings.defaultCondition
         if (condition == null) remove(Keys.DEFAULT_CONDITION) else this[Keys.DEFAULT_CONDITION] = condition.name
         val shippingPrice = settings.defaultShippingPriceCents

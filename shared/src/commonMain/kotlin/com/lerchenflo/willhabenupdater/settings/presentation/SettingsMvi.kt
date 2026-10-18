@@ -10,6 +10,7 @@ data class SettingsState(
     val shippingPriceText: String = "",
     val isShippingPriceInvalid: Boolean = false,
     val dataFolder: String = "",
+    val autoRenewExpired: Boolean = false,
 )
 
 sealed interface SettingsAction {
@@ -18,5 +19,6 @@ sealed interface SettingsAction {
     data class OnPickupChange(val enabled: Boolean) : SettingsAction
     data class OnShippingChange(val enabled: Boolean) : SettingsAction
     data class OnShippingPriceChange(val priceText: String) : SettingsAction
+    data class OnAutoRenewChange(val enabled: Boolean) : SettingsAction
     data object OnBackClick : SettingsAction
 }
