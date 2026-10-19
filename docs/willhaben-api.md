@@ -128,11 +128,15 @@ später noch einmal." because no package was chosen. The draft's `upsellingProdu
 for € 9.99, "Unlimited" `40052` for € 34.99. Choosing one is `PUT` link `upsellings`
 (`/upselling/new/{adId}`) with `{"upsellingProducts": [...the groups with "selected" set...]}`.
 The app only ever selects a package with price 0 and stops (`PaidProduct`) when there is none.
-The package prices are per user and change: on 2026-10-19 "Basic - 14 Tage" cost € 0 on the first
-Beta draft (08:16), and € 4.99 on the same draft at 09:54, after "Aprilia SX 50" had been renewed
-for free in between (likely a limit of free motorbike listings per account; not confirmed). The
-public `/iad/productgroups` still lists the motor product as free ("Kostenlos bis € 8.000"), so
-only the draft's `upsellingProductList` tells whether publishing is free.
+Package prices (willhaben page `/iad/gebrauchtwagen/produkte-und-preise`, 2026-10-19): "Pro Nutzer
+ist nur eine kostenlose Anzeige aktiv möglich. Jede weitere Anzeige ist kostenpflichtig." The
+Basic package (14 days) is € 0 for cars up to € 21,999 and motorbikes/quads up to € 7,999 (above:
+€ 19.99 / € 14.99); vans/pickups and caravans have no free package (from € 39.99). Turbo and
+Unlimited are always paid, by price band. "Die Schaltung endet, wenn der Verkäufer die Anzeige als
+'Verkauft' markiert oder diese aktiv löscht." Seen live: the first Beta draft offered Basic for € 0;
+after "Aprilia SX 50" had been renewed (and then deactivated, status "Inaktiv"), the same draft
+offered Basic for € 4.99 – a deactivated listing still uses the one free slot. The public
+`/iad/productgroups` does not show this; only the draft's `upsellingProductList` does.
 The copy **replaces** the expired listing: afterwards my-adverts lists only the draft (status
 `statusId` 10 "Bearbeitung", `advertStatus` "Passiv", actions `5` "Fertigstellen" → `/motor/get/{id}`
 and `3` "Löschen"); a second copy of the old id answers `500`. The app moves the publication to the
