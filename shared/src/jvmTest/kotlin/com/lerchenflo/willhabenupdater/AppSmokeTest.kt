@@ -5,11 +5,14 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
+import assertk.assertThat
+import assertk.assertions.isEmpty
 import com.lerchenflo.willhabenupdater.di.datasourceModule
 import com.lerchenflo.willhabenupdater.di.presentationModule
 import com.lerchenflo.willhabenupdater.testutil.TempAppDirectories
@@ -70,6 +73,25 @@ class AppSmokeTest {
         onNode(hasContentDescription("Settings") and hasClickAction()).performClick()
         waitUntil(timeoutMillis = 5_000) {
             onAllNodesWithText("Defaults for new listings").fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    @Test
+    fun willhabenLoginIsInSettingsNotOnHome() = runComposeUiTest {
+        setContent { App() }
+        waitUntil(timeoutMillis = 5_000) {
+            onAllNodesWithText("No listings yet. Create your first one.").fetchSemanticsNodes().isNotEmpty()
+        }
+        assertThat(onAllNodesWithText("Log in to willhaben").fetchSemanticsNodes()).isEmpty()
+        waitUntil(timeoutMillis = 5_000) {
+            onAllNodesWithContentDescription("willhaben: not logged in").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // The market icon opens the settings with the login
+        onNode(hasContentDescription("willhaben: not logged in") and hasClickAction()).performClick()
+
+        waitUntil(timeoutMillis = 5_000) {
+            onAllNodesWithText("Log in to willhaben").fetchSemanticsNodes().isNotEmpty()
         }
     }
 }

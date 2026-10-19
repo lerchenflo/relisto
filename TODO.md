@@ -8,6 +8,17 @@ background and details: [PLAN.md](PLAN.md). Product and scope decisions are aske
 willhaben listings up to date → renew expired listings. **Last phase:** same listings on other marketplaces.
 **Release:** the first production release comes after Phases 5–7 (everything except other marketplaces).
 
+## All willhaben verticals (user request 2026-10-19)
+
+Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
+The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
+
+- [ ] V.1 Analyse the web client for the other verticals: edit form JSON (`GET /iad/motor/...`?), copy,
+  presave, images, finish, activate; write the result into `docs/willhaben-api.md` and PLAN.md.
+- [ ] V.2 Import listings of all verticals (text, images, fields, status), keep the vertical per listing.
+- [ ] V.3 Renew expired listings of all verticals (single, bulk, automatic); stop on `paymentURI`.
+- [ ] V.4 Live test with one Auto & Motor listing (ask which one first).
+
 ## Next session
 
 - [ ] N.1 Product name: the user does not want "Willhaben Updater". Proposals are in the last chat
@@ -71,7 +82,8 @@ Same local listings on Kleinanzeigen, Shpock and Facebook Marketplace. Each mark
 - [ ] 8.1 Ask: order of the marketplaces.
 - [ ] 8.2 Per marketplace, before code: analyse its web client like PLAN.md section 3; write the result
   into PLAN.md section 7; ask the open decisions.
-- [ ] 8.3 Per marketplace: login + session storage (embedded browser like willhaben).
+- [ ] 8.3 Per marketplace: login + session storage (embedded browser like willhaben); login/logout in the
+  settings and a market icon in the home header that shows the login state (like willhaben).
 - [ ] 8.4 Per marketplace: field mapping (category, condition, location, delivery) and the editor tab.
 - [ ] 8.5 Per marketplace: import my listings and match them to existing local listings (confirm in UI).
 - [ ] 8.6 Per marketplace: publish, push changes, images, status actions, renew if the marketplace has expiry.

@@ -26,7 +26,7 @@ import willhabenupdater.shared.generated.resources.login_error_browser
 import willhabenupdater.shared.generated.resources.login_error_network
 import willhabenupdater.shared.generated.resources.login_error_not_logged_in
 
-/** willhaben login state for the top bar; login runs in the login browser window. */
+/** willhaben login state for the header icon and the settings; login runs in the login browser window. */
 class AccountViewModel(
     private val sessionRepository: WillhabenSessionRepository,
     private val loginBrowser: WillhabenLoginBrowser,

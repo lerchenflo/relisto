@@ -102,3 +102,5 @@ Next: see "Next session" in TODO.md (product name, live renew test, bulk delete 
 - 2026-10-18 – Phase 5 part 1: republish (single, bulk, automatic on start), status section in the
   willhaben tab, replaced-listing guard with DB migration 1 → 2, update icon in the header.
   TODO.md cleaned up to open work only. 275 tests green.
+- 2026-10-19 – willhaben login moved from the home header into the settings; the header shows a
+  market icon with the login state (opens the settings) and an import icon. One app-wide `AccountViewModel`.

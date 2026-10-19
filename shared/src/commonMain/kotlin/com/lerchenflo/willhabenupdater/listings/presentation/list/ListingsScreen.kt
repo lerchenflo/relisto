@@ -56,7 +56,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lerchenflo.willhabenupdater.app.navigation.ObserveAsEvents
 import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
 import com.lerchenflo.willhabenupdater.listings.presentation.editor.ListingEditorRoot
-import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountRoot
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountViewModel
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.MarketStatusRoot
 import com.lerchenflo.willhabenupdater.sharedUi.ListingImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -86,6 +87,7 @@ import willhabenupdater.shared.generated.resources.renew_select_all
 
 @Composable
 fun ListingsRoot(
+    accountViewModel: AccountViewModel,
     headerActions: @Composable () -> Unit = {},
     viewModel: ListingsViewModel = koinViewModel(),
 ) {
@@ -105,7 +107,13 @@ fun ListingsRoot(
         state = state,
         onAction = viewModel::onAction,
         snackbarHostState = snackbarHostState,
-        accountContent = { AccountRoot(snackbarHostState = snackbarHostState) },
+        marketStatusContent = {
+            MarketStatusRoot(
+                viewModel = accountViewModel,
+                snackbarHostState = snackbarHostState,
+                onOpenSettings = { viewModel.onAction(ListingsAction.OnSettingsClick) },
+            )
+        },
         headerActions = headerActions,
         editorContent = { listingId ->
             ListingEditorRoot(
@@ -123,7 +131,7 @@ fun ListingsScreen(
     state: ListingsState,
     onAction: (ListingsAction) -> Unit,
     snackbarHostState: SnackbarHostState,
-    accountContent: @Composable () -> Unit,
+    marketStatusContent: @Composable () -> Unit,
     editorContent: @Composable (listingId: Long) -> Unit,
     headerActions: @Composable () -> Unit = {},
 ) {
@@ -132,7 +140,7 @@ fun ListingsScreen(
             ListingListPane(
                 state = state,
                 onAction = onAction,
-                accountContent = accountContent,
+                marketStatusContent = marketStatusContent,
                 headerActions = headerActions,
                 modifier = Modifier.width(380.dp).fillMaxHeight(),
             )
@@ -159,7 +167,7 @@ fun ListingsScreen(
 private fun ListingListPane(
     state: ListingsState,
     onAction: (ListingsAction) -> Unit,
-    accountContent: @Composable () -> Unit,
+    marketStatusContent: @Composable () -> Unit,
     headerActions: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -170,12 +178,12 @@ private fun ListingListPane(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f),
             )
+            marketStatusContent()
             headerActions()
             IconButton(onClick = { onAction(ListingsAction.OnSettingsClick) }) {
                 Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.listings_settings))
             }
         }
-        accountContent()
         Button(onClick = { onAction(ListingsAction.OnNewListingClick) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(Modifier.width(8.dp))
@@ -344,7 +352,7 @@ private fun ListingsScreenPreview() {
             ),
             onAction = {},
             snackbarHostState = SnackbarHostState(),
-            accountContent = {},
+            marketStatusContent = {},
             editorContent = {},
         )
     }

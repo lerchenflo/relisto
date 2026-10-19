@@ -22,6 +22,7 @@ import com.lerchenflo.willhabenupdater.app.presentation.AppUpdateRoot
 import com.lerchenflo.willhabenupdater.app.presentation.AppUpdateViewModel
 import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
 import com.lerchenflo.willhabenupdater.listings.presentation.list.ListingsRoot
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountViewModel
 import com.lerchenflo.willhabenupdater.settings.presentation.SettingsRoot
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -60,6 +61,8 @@ fun App() {
 
             // One instance for banner and header button, so GitHub is asked once per start
             val appUpdateViewModel = koinViewModel<AppUpdateViewModel>()
+            // One instance for header icon and settings, so the login check and auto renew run once
+            val accountViewModel = koinViewModel<AccountViewModel>()
 
             Column(modifier = Modifier.fillMaxSize()) {
                 AppUpdateRoot(viewModel = appUpdateViewModel)
@@ -71,8 +74,13 @@ fun App() {
                         rememberViewModelStoreNavEntryDecorator(),
                     ),
                     entryProvider = entryProvider {
-                        entry<Route.Listings> { ListingsRoot(headerActions = { AppUpdateButtonRoot(appUpdateViewModel) }) }
-                        entry<Route.Settings> { SettingsRoot() }
+                        entry<Route.Listings> {
+                            ListingsRoot(
+                                accountViewModel = accountViewModel,
+                                headerActions = { AppUpdateButtonRoot(appUpdateViewModel) },
+                            )
+                        }
+                        entry<Route.Settings> { SettingsRoot(accountViewModel = accountViewModel) }
                     },
                 )
             }
