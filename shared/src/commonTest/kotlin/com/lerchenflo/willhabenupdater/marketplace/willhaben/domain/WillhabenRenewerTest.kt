@@ -39,6 +39,23 @@ class WillhabenRenewerTest {
     }
 
     @Test
+    fun soldOrDeactivatedListingsAreNeverExpired() {
+        // Their end date has passed too, but renewing them would put a sold item online again
+        assertThat(status(1, "Verkauft", expiresAt = 9_000L).isExpired(time.now)).isFalse()
+        assertThat(status(1, "Deaktiviert", expiresAt = 9_000L).isExpired(time.now)).isFalse()
+        assertThat(status(1, "Reserviert", expiresAt = 9_000L).isExpired(time.now)).isFalse()
+    }
+
+    @Test
+    fun renewAllExpiredSkipsSoldListings() = runTest {
+        statuses.statuses.value = listOf(status(1, "Abgelaufen"), status(2, "Verkauft", expiresAt = 5_000L))
+
+        renewer.renewAllExpired()
+
+        assertThat(publisher.republished).containsExactly(1L)
+    }
+
+    @Test
     fun listingsAreRenewedOneAfterAnotherThenRefreshedOnce() = runTest {
         val summary = renewer.renew(listOf(3L, 1L))
 

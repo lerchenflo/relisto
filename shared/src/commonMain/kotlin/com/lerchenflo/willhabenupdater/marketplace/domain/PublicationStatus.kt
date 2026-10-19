@@ -19,6 +19,13 @@ interface PublicationStatusRepository {
 /** willhaben's status name of an expired listing. */
 private const val EXPIRED_STATUS = "Abgelaufen"
 
-/** Expired on the marketplace: its own status says so, or the end date has passed. */
+/** Status names of running listings; only these (or an unknown status) can run out by their end date. */
+private val RUNNING_STATUSES = setOf("Online", "Aktiv")
+
+/**
+ * Expired on the marketplace: its own status says so, or a running listing's end date has passed.
+ * Sold, reserved or deactivated listings are never expired, so they are never renewed.
+ */
 fun PublicationStatus.isExpired(nowMillis: Long): Boolean =
-    statusText == EXPIRED_STATUS || (expiresAt != null && expiresAt <= nowMillis)
+    statusText == EXPIRED_STATUS ||
+        ((statusText == null || statusText in RUNNING_STATUSES) && expiresAt != null && expiresAt <= nowMillis)
