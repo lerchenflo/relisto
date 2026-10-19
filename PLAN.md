@@ -1,4 +1,4 @@
-# Willhaben Updater – Project Plan
+# Relisto – Project Plan
 
 Status: planning · Created: 2026-10-18 · Ordered work list: [TODO.md](TODO.md)
 
@@ -314,7 +314,7 @@ without changing the listing core. willhaben is the first adapter.
 
 ```
 shared/src/
-  commonMain/kotlin/com/lerchenflo/willhabenupdater/
+  commonMain/kotlin/com/lerchenflo/relisto/
     app/                    App.kt, theme, navigation/ (Route.kt, Navigator)
     listings/
       domain/               Listing, ListingImage, Price, Condition, ListingRepository
@@ -338,15 +338,15 @@ shared/src/
     sharedUi/               image grid, price field, status chips, dialogs
     utilities/              UiText, price formatting (de-AT), hashing
     di/                     Koin modules
-  jvmMain/kotlin/com/lerchenflo/willhabenupdater/
+  jvmMain/kotlin/com/lerchenflo/relisto/
     platform/               AppDirs (actual), ImageTools, login window
-  androidMain/kotlin/com/lerchenflo/willhabenupdater/
+  androidMain/kotlin/com/lerchenflo/relisto/
     platform/               Android actuals (minimal stubs until Android features are planned)
-desktopApp/src/main/kotlin/com/lerchenflo/willhabenupdater/
+desktopApp/src/main/kotlin/com/lerchenflo/relisto/
   main.kt                   window
 ```
 
-Root package: `com.lerchenflo.willhabenupdater`. App display name: "Willhaben Updater".
+Root package: `com.lerchenflo.relisto`. App display name: "Relisto".
 
 ### 4.3 Data model (Room)
 
@@ -390,8 +390,8 @@ size/position, last import time.
 
 ### 4.4 Image storage
 
-- App data folder: macOS `~/Library/Application Support/WillhabenUpdater/`, Windows
-  `%APPDATA%\WillhabenUpdater\`, Linux `~/.local/share/willhabenupdater/`.
+- App data folder: macOS `~/Library/Application Support/Relisto/`, Windows
+  `%APPDATA%\Relisto\`, Linux `~/.local/share/relisto/`.
 - `images/` holds a copy of every imported image, named `<sha256>.<ext>`; the DB stores only the
   file name. Same image added twice = one file.
 - `thumbs/` holds small previews for the list.
@@ -514,7 +514,7 @@ Made (all 2026-10-18, confirmed by me in the interview):
 - Last phase: other marketplaces Kleinanzeigen, Shpock, Facebook Marketplace.
 - Generic data model now: content in `ListingEntity`, marketplace data in `ListingPublicationEntity`.
 - No paid extras, payments, upselling; private marketplace only (verticals widened on 2026-10-19, see below).
-- Root package `com.lerchenflo.willhabenupdater`, app name "Willhaben Updater".
+- Root package `com.lerchenflo.relisto`, app name "Relisto".
 - Login only through an embedded browser (now JavaFX WebView, see 4.1); no manual cookie paste; no password storage.
 - Session cookies stored with KSafe.
 - Local DB is master for content (conflict dialog when both sides changed); willhaben is master

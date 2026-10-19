@@ -52,7 +52,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.APP_VERSION }}
-          name: Willhaben Updater ${{ env.APP_VERSION }}
+          name: Relisto ${{ env.APP_VERSION }}
           target_commitish: ${{ github.sha }}
           generate_release_notes: true
 
@@ -132,10 +132,10 @@ jobs:
           cp "$DEB_FILE" arch-build/app.deb
 
           cat << EOF > arch-build/PKGBUILD
-          pkgname=willhaben-updater
+          pkgname=relisto
           pkgver=${APP_VERSION}
           pkgrel=1
-          pkgdesc="Manage willhaben listings locally"
+          pkgdesc="Manage marketplace listings locally"
           arch=('x86_64')
           options=(!debug !strip)
           depends=('alsa-lib' 'freetype2' 'fontconfig' 'glibc' 'libx11' 'libxext' 'libxi' 'libxrender' 'libxtst' 'xdg-utils' 'zlib')
@@ -149,11 +149,11 @@ jobs:
           package() {
               bsdtar -xf data.tar.* -C "\$pkgdir/"
               install -d "\$pkgdir/usr/bin" "\$pkgdir/usr/share/applications"
-              ln -s "/opt/willhaben-updater/bin/Willhaben Updater" "\$pkgdir/usr/bin/willhaben-updater"
-              rm -f "\$pkgdir"/opt/willhaben-updater/lib/*.desktop
-              printf '%s\n' '[Desktop Entry]' 'Type=Application' 'Name=Willhaben Updater' \
-                  'Exec=/usr/bin/willhaben-updater' 'Categories=Office;' 'Terminal=false' \
-                  > "\$pkgdir/usr/share/applications/willhaben-updater.desktop"
+              ln -s "/opt/relisto/bin/Relisto" "\$pkgdir/usr/bin/relisto"
+              rm -f "\$pkgdir"/opt/relisto/lib/*.desktop
+              printf '%s\n' '[Desktop Entry]' 'Type=Application' 'Name=Relisto' \
+                  'Exec=/usr/bin/relisto' 'Categories=Office;' 'Terminal=false' \
+                  > "\$pkgdir/usr/share/applications/relisto.desktop"
           }
           EOF
 
@@ -192,7 +192,7 @@ jobs:
       - name: Rename APK
         run: |
           mkdir -p release-apk
-          cp androidApp/build/outputs/apk/release/*.apk "release-apk/willhaben-updater-${APP_VERSION}.apk"
+          cp androidApp/build/outputs/apk/release/*.apk "release-apk/relisto-${APP_VERSION}.apk"
 
       - name: Publish to GitHub release
         uses: softprops/action-gh-release@v2

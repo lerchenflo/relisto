@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- English translations; the default language (German) is in values/strings.xml. Keep both in sync. -->
 <resources>
-    <string name="app_name">Willhaben Updater</string>
+    <string name="app_name">Relisto</string>
 
     <!-- Errors -->
     <string name="error_no_internet">No internet connection.</string>

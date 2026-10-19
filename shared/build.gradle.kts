@@ -41,7 +41,7 @@ kotlin {
     }
 
     android {
-       namespace = "com.lerchenflo.willhabenupdater.shared"
+       namespace = "com.lerchenflo.relisto.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
        minSdk = libs.versions.android.minSdk.get().toInt()
        androidResources {

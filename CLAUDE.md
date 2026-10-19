@@ -1,4 +1,4 @@
-# Willhaben Updater
+# Relisto
 
 Compose Multiplatform desktop app to manage my own willhaben.at marketplace listings.
 
@@ -52,11 +52,11 @@ listings on other marketplaces (Kleinanzeigen, Shpock, Facebook Marketplace).
 | Item | Value |
 |---|---|
 | Modules | `:shared` (all app code, targets `jvm` + `android`), `:desktopApp` (`main.kt`, packaging), `:androidApp` (kept from the wizard, no features yet) |
-| Package | `com.lerchenflo.willhabenupdater` |
+| Package | `com.lerchenflo.relisto` |
 | Java | 25 everywhere, same as SchneaggchatV3: `jvmToolchain(25)` + `java { sourceCompatibility/targetCompatibility = JavaVersion.VERSION_25 }` in every module |
 | Gradle daemon | JetBrains Runtime 25 (`gradle/gradle-daemon-jvm.properties`) |
 | Versions | Gradle 9.8.0, Kotlin 2.4.20, Compose Multiplatform 1.12.1, AGP 9.4.1 (`gradle/libs.versions.toml`) |
-| Git remote | `origin` → https://github.com/lerchenflo/willhabenupdater.git |
+| Git remote | `origin` → https://github.com/lerchenflo/relisto.git |
 
 Compile check (allowed without asking on this desktop machine):
 
@@ -116,3 +116,6 @@ Next: see "Next session" in TODO.md (product name, live renew test, bulk delete 
 - 2026-10-19 – Editor willhaben tab shows the section ("Auto & Motor") instead of marketplace category,
   details and delivery for other verticals. Decisions: live test with "Beta RR 50", auto renew for all
   listings, bulk delete asks each time (local / local + willhaben).
+- 2026-10-19 – Renamed to Relisto everywhere: package `com.lerchenflo.relisto`, Android ids, bundle ID,
+  resources package, theme, data folder `Relisto`, DB `relisto.db`, GitHub repo `lerchenflo/relisto`.
+  No data migration (user decision); the old data folder is not used anymore.

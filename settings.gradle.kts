@@ -1,4 +1,4 @@
-rootProject.name = "Willhabenupdater"
+rootProject.name = "Relisto"
 
 pluginManagement {
     repositories {

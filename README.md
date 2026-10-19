@@ -1,4 +1,4 @@
-# Willhaben Updater
+# Relisto
 
 Desktop app (Kotlin Multiplatform, Compose) to manage my own willhaben.at listings: text, price
 and images live in a local database and are pushed to willhaben from there. Existing willhaben

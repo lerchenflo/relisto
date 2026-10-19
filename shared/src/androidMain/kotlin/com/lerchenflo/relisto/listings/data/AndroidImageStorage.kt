@@ -1,0 +1,42 @@
+package com.lerchenflo.relisto.listings.data
+
+import com.lerchenflo.relisto.app.domain.Result
+import com.lerchenflo.relisto.listings.domain.ImageImportError
+import com.lerchenflo.relisto.listings.domain.ImagePicker
+import com.lerchenflo.relisto.listings.domain.ImageStorage
+import com.lerchenflo.relisto.listings.domain.StoredImage
+import com.lerchenflo.relisto.utilities.AppDirectories
+import java.io.File
+
+/**
+ * Android has no image import yet (desktop first, see PLAN.md). Stored files can still be
+ * listed and deleted, so cleanup works the same way on both platforms.
+ */
+class AndroidImageStorage(
+    appDirectories: AppDirectories,
+) : ImageStorage {
+
+    private val imagesDir = File(appDirectories.imagesDir)
+
+    override suspend fun importImage(sourcePath: String): Result<StoredImage, ImageImportError> =
+        Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
+
+    override suspend fun importImageBytes(bytes: ByteArray, extension: String): Result<StoredImage, ImageImportError> =
+        Result.Error(ImageImportError.UNSUPPORTED_FORMAT)
+
+    override suspend fun readBytes(absolutePath: String): ByteArray? = File(absolutePath).takeIf { it.isFile }?.readBytes()
+
+    override suspend fun deleteFile(fileName: String) {
+        File(imagesDir, fileName).delete()
+    }
+
+    override suspend fun listFileNames(): List<String> =
+        imagesDir.listFiles()?.filter { it.isFile }?.map { it.name }.orEmpty()
+
+    override fun absolutePath(fileName: String): String = File(imagesDir, fileName).absolutePath
+}
+
+/** No image picker on Android yet. */
+class AndroidImagePicker : ImagePicker {
+    override suspend fun pickImages(): List<String> = emptyList()
+}

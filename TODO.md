@@ -1,4 +1,4 @@
-# Willhaben Updater – To-do list
+# Relisto – To-do list
 
 Open work only, top to bottom. Done work is in the progress log in [CLAUDE.md](CLAUDE.md);
 background and details: [PLAN.md](PLAN.md). Product and scope decisions are asked in an interview
@@ -20,9 +20,6 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
 
 ## Next session
 
-- [ ] N.1 Product name: the user does not want "Willhaben Updater". Proposals are in the last chat
-  message; ask for the choice, then rename app name strings, `packageName`, window title, README,
-  release workflow asset names (keep `upgradeUuid` and bundle ID so updates still install over the old app).
 - [ ] N.2 Live test of "Neu veröffentlichen" with "Rasentraktor Kart" (willhaben id 704262322); check the
   captured responses in `docs/api-samples/` step by step (mask contact data, never print it).
 

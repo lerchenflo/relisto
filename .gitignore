@@ -18,7 +18,7 @@ captures
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
 
-# Willhaben Updater
+# Relisto
 docs/api-samples/
 *.har
 hs_err_pid*.log

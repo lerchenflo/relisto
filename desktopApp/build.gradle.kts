@@ -29,33 +29,34 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "com.lerchenflo.willhabenupdater.MainKt"
+        mainClass = "com.lerchenflo.relisto.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
-            packageName = "Willhaben Updater"
+            packageName = "Relisto"
             packageVersion = appVersion
-            description = "Manage willhaben listings locally"
+            description = "Manage marketplace listings locally"
             vendor = "lerchenflo"
             // OkHttp/TLS, bundled SQLite, DataStore and the JavaFX WebView need these on top of the default runtime
             modules("java.instrument", "java.management", "java.naming", "java.net.http", "java.scripting", "java.sql", "jdk.unsupported", "jdk.crypto.ec", "jdk.xml.dom")
 
             linux {
                 // Lowercase without spaces for DEB/RPM package names
-                packageName = "willhaben-updater"
+                packageName = "relisto"
                 shortcut = true
                 menuGroup = "Office"
             }
 
             windows {
                 perUserInstall = true
+                // Never change: lets a new MSI replace the installed version
                 upgradeUuid = "e5b067a6-c9f4-46c0-8863-e7f15b81a1af"
                 menu = true
                 shortcut = true
             }
 
             macOS {
-                bundleID = "com.lerchenflo.willhabenupdater"
+                bundleID = "com.lerchenflo.relisto"
             }
         }
 

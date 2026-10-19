@@ -26,11 +26,11 @@ dependencies {
 }
 
 android {
-    namespace = "com.lerchenflo.willhabenupdater"
+    namespace = "com.lerchenflo.relisto"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.lerchenflo.willhabenupdater"
+        applicationId = "com.lerchenflo.relisto"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = appVersionCode

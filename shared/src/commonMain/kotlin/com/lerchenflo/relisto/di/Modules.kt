@@ -1,0 +1,107 @@
+package com.lerchenflo.relisto.di
+
+import com.lerchenflo.relisto.app.data.GitHubUpdateChecker
+import com.lerchenflo.relisto.app.domain.UpdateChecker
+import com.lerchenflo.relisto.app.navigation.Navigator
+import com.lerchenflo.relisto.app.presentation.AppUpdateViewModel
+import com.lerchenflo.relisto.datasource.database.AppDatabase
+import com.lerchenflo.relisto.datasource.database.CreateAppDatabase
+import com.lerchenflo.relisto.datasource.network.HttpClientFactory
+import com.lerchenflo.relisto.datasource.network.PersistentCookiesStorage
+import com.lerchenflo.relisto.datasource.network.ResponseCaptureSettings
+import com.lerchenflo.relisto.datasource.preferences.Preferencemanager
+import com.lerchenflo.relisto.listings.data.KtorImageDownloader
+import com.lerchenflo.relisto.listings.data.RoomListingRepository
+import com.lerchenflo.relisto.listings.domain.ImageDownloader
+import com.lerchenflo.relisto.listings.presentation.editor.ListingEditorViewModel
+import com.lerchenflo.relisto.listings.presentation.list.ListingsViewModel
+import com.lerchenflo.relisto.listings.domain.ListingRepository
+import com.lerchenflo.relisto.marketplace.data.RoomPublicationStatusRepository
+import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
+import com.lerchenflo.relisto.marketplace.willhaben.data.CachedWillhabenCatalogRepository
+import com.lerchenflo.relisto.marketplace.willhaben.data.CookieWillhabenSessionRepository
+import com.lerchenflo.relisto.marketplace.willhaben.data.KtorWillhabenWriteDataSource
+import com.lerchenflo.relisto.marketplace.willhaben.data.RoomWillhabenImporter
+import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenRepublisher
+import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenListingsSource
+import com.lerchenflo.relisto.marketplace.willhaben.data.KtorWillhabenListingsDataSource
+import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenListingsFetcher
+import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenRequestRunner
+import com.lerchenflo.relisto.marketplace.willhaben.data.KtorWillhabenAccountDataSource
+import com.lerchenflo.relisto.marketplace.willhaben.data.KtorWillhabenCatalogDataSource
+import com.lerchenflo.relisto.marketplace.willhaben.data.RoomWillhabenFieldsDataSource
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCatalogRepository
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenImporter
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenPublisher
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenRenewer
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenSessionRepository
+import com.lerchenflo.relisto.marketplace.willhaben.presentation.WillhabenTabViewModel
+import com.lerchenflo.relisto.marketplace.willhaben.presentation.account.AccountViewModel
+import com.lerchenflo.relisto.settings.domain.SettingsDataSource
+import com.lerchenflo.relisto.settings.presentation.SettingsViewModel
+import com.lerchenflo.relisto.utilities.SystemTimeProvider
+import com.lerchenflo.relisto.utilities.TimeProvider
+import io.ktor.client.HttpClient
+import kotlinx.coroutines.delay
+import org.koin.core.module.dsl.bind
+import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.qualifier.named
+import org.koin.dsl.module
+
+/**
+ * All data-layer singletons. Platform modules provide the database builder, DataStore, HTTP engine,
+ * file access, secure storage and the login browser.
+ */
+val datasourceModule = module {
+    single<AppDatabase> { CreateAppDatabase(get()).getDatabase() }
+    single { get<AppDatabase>().listingDao() }
+    single { get<AppDatabase>().listingImageDao() }
+    single { get<AppDatabase>().publicationDao() }
+
+    singleOf(::SystemTimeProvider) { bind<TimeProvider>() }
+    singleOf(::Preferencemanager) { bind<SettingsDataSource>() }
+    singleOf(::PersistentCookiesStorage)
+    single<HttpClient> {
+        HttpClientFactory.createWillhabenClient(get(), get<PersistentCookiesStorage>(), get<ResponseCaptureSettings>().directory)
+    }
+
+    singleOf(::RoomListingRepository) { bind<ListingRepository>() }
+    singleOf(::RoomPublicationStatusRepository) { bind<PublicationStatusRepository>() }
+    singleOf(::RoomWillhabenFieldsDataSource) { bind<WillhabenFieldsLocalDataSource>() }
+    singleOf(::KtorWillhabenCatalogDataSource)
+    singleOf(::CachedWillhabenCatalogRepository) { bind<WillhabenCatalogRepository>() }
+    singleOf(::KtorWillhabenAccountDataSource)
+    singleOf(::CookieWillhabenSessionRepository) { bind<WillhabenSessionRepository>() }
+    single { WillhabenRequestRunner(renewSession = { get<KtorWillhabenAccountDataSource>().renewSession() }, backoff = { delay(it) }) }
+    singleOf(::KtorWillhabenListingsDataSource)
+    single<WillhabenListingsSource> { WillhabenListingsFetcher(get(), get()) }
+    single<HttpClient>(named(IMAGE_CLIENT)) { HttpClientFactory.createImageClient(get()) }
+    single<ImageDownloader> { KtorImageDownloader(get(named(IMAGE_CLIENT))) }
+    singleOf(::RoomWillhabenImporter) { bind<WillhabenImporter>() }
+    singleOf(::KtorWillhabenWriteDataSource)
+    singleOf(::WillhabenRepublisher) { bind<WillhabenPublisher>() }
+    singleOf(::WillhabenRenewer)
+
+    // Separate plain client for the optional update hint (no willhaben headers or cookies)
+    single<HttpClient>(named(GITHUB_CLIENT)) { HttpClientFactory.createGitHubClient(get()) }
+    single<UpdateChecker> { GitHubUpdateChecker(get(named(GITHUB_CLIENT)), get()) }
+
+    singleOf(::Navigator)
+}
+
+private const val GITHUB_CLIENT = "github"
+private const val IMAGE_CLIENT = "images"
+
+
+/** All ViewModels. */
+val presentationModule = module {
+    viewModelOf(::ListingsViewModel)
+    // The listing id comes from parametersOf(listingId) at the injection site
+    viewModelOf(::ListingEditorViewModel)
+    viewModelOf(::WillhabenTabViewModel)
+    viewModelOf(::SettingsViewModel)
+    viewModelOf(::AccountViewModel)
+    viewModelOf(::AppUpdateViewModel)
+}
