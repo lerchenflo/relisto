@@ -43,4 +43,6 @@ data class ListingPublicationEntity(
     val lastError: String?,
     /** Comma-separated remote ids this listing replaced by republishing; the importer skips them. */
     val replacedRemoteIds: String? = null,
+    /** Status actions the marketplace offers right now (willhaben: activate, deactivate, sold, ...) as JSON. */
+    val remoteActionsJson: String? = null,
 )

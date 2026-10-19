@@ -1,11 +1,13 @@
 package com.lerchenflo.relisto.marketplace.willhaben.data
 
+import com.lerchenflo.relisto.datasource.network.AppJson
 import com.lerchenflo.relisto.marketplace.willhaben.data.dto.CategoryNodeDto
 import com.lerchenflo.relisto.marketplace.willhaben.data.dto.CategoryRefDto
 import com.lerchenflo.relisto.marketplace.willhaben.data.dto.CategoryTreeResponseDto
 import com.lerchenflo.relisto.marketplace.willhaben.data.dto.DeliveryOptionsDto
 import com.lerchenflo.relisto.marketplace.willhaben.data.dto.LocationDto
 import com.lerchenflo.relisto.marketplace.willhaben.data.dto.SuggestedCategoryDto
+import com.lerchenflo.relisto.marketplace.willhaben.data.dto.StatusActionLinkDto
 import com.lerchenflo.relisto.marketplace.willhaben.data.dto.WillhabenFieldsDto
 import com.lerchenflo.relisto.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenAttribute
@@ -15,6 +17,9 @@ import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCategory
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCategoryRef
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCategoryTree
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenListingFields
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActionLink
+import kotlinx.serialization.builtins.ListSerializer
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenLocation
 
 fun CategoryTreeResponseDto.toCategoryTree(): WillhabenCategoryTree = WillhabenCategoryTree(
@@ -75,3 +80,17 @@ fun WillhabenListingFields.toDto(): WillhabenFieldsDto = WillhabenFieldsDto(
     ),
     adTypeId = adTypeId,
 )
+
+/** Status actions as stored in `listing_publications.remoteActionsJson`. */
+fun List<WillhabenStatusActionLink>.toActionsJson(): String = AppJson.encodeToString(
+    ListSerializer(StatusActionLinkDto.serializer()),
+    map { StatusActionLinkDto(action = it.action.name, serviceName = it.serviceName, relativePath = it.relativePath) },
+)
+
+/** Unknown entries are skipped; broken JSON gives no actions. */
+fun String.toStatusActionLinks(): List<WillhabenStatusActionLink> =
+    runCatching { AppJson.decodeFromString(ListSerializer(StatusActionLinkDto.serializer()), this) }.getOrDefault(emptyList())
+        .mapNotNull { dto ->
+            val action = WillhabenStatusAction.entries.firstOrNull { it.name == dto.action } ?: return@mapNotNull null
+            WillhabenStatusActionLink(action, dto.serviceName, dto.relativePath)
+        }

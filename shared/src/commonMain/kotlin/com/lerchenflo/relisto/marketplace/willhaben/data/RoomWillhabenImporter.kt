@@ -83,6 +83,7 @@ class RoomWillhabenImporter(
                 expiresAt = imported.expiresAt,
                 remoteSnapshotJson = imported.snapshotJson,
                 remoteSnapshotHash = imported.contentHash(),
+                remoteActionsJson = imported.statusActions.toActionsJson(),
                 syncState = SyncState.SYNCED.name,
                 lastSyncedAt = timeProvider.nowEpochMillis(),
                 lastError = null,
@@ -118,6 +119,7 @@ class RoomWillhabenImporter(
                 expiresAt = imported.expiresAt,
                 remoteSnapshotJson = imported.snapshotJson,
                 remoteSnapshotHash = hash,
+                remoteActionsJson = imported.statusActions.toActionsJson(),
                 syncState = when {
                     takeRemote -> SyncState.SYNCED.name
                     remoteChanged -> SyncState.CONFLICT.name

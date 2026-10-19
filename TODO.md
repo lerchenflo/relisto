@@ -15,7 +15,6 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
 
 - [ ] V.4 "Beta RR 50": draft 1415790914 ("Bearbeitung") – add a photo, then "Fertigstellen".
   ("Aprilia SX 50" renewed OK on 2026-10-19 → "in Warteschlange"; the user took it offline again.)
-- [ ] V.6 Deactivated listings: "Aktivieren" (status action `4`) instead of renew – part of 5.3.
 
 ## Next session
 
@@ -35,8 +34,9 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
   the snapshot, `AdJsonPatcher`, `PUT` link `selfLinkEdit`, save the new snapshot.
 - [ ] 5.2 Push images: temp upload + `order-and-associate` (exists in the republish flow), `DELETE`
   unused temp images; document image limits.
-- [ ] 5.3 Status actions from `advertEditStatusActionsList`: deactivate (`2`), activate (`4`),
-  reserved on/off, sold (+ sold reasons), delete (`3`, + delete reasons). Hide paid actions.
+- [ ] 5.3 Status actions are built (activate, deactivate, reserved on/off, sold, delete on willhaben;
+  buttons in the willhaben tab, links stored per import, DB v3). Live test: ask which listing first
+  (e.g. deactivate + activate one online listing).
 - [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if needed).
 - [ ] 5.5 Conflict dialog: local vs. willhaben side by side, "keep local" / "take willhaben".
 - [ ] 5.6 Renew: "expiring soon" filter. (Resuming a draft after a failed renew exists: `pendingDraftId`.)

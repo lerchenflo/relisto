@@ -12,6 +12,8 @@ import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
 import com.lerchenflo.relisto.marketplace.domain.isExpired
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenImporter
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenPublisher
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActions
 import com.lerchenflo.relisto.utilities.TimeProvider
 import com.lerchenflo.relisto.utilities.UiText
 import com.lerchenflo.relisto.utilities.formatDateTime
@@ -38,6 +40,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import relisto.shared.generated.resources.Res
 import relisto.shared.generated.resources.republish_done
+import relisto.shared.generated.resources.status_action_done
 
 /**
  * willhaben tab of the editor: category, category attributes, location and delivery options.
@@ -51,6 +54,7 @@ class WillhabenTabViewModel(
     private val publicationStatuses: PublicationStatusRepository,
     private val publisher: WillhabenPublisher,
     private val importer: WillhabenImporter,
+    private val statusActions: WillhabenStatusActions,
     private val timeProvider: TimeProvider,
 ) : ViewModel() {
 
@@ -78,7 +82,14 @@ class WillhabenTabViewModel(
             publicationStatuses.getStatusesAsFlow()
                 .map { statuses -> statuses.firstOrNull { it.listingId == listingId && it.marketplace == Marketplace.WILLHABEN } }
                 .distinctUntilChanged()
-                .collect { status -> _state.update { it.copy(publication = status?.toUi()) } }
+                .collect { status ->
+                    _state.update {
+                        it.copy(
+                            publication = status?.toUi(),
+                            statusActions = WillhabenStatusAction.entries.filter { action -> action.name in status?.availableActions.orEmpty() },
+                        )
+                    }
+                }
         }
         viewModelScope.launch {
             listingRepository.getListingByIdAsFlow(listingId)
@@ -117,6 +128,27 @@ class WillhabenTabViewModel(
             WillhabenTabAction.OnRepublishClick -> _state.update { it.copy(isRepublishConfirmOpen = true) }
             WillhabenTabAction.OnRepublishDismiss -> _state.update { it.copy(isRepublishConfirmOpen = false) }
             WillhabenTabAction.OnRepublishConfirm -> republish()
+            is WillhabenTabAction.OnStatusActionClick ->
+                if (action.action.needsConfirmation) {
+                    _state.update { it.copy(confirmStatusAction = action.action) }
+                } else {
+                    performStatusAction(action.action)
+                }
+            WillhabenTabAction.OnStatusActionConfirm -> _state.value.confirmStatusAction?.let(::performStatusAction)
+            WillhabenTabAction.OnStatusActionDismiss -> _state.update { it.copy(confirmStatusAction = null) }
+        }
+    }
+
+    private fun performStatusAction(action: WillhabenStatusAction) {
+        if (_state.value.runningStatusAction != null) return
+        _state.update { it.copy(confirmStatusAction = null, runningStatusAction = action) }
+        viewModelScope.launch {
+            val message = when (val result = statusActions.perform(listingId, action)) {
+                is Result.Success -> UiText.StringResourceText(Res.string.status_action_done)
+                is Result.Error -> result.error.toUiText()
+            }
+            _state.update { it.copy(runningStatusAction = null) }
+            _events.send(WillhabenTabEvent.ShowMessage(message))
         }
     }
 

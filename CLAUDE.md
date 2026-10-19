@@ -132,3 +132,6 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
   "Fertigstellen" (finish instead of copy), deactivated listings are never renewed.
 - 2026-10-19 – List rows show the willhaben logo plus a state icon (pen = draft, timer = expired, check =
   online, hourglass = in review, tag = sold, pause = deactivated, bookmark = reserved) instead of text.
+- 2026-10-19 – Status actions (5.3): links from my-adverts stored per import (`remoteActionsJson`, DB v3
+  with AutoMigration + test); willhaben tab buttons for activate, deactivate, reserved, sold, delete
+  (sold/delete confirmed); `PUT`/`DELETE` like the web client; "Inaktiv" shown as deactivated.

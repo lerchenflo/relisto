@@ -202,7 +202,8 @@ class ListingsViewModelTest : MainDispatcherTest() {
 
     @Test
     fun willhabenStatusBecomesAStateForTheIcon() = runTest {
-        val texts = listOf("Online", "Abgelaufen", "Bearbeitung", "in Warteschlange", "Verkauft", "Deaktiviert", "Reserviert", "Neu")
+        // "Inaktiv" is what willhaben shows for a deactivated listing
+        val texts = listOf("Online", "Abgelaufen", "Bearbeitung", "in Warteschlange", "Verkauft", "Inaktiv", "Reserviert", "Neu")
         repository.listings.value = texts.indices.map { listing(it + 1L) }
         statuses.statuses.value = texts.mapIndexed { index, text ->
             PublicationStatus(index + 1L, Marketplace.WILLHABEN, text, expiresAt = 20_000L, syncState = SyncState.SYNCED)

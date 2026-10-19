@@ -49,6 +49,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -56,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lerchenflo.relisto.app.navigation.ObserveAsEvents
 import com.lerchenflo.relisto.app.theme.RelistoTheme
 import com.lerchenflo.relisto.marketplace.domain.SyncState
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenVertical
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
@@ -85,6 +87,16 @@ import relisto.shared.generated.resources.finish_draft_button
 import relisto.shared.generated.resources.finish_draft_confirm_text
 import relisto.shared.generated.resources.finish_draft_confirm_title
 import relisto.shared.generated.resources.finish_draft_running
+import relisto.shared.generated.resources.status_action_activate
+import relisto.shared.generated.resources.status_action_deactivate
+import relisto.shared.generated.resources.status_action_delete
+import relisto.shared.generated.resources.status_action_delete_text
+import relisto.shared.generated.resources.status_action_delete_title
+import relisto.shared.generated.resources.status_action_reserve
+import relisto.shared.generated.resources.status_action_sold
+import relisto.shared.generated.resources.status_action_sold_text
+import relisto.shared.generated.resources.status_action_sold_title
+import relisto.shared.generated.resources.status_action_unreserve
 import relisto.shared.generated.resources.willhaben_category
 import relisto.shared.generated.resources.willhaben_vertical
 import relisto.shared.generated.resources.willhaben_vertical_hint
@@ -144,7 +156,9 @@ fun WillhabenTabScreen(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
         state.publication?.let { publication ->
-            PublicationSection(publication = publication, isRepublishing = state.isRepublishing, onAction = onAction)
+            PublicationSection(publication = publication, isRepublishing = state.isRepublishing, onAction = onAction) {
+                StatusActionButtons(actions = state.statusActions, running = state.runningStatusAction, onAction = onAction)
+            }
         }
         if (state.vertical == WillhabenVertical.MARKETPLACE) {
             CategorySection(state = state, onAction = onAction)
@@ -162,13 +176,19 @@ fun WillhabenTabScreen(
     if (state.isCategoryPickerOpen) {
         CategoryPickerDialog(state = state, onAction = onAction)
     }
+    state.confirmStatusAction?.let { action -> StatusActionConfirmDialog(action = action, onAction = onAction) }
     if (state.isRepublishConfirmOpen) {
         RepublishConfirmDialog(action = state.publication?.renewAction ?: RenewAction.REPUBLISH, onAction = onAction)
     }
 }
 
 @Composable
-private fun PublicationSection(publication: PublicationUi, isRepublishing: Boolean, onAction: (WillhabenTabAction) -> Unit) {
+private fun PublicationSection(
+    publication: PublicationUi,
+    isRepublishing: Boolean,
+    onAction: (WillhabenTabAction) -> Unit,
+    statusActions: @Composable () -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(stringResource(Res.string.willhaben_listing_title), style = MaterialTheme.typography.titleSmall)
         publication.statusText?.let { Text(stringResource(Res.string.willhaben_listing_status, it)) }
@@ -192,8 +212,66 @@ private fun PublicationSection(publication: PublicationUi, isRepublishing: Boole
                 Text(stringResource(if (action == RenewAction.FINISH_DRAFT) Res.string.finish_draft_button else Res.string.republish_button))
             }
         }
+        statusActions()
         HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
     }
+}
+
+/** willhaben's status changes for this listing, as offered at the last import. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun StatusActionButtons(
+    actions: List<WillhabenStatusAction>,
+    running: WillhabenStatusAction?,
+    onAction: (WillhabenTabAction) -> Unit,
+) {
+    if (actions.isEmpty()) return
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
+        actions.forEach { action ->
+            OutlinedButton(
+                onClick = { onAction(WillhabenTabAction.OnStatusActionClick(action)) },
+                enabled = running == null,
+            ) {
+                if (running == action) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(
+                    stringResource(action.label()),
+                    color = if (action == WillhabenStatusAction.DELETE) MaterialTheme.colorScheme.error else Color.Unspecified,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusActionConfirmDialog(action: WillhabenStatusAction, onAction: (WillhabenTabAction) -> Unit) {
+    val isDelete = action == WillhabenStatusAction.DELETE
+    AlertDialog(
+        onDismissRequest = { onAction(WillhabenTabAction.OnStatusActionDismiss) },
+        title = { Text(stringResource(if (isDelete) Res.string.status_action_delete_title else Res.string.status_action_sold_title)) },
+        text = { Text(stringResource(if (isDelete) Res.string.status_action_delete_text else Res.string.status_action_sold_text)) },
+        confirmButton = {
+            TextButton(onClick = { onAction(WillhabenTabAction.OnStatusActionConfirm) }) {
+                Text(stringResource(action.label()), color = if (isDelete) MaterialTheme.colorScheme.error else Color.Unspecified)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onAction(WillhabenTabAction.OnStatusActionDismiss) }) {
+                Text(stringResource(Res.string.editor_delete_cancel))
+            }
+        },
+    )
+}
+
+private fun WillhabenStatusAction.label(): StringResource = when (this) {
+    WillhabenStatusAction.ACTIVATE -> Res.string.status_action_activate
+    WillhabenStatusAction.DEACTIVATE -> Res.string.status_action_deactivate
+    WillhabenStatusAction.RESERVE -> Res.string.status_action_reserve
+    WillhabenStatusAction.UNRESERVE -> Res.string.status_action_unreserve
+    WillhabenStatusAction.SOLD -> Res.string.status_action_sold
+    WillhabenStatusAction.DELETE -> Res.string.status_action_delete
 }
 
 @Composable

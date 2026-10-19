@@ -1,6 +1,7 @@
 package com.lerchenflo.relisto.marketplace.data
 
 import assertk.assertThat
+import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import com.lerchenflo.relisto.listings.data.RoomListingRepository
@@ -27,16 +28,27 @@ class RoomPublicationStatusRepositoryTest {
     @AfterTest
     fun tearDown() = database.close()
 
-    private suspend fun publication(status: String, replacedRemoteIds: String?) {
+    private suspend fun publication(status: String, replacedRemoteIds: String?, actionsJson: String? = null) {
         val id = (listings.createListing(ListingContent(title = "x")) as Result.Success).data
         database.publicationDao().insert(
             ListingPublicationEntity(
                 listingId = id, marketplace = Marketplace.WILLHABEN.name, marketplaceFieldsJson = null,
                 remoteId = "r$id", remoteUuid = null, remoteUrl = null, remoteStatus = status, expiresAt = null,
                 remoteSnapshotJson = null, remoteSnapshotHash = null, syncState = SyncState.SYNCED.name,
-                lastSyncedAt = null, lastError = null, replacedRemoteIds = replacedRemoteIds,
+                lastSyncedAt = null, lastError = null, replacedRemoteIds = replacedRemoteIds, remoteActionsJson = actionsJson,
             )
         )
+    }
+
+    @Test
+    fun offeredStatusActionsAreListed() = runTest {
+        publication("Inaktiv", null, """[{"action":"ACTIVATE","serviceName":"myatz","relativePath":"/a"},{"action":"DELETE","serviceName":"myatz","relativePath":"/d"}]""")
+        publication("Online", null, null)
+
+        val statuses = repository.getStatusesAsFlow().first()
+
+        assertThat(statuses[0].availableActions).isEqualTo(setOf("ACTIVATE", "DELETE"))
+        assertThat(statuses[1].availableActions).isEqualTo(emptySet())
     }
 
     @Test

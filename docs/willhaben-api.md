@@ -137,6 +137,20 @@ A successful activate answers `200` with `advertEditStatusActionsList` `statusId
 images) activated without a package being selected; "Beta RR 50" (no images) failed with `400`, so
 the missing image is the likely cause there.
 
+## Status actions (my-adverts `advertEditStatusActionsList.contextLinkList`)
+
+Link ids as in the web client (`EDIT "1"`, `DEACTIVATE "2"`, `DELETE "3"`, `ACTIVATE "4"`,
+`FINALIZE "5"`, `REPUBLISH "6"`, `setAdSold`, `markAdReserved`, `removeMarkAdReserved`,
+`upsellingsActiveAd`, `requestBillLink`, `changeDeliveryOptions`, bulk ids). Each action is one
+request without body on `/{serviceName}{relativePath}`: `DELETE` for `3`, `PUT` for activate,
+deactivate, sold and reserved (web client "Meine Anzeigen"); republish `6` is a `POST`.
+Example (deactivated motorbike, status "Inaktiv", `statusId` 51): `4` "Aktivieren" →
+service `myatz`, `/motor/activate/{id}`; `3` "Löschen" → `myatz`, `/motor/{id}`.
+Delete and sold reasons are separate, optional calls (`POST /iad/deletereasons?adId=…`
+`{deleteReasonId}`, `POST /iad/soldreasons?adId=…` `{soldReasonId}`); the app does not send them.
+Status names seen: Online, Abgelaufen (61), Bearbeitung (10), in Warteschlange (32), Inaktiv (51),
+Verkauft (120).
+
 ## Images
 
 - Neither the my-adverts entry nor the edit JSON lists all images: my-adverts has the cover only

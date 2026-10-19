@@ -12,6 +12,8 @@ data class PublicationStatus(
     val syncState: SyncState,
     /** A draft that replaced an expired listing during a renew that did not finish (e.g. activation failed). */
     val isRenewDraft: Boolean = false,
+    /** Names of the status actions the marketplace offers right now (willhaben: WillhabenStatusAction). */
+    val availableActions: Set<String> = emptySet(),
 ) {
     /** In editing on the marketplace ("Bearbeitung"): finished, not copied, to publish it. */
     val isDraft: Boolean get() = statusText == WILLHABEN_DRAFT_STATUS

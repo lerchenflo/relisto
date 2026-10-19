@@ -125,6 +125,7 @@ class WillhabenRepublisher(
                     remoteStatus = WILLHABEN_DRAFT_STATUS,
                     remoteUrl = "https://www.willhaben.at/iad/object?adId=$draftId",
                     expiresAt = null,
+                    remoteActionsJson = null,
                 )
             )
         }
@@ -224,6 +225,7 @@ class WillhabenRepublisher(
                 remoteUuid = imported?.remoteUuid,
                 remoteUrl = "https://www.willhaben.at/iad/object?adId=$newId",
                 remoteStatus = null,
+                remoteActionsJson = null,
                 expiresAt = imported?.expiresAt,
                 remoteSnapshotJson = reloadedJson,
                 remoteSnapshotHash = imported?.let { willhabenContentHash(it.content, it.fields) },

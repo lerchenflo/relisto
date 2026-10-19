@@ -6,6 +6,8 @@ import com.lerchenflo.relisto.app.domain.map
 import com.lerchenflo.relisto.datasource.network.get
 import com.lerchenflo.relisto.marketplace.willhaben.domain.MyAdvertsPage
 import com.lerchenflo.relisto.marketplace.willhaben.domain.RemoteListingSummary
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActionLink
 import io.ktor.client.HttpClient
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -64,7 +66,23 @@ class KtorWillhabenListingsDataSource(
             // The edit status name is what the web app shows ("Online", "Abgelaufen", ...)
             statusText = (this["advertEditStatusActionsList"] as? JsonObject)?.text("statusName")
                 ?: (this["advertStatus"] as? JsonObject)?.text("description"),
+            statusActions = statusActions(),
         )
+    }
+
+    /** The status changes willhaben offers for this listing; unknown and paid actions are left out. */
+    private fun JsonObject.statusActions(): List<WillhabenStatusActionLink> {
+        val links = ((this["advertEditStatusActionsList"] as? JsonObject)?.get("contextLinkList") as? JsonObject)
+            ?.get("contextLink") as? JsonArray
+        return links.orEmpty().mapNotNull { element ->
+            val link = element as? JsonObject ?: return@mapNotNull null
+            val action = link.text("id")?.let(WillhabenStatusAction::ofLinkId) ?: return@mapNotNull null
+            WillhabenStatusActionLink(
+                action = action,
+                serviceName = link.text("serviceName") ?: return@mapNotNull null,
+                relativePath = link.text("relativePath") ?: return@mapNotNull null,
+            )
+        }
     }
 
     private fun JsonObject.text(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull

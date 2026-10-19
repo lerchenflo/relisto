@@ -9,6 +9,8 @@ import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.datasource.network.HttpClientFactory
 import com.lerchenflo.relisto.marketplace.willhaben.domain.RemoteListingSummary
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActionLink
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
@@ -31,7 +33,10 @@ class WillhabenListingsFetchTest {
         """{"id":$id,"uuid":"uuid-$id","adTypeId":$adTypeId,"verticalId":5,"description":"$title",
            "advertStatus":{"description":"Aktiv","id":"active","statusId":50},
            "advertImageList":{"advertImage":[{"mainImageUrl":"https://cache.willhaben.at/$id.jpg"},{"mainImageUrl":null}]},
-           "advertEditStatusActionsList":{"statusId":50,"statusName":"Online","contextLinkList":{"contextLink":[{"id":"2","serviceName":"iad","relativePath":"/x"}]}}}"""
+           "advertEditStatusActionsList":{"statusId":50,"statusName":"Online","contextLinkList":{"contextLink":[
+             {"id":"2","serviceName":"myatz","relativePath":"/bap/deactivate/$id"},
+             {"id":"requestBillLink","serviceName":"iad","relativePath":"/payment/all/$id"},
+             {"id":"3","serviceName":"myatz","relativePath":"/bap/$id"}]}}}"""
 
     private val page1 = """{"totalNumberOfAdvertDetails":4,"verticalList":[{"advertDetails":[${advert(1, 67, "Rad")},${advert(2, 21, "Moped")}]}]}"""
     private val page2 = """{"totalNumberOfAdvertDetails":4,"verticalList":[{"advertDetails":[${advert(3, 67, "Tisch")},${advert(4, 401, "Job")}]}]}"""
@@ -77,11 +82,17 @@ class WillhabenListingsFetchTest {
 
         assertThat(result.data.total).isEqualTo(4)
         assertThat(result.data.adverts).containsExactly(
-            RemoteListingSummary("1", "uuid-1", 67, "Rad", statusText = "Online"),
-            RemoteListingSummary("2", "uuid-2", 21, "Moped", statusText = "Online"),
+            RemoteListingSummary("1", "uuid-1", 67, "Rad", statusText = "Online", statusActions = actions(1)),
+            RemoteListingSummary("2", "uuid-2", 21, "Moped", statusText = "Online", statusActions = actions(2)),
         )
         assertThat(requests.single()).isEqualTo("/webapi/myatz/atverz/showpagedadsfromuser?page=1&rows=2&vertical=bap")
     }
+
+    /** Paid actions (bills, extras) are left out. */
+    private fun actions(id: Long) = listOf(
+        WillhabenStatusActionLink(WillhabenStatusAction.DEACTIVATE, "myatz", "/bap/deactivate/$id"),
+        WillhabenStatusActionLink(WillhabenStatusAction.DELETE, "myatz", "/bap/$id"),
+    )
 
     @Test
     fun allPagesAreFetchedAndListingsOfAllVerticalsKept() = runTest {

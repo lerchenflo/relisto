@@ -35,6 +35,9 @@ class KtorWillhabenWriteDataSource(
     suspend fun put(route: String, body: JsonObject? = null): Result<JsonObject, DataError.Network> =
         send(HttpMethod.Put, route, body)
 
+    suspend fun delete(route: String): Result<JsonObject, DataError.Network> =
+        send(HttpMethod.Delete, route, null)
+
     /** Uploads one image to willhaben's temporary image store; the result is its upload reference. */
     suspend fun uploadTempImage(bytes: ByteArray, fileName: String): Result<String, DataError.Network> {
         val form = MultiPartFormDataContent(

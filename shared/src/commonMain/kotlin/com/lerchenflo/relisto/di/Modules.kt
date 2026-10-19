@@ -23,6 +23,8 @@ import com.lerchenflo.relisto.marketplace.willhaben.data.CookieWillhabenSessionR
 import com.lerchenflo.relisto.marketplace.willhaben.data.KtorWillhabenWriteDataSource
 import com.lerchenflo.relisto.marketplace.willhaben.data.RoomWillhabenImporter
 import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenRepublisher
+import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenStatusActionRunner
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActions
 import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenListingsSource
 import com.lerchenflo.relisto.marketplace.willhaben.data.KtorWillhabenListingsDataSource
 import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenListingsFetcher
@@ -82,6 +84,7 @@ val datasourceModule = module {
     singleOf(::RoomWillhabenImporter) { bind<WillhabenImporter>() }
     singleOf(::KtorWillhabenWriteDataSource)
     singleOf(::WillhabenRepublisher) { bind<WillhabenPublisher>() }
+    singleOf(::WillhabenStatusActionRunner) { bind<WillhabenStatusActions>() }
     singleOf(::WillhabenRenewer)
 
     // Separate plain client for the optional update hint (no willhaben headers or cookies)

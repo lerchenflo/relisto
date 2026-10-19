@@ -30,6 +30,8 @@ import com.lerchenflo.relisto.testutil.FakeImporter
 import com.lerchenflo.relisto.testutil.FakeListingRepository
 import com.lerchenflo.relisto.testutil.FakePublicationStatusRepository
 import com.lerchenflo.relisto.testutil.FakePublisher
+import com.lerchenflo.relisto.testutil.FakeStatusActions
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
 import com.lerchenflo.relisto.testutil.FakeWillhabenCatalogRepository
 import com.lerchenflo.relisto.testutil.FakeWillhabenFieldsDataSource
@@ -98,7 +100,9 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
     private val importer = FakeImporter()
     private val time = FakeTimeProvider(now = 10_000L)
 
-    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, importer, time)
+    private val statusActions = FakeStatusActions()
+
+    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, importer, statusActions, time)
 
     private fun publishedAs(statusText: String?, expiresAt: Long? = null) {
         statuses.statuses.value = listOf(
@@ -398,6 +402,56 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
         publishedAs("Online", expiresAt = 20_000L)
 
         assertThat(viewModel().state.value.publication!!.renewAction).isNull()
+    }
+
+    private fun publishedWithActions(statusText: String, vararg actions: String) {
+        statuses.statuses.value = listOf(
+            PublicationStatus(1, Marketplace.WILLHABEN, statusText, null, SyncState.SYNCED, availableActions = actions.toSet()),
+        )
+    }
+
+    @Test
+    fun offeredStatusActionsAreShown() = runTest {
+        publishedWithActions("Inaktiv", "ACTIVATE", "DELETE")
+
+        assertThat(viewModel().state.value.statusActions).containsExactly(WillhabenStatusAction.ACTIVATE, WillhabenStatusAction.DELETE)
+    }
+
+    @Test
+    fun reversibleActionRunsAtOnce() = runTest {
+        publishedWithActions("Inaktiv", "ACTIVATE")
+        val viewModel = viewModel()
+
+        viewModel.onAction(WillhabenTabAction.OnStatusActionClick(WillhabenStatusAction.ACTIVATE))
+
+        assertThat(statusActions.performed).containsExactly(1L to WillhabenStatusAction.ACTIVATE)
+    }
+
+    @Test
+    fun soldAndDeleteAskFirst() = runTest {
+        publishedWithActions("Online", "SOLD", "DELETE")
+        val viewModel = viewModel()
+
+        viewModel.onAction(WillhabenTabAction.OnStatusActionClick(WillhabenStatusAction.DELETE))
+        assertThat(viewModel.state.value.confirmStatusAction).isEqualTo(WillhabenStatusAction.DELETE)
+        assertThat(statusActions.performed).isEmpty()
+
+        viewModel.onAction(WillhabenTabAction.OnStatusActionConfirm)
+
+        assertThat(statusActions.performed).containsExactly(1L to WillhabenStatusAction.DELETE)
+        assertThat(viewModel.state.value.confirmStatusAction).isNull()
+    }
+
+    @Test
+    fun dismissedConfirmationSendsNothing() = runTest {
+        publishedWithActions("Online", "SOLD")
+        val viewModel = viewModel()
+        viewModel.onAction(WillhabenTabAction.OnStatusActionClick(WillhabenStatusAction.SOLD))
+
+        viewModel.onAction(WillhabenTabAction.OnStatusActionDismiss)
+
+        assertThat(statusActions.performed).isEmpty()
+        assertThat(viewModel.state.value.confirmStatusAction).isNull()
     }
 
     @Test

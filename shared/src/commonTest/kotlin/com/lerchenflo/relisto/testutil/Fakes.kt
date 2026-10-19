@@ -328,3 +328,17 @@ class FakePublisher : com.lerchenflo.relisto.marketplace.willhaben.domain.Willha
         return result
     }
 }
+
+class FakeStatusActions : com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActions {
+    var result: com.lerchenflo.relisto.app.domain.EmptyResult<com.lerchenflo.relisto.marketplace.willhaben.domain.StatusActionError> =
+        Result.Success(Unit)
+    val performed = mutableListOf<Pair<Long, com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction>>()
+
+    override suspend fun perform(
+        listingId: Long,
+        action: com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction,
+    ): com.lerchenflo.relisto.app.domain.EmptyResult<com.lerchenflo.relisto.marketplace.willhaben.domain.StatusActionError> {
+        performed += listingId to action
+        return result
+    }
+}

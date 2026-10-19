@@ -2,6 +2,7 @@ package com.lerchenflo.relisto.marketplace.willhaben.presentation
 
 import androidx.compose.runtime.Stable
 import com.lerchenflo.relisto.marketplace.domain.SyncState
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenVertical
 import com.lerchenflo.relisto.utilities.UiText
 
@@ -39,6 +40,11 @@ data class WillhabenTabState(
     val publication: PublicationUi? = null,
     val isRepublishConfirmOpen: Boolean = false,
     val isRepublishing: Boolean = false,
+    /** Status changes willhaben offers right now (activate, deactivate, sold, ...). */
+    val statusActions: List<WillhabenStatusAction> = emptyList(),
+    /** Sold and delete are confirmed first. */
+    val confirmStatusAction: WillhabenStatusAction? = null,
+    val runningStatusAction: WillhabenStatusAction? = null,
 )
 
 data class PublicationUi(
@@ -108,6 +114,9 @@ sealed interface WillhabenTabAction {
     data object OnRepublishClick : WillhabenTabAction
     data object OnRepublishConfirm : WillhabenTabAction
     data object OnRepublishDismiss : WillhabenTabAction
+    data class OnStatusActionClick(val action: WillhabenStatusAction) : WillhabenTabAction
+    data object OnStatusActionConfirm : WillhabenTabAction
+    data object OnStatusActionDismiss : WillhabenTabAction
 }
 
 sealed interface WillhabenTabEvent {

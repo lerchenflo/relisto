@@ -12,10 +12,11 @@ import com.lerchenflo.relisto.marketplace.data.ListingPublicationEntity
 @Database(
     entities = [ListingEntity::class, ListingImageEntity::class, ListingPublicationEntity::class],
     exportSchema = true,
-    version = 2,
+    version = 3,
     // Never destructive: every version step keeps the user's data
     autoMigrations = [
         AutoMigration(from = 1, to = 2), // listing_publications.replacedRemoteIds
+        AutoMigration(from = 2, to = 3), // listing_publications.remoteActionsJson
     ],
 )
 @ConstructedBy(AppDatabaseConstructor::class)

@@ -1,6 +1,8 @@
 package com.lerchenflo.relisto.marketplace.willhaben.data
 
 import assertk.assertThat
+import assertk.assertions.doesNotContain
+import assertk.assertions.contains
 import assertk.assertions.isEqualTo
 import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
@@ -12,6 +14,8 @@ import com.lerchenflo.relisto.marketplace.domain.SyncState
 import com.lerchenflo.relisto.marketplace.willhaben.domain.ImportSummary
 import com.lerchenflo.relisto.marketplace.willhaben.domain.RemoteListing
 import com.lerchenflo.relisto.marketplace.willhaben.domain.RemoteListingSummary
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActionLink
 import com.lerchenflo.relisto.testutil.FakeImageDownloader
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
 import com.lerchenflo.relisto.testutil.FakeWillhabenCatalogRepository
@@ -46,8 +50,14 @@ class RoomWillhabenImporterTest {
     @AfterTest
     fun tearDown() = database.close()
 
-    private fun remoteListing(id: String, title: String, images: List<String> = emptyList(), status: String = "Online") = RemoteListing(
-        summary = RemoteListingSummary(id, "uuid-$id", 67, title, statusText = status),
+    private fun remoteListing(
+        id: String,
+        title: String,
+        images: List<String> = emptyList(),
+        status: String = "Online",
+        actions: List<WillhabenStatusActionLink> = emptyList(),
+    ) = RemoteListing(
+        summary = RemoteListingSummary(id, "uuid-$id", 67, title, statusText = status, statusActions = actions),
         imageUrls = images,
         detailJson = """{"heading":"$title","description":"Text<br />zwei","price":45.0,"postCode":"6850","locationId":7,
             "location":"Dornbirn","categoryTreeId":3653,"categoryPath":{"path":[{"label":"Garten","code":"GARDEN"}]},
@@ -105,6 +115,22 @@ class RoomWillhabenImporterTest {
         assertThat(result).isEqualTo(Result.Success(ImportSummary(found = 1, created = 0, updated = 0)))
         assertThat(allListings().size).isEqualTo(1)
         assertThat(downloader.downloaded.size).isEqualTo(1)
+    }
+
+    @Test
+    fun offeredStatusActionsAreStoredAndRefreshed() = runTest {
+        val deactivate = WillhabenStatusActionLink(WillhabenStatusAction.DEACTIVATE, "myatz", "/bap/deactivate/1")
+        val activate = WillhabenStatusActionLink(WillhabenStatusAction.ACTIVATE, "myatz", "/bap/activate/1")
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor", actions = listOf(deactivate))))
+        importer.importMyListings()
+        val listingId = allListings().single().id
+        assertThat(publication(listingId).remoteActionsJson.orEmpty()).contains("/bap/deactivate/1")
+
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor", status = "Inaktiv", actions = listOf(activate))))
+        importer.importMyListings()
+
+        assertThat(publication(listingId).remoteActionsJson.orEmpty()).contains("/bap/activate/1")
+        assertThat(publication(listingId).remoteActionsJson.orEmpty()).doesNotContain("deactivate")
     }
 
     @Test

@@ -71,6 +71,7 @@ object WillhabenListingMapper {
             expiresAt = json.text("endDate")?.let(::parseInstantMillis),
             imageUrls = listing.imageUrls,
             snapshotJson = listing.detailJson,
+            statusActions = listing.summary.statusActions,
         )
     }
 

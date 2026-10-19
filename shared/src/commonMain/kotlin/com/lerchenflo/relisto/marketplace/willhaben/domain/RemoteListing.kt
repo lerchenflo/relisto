@@ -10,6 +10,7 @@ data class RemoteListingSummary(
     val title: String?,
     /** willhaben's own status text, e.g. "Aktiv" or "Abgelaufen". */
     val statusText: String? = null,
+    val statusActions: List<WillhabenStatusActionLink> = emptyList(),
 )
 
 /** A marketplace listing of the user with its full willhaben JSON (the editable listing). */
@@ -36,4 +37,5 @@ data class ImportedListing(
     val imageUrls: List<String>,
     /** The listing JSON as received; base for later edits. Contains contact data, stays local. */
     val snapshotJson: String,
+    val statusActions: List<WillhabenStatusActionLink> = emptyList(),
 )

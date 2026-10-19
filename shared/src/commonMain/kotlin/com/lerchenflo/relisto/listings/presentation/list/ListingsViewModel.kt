@@ -219,7 +219,7 @@ class ListingsViewModel(
             null, "Online", "Aktiv" -> WillhabenStateUi.ONLINE
             "in Warteschlange" -> WillhabenStateUi.IN_REVIEW
             "Verkauft" -> WillhabenStateUi.SOLD
-            "Deaktiviert" -> WillhabenStateUi.DEACTIVATED
+            "Inaktiv", "Deaktiviert" -> WillhabenStateUi.DEACTIVATED
             "Reserviert" -> WillhabenStateUi.RESERVED
             else -> WillhabenStateUi.OTHER
         }
