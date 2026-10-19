@@ -4,6 +4,7 @@ import assertk.assertThat
 import assertk.assertions.doesNotContain
 import assertk.assertions.contains
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
 import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.listings.data.RoomListingRepository
@@ -115,6 +116,41 @@ class RoomWillhabenImporterTest {
         assertThat(result).isEqualTo(Result.Success(ImportSummary(found = 1, created = 0, updated = 0)))
         assertThat(allListings().size).isEqualTo(1)
         assertThat(downloader.downloaded.size).isEqualTo(1)
+    }
+
+    @Test
+    fun listingThatIsGoneOnWillhabenIsMarked() = runTest {
+        // e.g. deleted there, or replaced by the draft of a renew
+        val delete = WillhabenStatusActionLink(WillhabenStatusAction.DELETE, "myatz", "/bap/1")
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor", status = "Abgelaufen", actions = listOf(delete)), remoteListing("2", "Tisch")))
+        importer.importMyListings()
+        val listingId = allListings().first { it.title == "Rasentraktor" }.id
+        remote = Result.Success(listOf(remoteListing("2", "Tisch")))
+
+        importer.importMyListings()
+
+        val gone = publication(listingId)
+        assertThat(gone.syncState).isEqualTo(SyncState.REMOTE_GONE.name)
+        assertThat(gone.remoteStatus).isNull()
+        assertThat(gone.expiresAt).isNull()
+        assertThat(gone.remoteActionsJson).isNull()
+        // The local listing stays
+        assertThat(allListings().size).isEqualTo(2)
+    }
+
+    @Test
+    fun listingThatIsBackOnWillhabenIsSyncedAgain() = runTest {
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor")))
+        importer.importMyListings()
+        remote = Result.Success(emptyList())
+        importer.importMyListings()
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor")))
+
+        importer.importMyListings()
+
+        val publication = publication(allListings().single().id)
+        assertThat(publication.syncState).isEqualTo(SyncState.SYNCED.name)
+        assertThat(publication.remoteStatus).isEqualTo("Online")
     }
 
     @Test

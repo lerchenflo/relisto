@@ -140,6 +140,7 @@
     <string name="sync_state_conflict">Conflict</string>
     <string name="sync_state_publishing">Publishing</string>
     <string name="sync_state_error">Error</string>
+    <string name="sync_state_remote_gone">No longer on willhaben</string>
     <string name="republish_button">Republish</string>
     <string name="republish_confirm_title">Republish listing?</string>
     <string name="republish_confirm_text">The expired listing is published again on willhaben with the local title, text, price and images. No paid extras are booked.</string>

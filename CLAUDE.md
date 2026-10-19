@@ -141,3 +141,5 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
   `:shared:bundleLibRuntimeToDirAndroidMain` stayed UP-TO-DATE with an old partial output (378 of 618
   classes); deleting `shared/build/intermediates/runtime_library_classes_dir` + `androidApp/build`
   fixed it, app runs on the emulator. List: willhaben state aligned right.
+- 2026-10-19 – Import marks listings willhaben no longer lists (`SyncState.REMOTE_GONE`, cloud-off icon,
+  status/expiry/actions cleared, local listing kept); a listing that comes back syncs normally.

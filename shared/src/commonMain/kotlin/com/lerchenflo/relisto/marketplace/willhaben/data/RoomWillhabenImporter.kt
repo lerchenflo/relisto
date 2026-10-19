@@ -63,7 +63,23 @@ class RoomWillhabenImporter(
                 updated++
             }
         }
+        markGone(fetchedIds = fetchedListings.map { it.summary.remoteId }.toSet())
         return Result.Success(ImportSummary(found = remoteListings.size, created = created, updated = updated))
+    }
+
+    /**
+     * Listings willhaben does not list any more (deleted there, or replaced by a renew's draft):
+     * status, expiry and actions no longer apply. The local listing stays.
+     */
+    private suspend fun markGone(fetchedIds: Set<String>) {
+        publicationDao.getAll()
+            .filter { it.marketplace == MARKETPLACE && it.remoteId != null && it.remoteId !in fetchedIds }
+            .filter { it.syncState != SyncState.REMOTE_GONE.name && it.syncState != SyncState.LOCAL_ONLY.name }
+            .forEach { gone ->
+                publicationDao.update(
+                    gone.copy(remoteStatus = null, expiresAt = null, remoteActionsJson = null, syncState = SyncState.REMOTE_GONE.name)
+                )
+            }
     }
 
     private suspend fun createLocal(imported: ImportedListing): Result<Unit, DataError.Local> {
@@ -100,7 +116,9 @@ class RoomWillhabenImporter(
     }
 
     /** Returns true when the local content was replaced by the willhaben content. */
-    private suspend fun refreshLocal(existing: ListingPublicationEntity, imported: ImportedListing): Boolean {
+    private suspend fun refreshLocal(listed: ListingPublicationEntity, imported: ImportedListing): Boolean {
+        // Back on willhaben after it was gone: compare as if it was synced
+        val existing = if (listed.syncState == SyncState.REMOTE_GONE.name) listed.copy(syncState = SyncState.SYNCED.name) else listed
         val hash = imported.contentHash()
         val remoteChanged = existing.remoteSnapshotHash != hash
         val editedLocally = existing.syncState != SyncState.SYNCED.name && existing.syncState != SyncState.REMOTE_CHANGED.name

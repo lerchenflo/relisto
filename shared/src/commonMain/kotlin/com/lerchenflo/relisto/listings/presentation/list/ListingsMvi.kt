@@ -47,6 +47,8 @@ enum class WillhabenStateUi {
     SOLD,
     DEACTIVATED,
     RESERVED,
+    /** No longer on willhaben. */
+    GONE,
     OTHER
 }
 

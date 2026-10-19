@@ -20,5 +20,7 @@ enum class SyncState {
     /** Publish started, can be resumed. */
     PUBLISHING,
     /** Last sync step failed. */
-    ERROR
+    ERROR,
+    /** Not on the marketplace any more (deleted there, or replaced by the draft of a renew). */
+    REMOTE_GONE
 }

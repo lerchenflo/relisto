@@ -234,6 +234,17 @@ class ListingsViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun listingGoneOnWillhabenShowsThat() = runTest {
+        repository.listings.value = listOf(listing(1))
+        statuses.statuses.value = listOf(PublicationStatus(1, Marketplace.WILLHABEN, null, null, SyncState.REMOTE_GONE))
+
+        val item = viewModel().state.value.listings.single()
+
+        assertThat(item.willhabenState).isEqualTo(WillhabenStateUi.GONE)
+        assertThat(item.canRenew).isFalse()
+    }
+
+    @Test
     fun localOnlyListingHasNoWillhabenState() = runTest {
         repository.listings.value = listOf(listing(1))
 

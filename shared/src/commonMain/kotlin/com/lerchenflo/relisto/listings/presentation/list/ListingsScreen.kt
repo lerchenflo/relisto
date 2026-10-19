@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Info
@@ -392,6 +393,7 @@ private fun WillhabenStateUi.icon(): ImageVector = when (this) {
     WillhabenStateUi.SOLD -> Icons.Default.Sell
     WillhabenStateUi.DEACTIVATED -> Icons.Default.PauseCircle
     WillhabenStateUi.RESERVED -> Icons.Default.Bookmark
+    WillhabenStateUi.GONE -> Icons.Default.CloudOff
     WillhabenStateUi.OTHER -> Icons.Default.Info
 }
 

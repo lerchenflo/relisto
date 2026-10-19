@@ -10,8 +10,9 @@ import com.lerchenflo.relisto.listings.domain.Listing
 import com.lerchenflo.relisto.listings.domain.ListingContent
 import com.lerchenflo.relisto.listings.domain.ListingRepository
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
-import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatus
+import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
+import com.lerchenflo.relisto.marketplace.domain.SyncState
 import com.lerchenflo.relisto.marketplace.domain.canRenew
 import com.lerchenflo.relisto.marketplace.domain.isExpired
 import com.lerchenflo.relisto.marketplace.willhaben.presentation.toUiText
@@ -230,6 +231,7 @@ class ListingsViewModel(
     }
 
     private fun PublicationStatus.toStateUi(now: Long): WillhabenStateUi? = when {
+        syncState == SyncState.REMOTE_GONE -> WillhabenStateUi.GONE
         statusText == null && expiresAt == null -> null
         isDraft -> WillhabenStateUi.DRAFT
         isExpired(now) -> WillhabenStateUi.EXPIRED

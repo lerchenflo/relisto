@@ -97,6 +97,7 @@ import relisto.shared.generated.resources.status_action_sold
 import relisto.shared.generated.resources.status_action_sold_text
 import relisto.shared.generated.resources.status_action_sold_title
 import relisto.shared.generated.resources.status_action_unreserve
+import relisto.shared.generated.resources.sync_state_remote_gone
 import relisto.shared.generated.resources.willhaben_category
 import relisto.shared.generated.resources.willhaben_vertical
 import relisto.shared.generated.resources.willhaben_vertical_hint
@@ -302,6 +303,7 @@ private fun SyncState.label(): StringResource = when (this) {
     SyncState.CONFLICT -> Res.string.sync_state_conflict
     SyncState.PUBLISHING -> Res.string.sync_state_publishing
     SyncState.ERROR -> Res.string.sync_state_error
+    SyncState.REMOTE_GONE -> Res.string.sync_state_remote_gone
 }
 
 @OptIn(ExperimentalLayoutApi::class)

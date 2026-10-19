@@ -37,7 +37,7 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
   (e.g. deactivate + activate one online listing).
 - [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if needed).
 - [ ] 5.5 Conflict dialog: local vs. willhaben side by side, "keep local" / "take willhaben".
-- [ ] 5.6 Renew: "expiring soon" filter. (Resuming a draft after a failed renew exists: `pendingDraftId`.)
+- [ ] 5.6 Renew: "expiring soon" filter. (Finishing a draft after a failed renew exists.)
 - [ ] 5.7 Confirmation dialogs for destructive actions; activity log for every write.
 - [ ] 5.8 Verify each action's HTTP method and body against the real responses; update `docs/willhaben-api.md`.
 
@@ -54,7 +54,6 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
 ## Phase 7 – Polish and release
 
 - [ ] 7.1 Activity log panel with filter per listing and marketplace.
-- [ ] 7.2 Import: mark listings that are gone on willhaben.
 - [ ] 7.3 Clear "willhaben changed its API" message everywhere (`PublishError.MissingLink` exists).
 - [ ] 7.4 "Open on willhaben" link per listing.
 - [ ] 7.5 Backup / export of database + images as a zip.

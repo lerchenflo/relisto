@@ -140,6 +140,7 @@
     <string name="sync_state_conflict">Konflikt</string>
     <string name="sync_state_publishing">Wird veröffentlicht</string>
     <string name="sync_state_error">Fehler</string>
+    <string name="sync_state_remote_gone">Nicht mehr auf willhaben</string>
     <string name="republish_button">Neu veröffentlichen</string>
     <string name="republish_confirm_title">Anzeige neu veröffentlichen?</string>
     <string name="republish_confirm_text">Die abgelaufene Anzeige wird mit dem lokalen Titel, Text, Preis und den lokalen Bildern neu auf willhaben veröffentlicht. Es werden keine kostenpflichtigen Extras gebucht.</string>
