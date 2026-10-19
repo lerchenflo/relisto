@@ -14,7 +14,12 @@ data class WillhabenTabState(
     val isSuggesting: Boolean = false,
     val isCategoryPickerOpen: Boolean = false,
     val categoryQuery: String = "",
+    /** Search hits while [categoryQuery] is not blank. */
     val categoryResults: List<CategoryOptionUi> = emptyList(),
+    /** Step-by-step selection: the categories opened so far, from the top. */
+    val categoryBreadcrumb: List<CategoryNodeUi> = emptyList(),
+    /** The categories one level below the last breadcrumb entry (top level when empty). */
+    val categoryLevel: List<CategoryNodeUi> = emptyList(),
     /** Attributes of the chosen category, without condition and handover (they come from other fields). */
     val attributeFields: List<AttributeFieldUi> = emptyList(),
     val postcode: String = "",
@@ -47,6 +52,13 @@ data class CategoryOptionUi(
     val pathText: String,
 )
 
+data class CategoryNodeUi(
+    val treeId: Int,
+    val label: String,
+    /** Categories with children are opened, the others are selected. */
+    val hasChildren: Boolean,
+)
+
 data class AttributeFieldUi(
     val code: String,
     val label: String,
@@ -73,6 +85,9 @@ sealed interface WillhabenTabAction {
     data object OnCloseCategoryPicker : WillhabenTabAction
     data class OnCategoryQueryChange(val query: String) : WillhabenTabAction
     data class OnCategorySelect(val treeId: Int) : WillhabenTabAction
+    data class OnCategoryBrowse(val treeId: Int) : WillhabenTabAction
+    /** null goes back to the top level. */
+    data class OnCategoryBreadcrumbClick(val treeId: Int?) : WillhabenTabAction
     data class OnAttributeValueToggle(val attributeCode: String, val valueCode: String) : WillhabenTabAction
     data class OnLocationSelect(val locationId: Int) : WillhabenTabAction
     data class OnPickupChange(val enabled: Boolean) : WillhabenTabAction

@@ -74,6 +74,7 @@
     <string name="willhaben_category_search">Kategorie suchen</string>
     <string name="willhaben_category_no_results">Keine Kategorie gefunden.</string>
     <string name="willhaben_category_close">Schließen</string>
+    <string name="willhaben_category_all">Alle Kategorien</string>
     <string name="willhaben_tree_loading">willhaben-Kategorien werden geladen…</string>
     <string name="willhaben_tree_retry">Erneut versuchen</string>
     <string name="willhaben_attributes">Details</string>

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -78,6 +80,7 @@ import willhabenupdater.shared.generated.resources.willhaben_attribute_required
 import willhabenupdater.shared.generated.resources.willhaben_attributes
 import willhabenupdater.shared.generated.resources.willhaben_attributes_hint
 import willhabenupdater.shared.generated.resources.willhaben_category
+import willhabenupdater.shared.generated.resources.willhaben_category_all
 import willhabenupdater.shared.generated.resources.willhaben_category_choose
 import willhabenupdater.shared.generated.resources.willhaben_category_close
 import willhabenupdater.shared.generated.resources.willhaben_category_no_results
@@ -405,13 +408,16 @@ private fun CheckboxRow(label: String, checked: Boolean, onCheckedChange: (Boole
     }
 }
 
+/** Step-by-step selection from the top level down; typing switches to a search over all categories. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CategoryPickerDialog(state: WillhabenTabState, onAction: (WillhabenTabAction) -> Unit) {
     AlertDialog(
         onDismissRequest = { onAction(WillhabenTabAction.OnCloseCategoryPicker) },
         title = { Text(stringResource(Res.string.willhaben_category_choose)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Fixed height, so the dialog does not jump while browsing or typing
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.height(480.dp)) {
                 OutlinedTextField(
                     value = state.categoryQuery,
                     onValueChange = { onAction(WillhabenTabAction.OnCategoryQueryChange(it)) },
@@ -420,19 +426,53 @@ private fun CategoryPickerDialog(state: WillhabenTabState, onAction: (WillhabenT
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                if (state.categoryResults.isEmpty()) {
-                    Text(stringResource(Res.string.willhaben_category_no_results), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                when {
+                    state.categoryQuery.isNotBlank() && state.categoryResults.isEmpty() ->
+                        Text(stringResource(Res.string.willhaben_category_no_results), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    state.categoryQuery.isNotBlank() -> LazyColumn {
                         items(items = state.categoryResults, key = { it.treeId }) { option ->
-                            Text(
+                            CategoryRow(
                                 text = option.pathText,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onAction(WillhabenTabAction.OnCategorySelect(option.treeId)) }
-                                    .padding(vertical = 10.dp, horizontal = 4.dp),
+                                hasChildren = false,
+                                onClick = { onAction(WillhabenTabAction.OnCategorySelect(option.treeId)) },
                             )
-                            HorizontalDivider()
+                        }
+                    }
+                    else -> {
+                        FlowRow(verticalArrangement = Arrangement.Center) {
+                            CategoryBreadcrumbItem(
+                                label = stringResource(Res.string.willhaben_category_all),
+                                isCurrent = state.categoryBreadcrumb.isEmpty(),
+                                onClick = { onAction(WillhabenTabAction.OnCategoryBreadcrumbClick(null)) },
+                            )
+                            state.categoryBreadcrumb.forEachIndexed { index, node ->
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    modifier = Modifier.align(Alignment.CenterVertically),
+                                )
+                                CategoryBreadcrumbItem(
+                                    label = node.label,
+                                    isCurrent = index == state.categoryBreadcrumb.lastIndex,
+                                    onClick = { onAction(WillhabenTabAction.OnCategoryBreadcrumbClick(node.treeId)) },
+                                )
+                            }
+                        }
+                        HorizontalDivider()
+                        LazyColumn {
+                            items(items = state.categoryLevel, key = { it.treeId }) { node ->
+                                CategoryRow(
+                                    text = node.label,
+                                    hasChildren = node.hasChildren,
+                                    onClick = {
+                                        if (node.hasChildren) {
+                                            onAction(WillhabenTabAction.OnCategoryBrowse(node.treeId))
+                                        } else {
+                                            onAction(WillhabenTabAction.OnCategorySelect(node.treeId))
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -444,6 +484,30 @@ private fun CategoryPickerDialog(state: WillhabenTabState, onAction: (WillhabenT
             }
         },
     )
+}
+
+@Composable
+private fun CategoryBreadcrumbItem(label: String, isCurrent: Boolean, onClick: () -> Unit) {
+    TextButton(onClick = onClick, enabled = !isCurrent) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+private fun CategoryRow(text: String, hasChildren: Boolean, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+    ) {
+        Text(text = text, modifier = Modifier.weight(1f))
+        if (hasChildren) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+    HorizontalDivider()
 }
 
 @Preview

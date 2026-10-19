@@ -53,11 +53,17 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
         treeId = 6943, code = "COMICS_MANGAS", label = "Comics / Mangas", children = emptyList(),
         attributeReferences = listOf(ref("LANGUAGE", true, false), ref("Zustand", true, false)),
     )
+    private fun leaf(treeId: Int, label: String) = WillhabenCategory(treeId, "C$treeId", label, emptyList(), emptyList())
+    private val winterSports = WillhabenCategory(
+        4400, "WINTER_SPORTS", "Wintersport",
+        listOf(leaf(4401, "Ski"), leaf(4402, "Skischuhe"), leaf(4404, "Wintersportbekleidung")),
+        emptyList(),
+    )
     private val tree = WillhabenCategoryTree(
         root = WillhabenCategory(
             2, "Marktplatz", "Marktplatz",
             listOf(
-                WillhabenCategory(4390, "SPORT_SPORTEQUIPMENT", "Sport / Sportgeräte", listOf(bicycles), emptyList()),
+                WillhabenCategory(4390, "SPORT_SPORTEQUIPMENT", "Sport / Sportgeräte", listOf(bicycles, winterSports), emptyList()),
                 WillhabenCategory(6941, "ANTIQUES_ART", "Antiquitäten / Kunst", listOf(comics), emptyList()),
             ),
             emptyList(),
@@ -134,24 +140,87 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun categorySearchMatchesAnyLabelOfThePath() = runTest {
+    fun categorySearchMatchesAnyLabelOfThePathAndRanksOwnLabelFirst() = runTest {
         val viewModel = viewModel()
         viewModel.onAction(WillhabenTabAction.OnOpenCategoryPickerClick)
 
         viewModel.onAction(WillhabenTabAction.OnCategoryQueryChange("sport"))
 
-        assertThat(viewModel.state.value.categoryResults.map { it.treeId }).containsExactly(4552)
-        assertThat(viewModel.state.value.categoryResults.single().pathText).isEqualTo("Sport / Sportgeräte › Fahrräder")
+        // Own label contains the word first, then matches in a parent category, each sorted by path
+        assertThat(viewModel.state.value.categoryResults.map { it.treeId }).containsExactly(4404, 4552, 4401, 4402)
+        assertThat(viewModel.state.value.categoryResults[1].pathText).isEqualTo("Sport / Sportgeräte › Fahrräder")
     }
 
     @Test
-    fun emptyCategorySearchListsAllLeaves() = runTest {
+    fun exactAndStartingLabelsComeFirstInTheSearch() = runTest {
+        val viewModel = viewModel()
+        viewModel.onAction(WillhabenTabAction.OnOpenCategoryPickerClick)
+
+        viewModel.onAction(WillhabenTabAction.OnCategoryQueryChange("ski"))
+
+        assertThat(viewModel.state.value.categoryResults.map { it.treeId }).containsExactly(4401, 4402)
+    }
+
+    @Test
+    fun pickerOpensWithTheTopLevelCategories() = runTest {
         val viewModel = viewModel()
 
         viewModel.onAction(WillhabenTabAction.OnOpenCategoryPickerClick)
 
-        assertThat(viewModel.state.value.isCategoryPickerOpen).isTrue()
-        assertThat(viewModel.state.value.categoryResults.map { it.treeId }).containsExactly(4552, 6943)
+        val state = viewModel.state.value
+        assertThat(state.isCategoryPickerOpen).isTrue()
+        assertThat(state.categoryBreadcrumb).isEmpty()
+        assertThat(state.categoryLevel).containsExactly(
+            CategoryNodeUi(4390, "Sport / Sportgeräte", hasChildren = true),
+            CategoryNodeUi(6941, "Antiquitäten / Kunst", hasChildren = true),
+        )
+    }
+
+    @Test
+    fun browsingIntoCategoriesShowsTheirChildrenStepByStep() = runTest {
+        val viewModel = viewModel()
+        viewModel.onAction(WillhabenTabAction.OnOpenCategoryPickerClick)
+
+        viewModel.onAction(WillhabenTabAction.OnCategoryBrowse(4390))
+        assertThat(viewModel.state.value.categoryLevel).containsExactly(
+            CategoryNodeUi(4552, "Fahrräder", hasChildren = false),
+            CategoryNodeUi(4400, "Wintersport", hasChildren = true),
+        )
+
+        viewModel.onAction(WillhabenTabAction.OnCategoryBrowse(4400))
+        val state = viewModel.state.value
+        assertThat(state.categoryBreadcrumb).containsExactly(
+            CategoryNodeUi(4390, "Sport / Sportgeräte", hasChildren = true),
+            CategoryNodeUi(4400, "Wintersport", hasChildren = true),
+        )
+        assertThat(state.categoryLevel.map { it.treeId }).containsExactly(4401, 4402, 4404)
+    }
+
+    @Test
+    fun breadcrumbGoesBackUp() = runTest {
+        val viewModel = viewModel()
+        viewModel.onAction(WillhabenTabAction.OnOpenCategoryPickerClick)
+        viewModel.onAction(WillhabenTabAction.OnCategoryBrowse(4390))
+        viewModel.onAction(WillhabenTabAction.OnCategoryBrowse(4400))
+
+        viewModel.onAction(WillhabenTabAction.OnCategoryBreadcrumbClick(4390))
+        assertThat(viewModel.state.value.categoryLevel.map { it.treeId }).containsExactly(4552, 4400)
+        assertThat(viewModel.state.value.categoryBreadcrumb.map { it.treeId }).containsExactly(4390)
+
+        viewModel.onAction(WillhabenTabAction.OnCategoryBreadcrumbClick(null))
+        assertThat(viewModel.state.value.categoryLevel.map { it.treeId }).containsExactly(4390, 6941)
+        assertThat(viewModel.state.value.categoryBreadcrumb).isEmpty()
+    }
+
+    @Test
+    fun pickerOpensNextToTheChosenCategory() = runTest {
+        fieldsSource.fields.value = mapOf(1L to WillhabenListingFields(categoryPath = bicyclePath))
+        val viewModel = viewModel()
+
+        viewModel.onAction(WillhabenTabAction.OnOpenCategoryPickerClick)
+
+        assertThat(viewModel.state.value.categoryBreadcrumb.map { it.treeId }).containsExactly(4390)
+        assertThat(viewModel.state.value.categoryLevel.map { it.treeId }).containsExactly(4552, 4400)
     }
 
     @Test

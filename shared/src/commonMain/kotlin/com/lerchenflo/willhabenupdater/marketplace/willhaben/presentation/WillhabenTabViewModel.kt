@@ -92,14 +92,18 @@ class WillhabenTabViewModel(
         when (action) {
             WillhabenTabAction.OnRetryLoadTreeClick -> viewModelScope.launch { loadTree() }
             WillhabenTabAction.OnSuggestCategoriesClick -> suggestCategories()
-            WillhabenTabAction.OnOpenCategoryPickerClick -> _state.update {
-                it.copy(isCategoryPickerOpen = true, categoryQuery = "", categoryResults = searchCategories(""))
+            WillhabenTabAction.OnOpenCategoryPickerClick -> {
+                // Opens next to the chosen category, or at the top level
+                val parentId = selectedCategoryPath()?.dropLast(1)?.lastOrNull()?.treeId
+                _state.update { it.copy(isCategoryPickerOpen = true, categoryQuery = "", categoryResults = emptyList()).browsedTo(parentId) }
             }
             WillhabenTabAction.OnCloseCategoryPicker -> _state.update { it.copy(isCategoryPickerOpen = false) }
             is WillhabenTabAction.OnCategoryQueryChange -> _state.update {
                 it.copy(categoryQuery = action.query, categoryResults = searchCategories(action.query))
             }
             is WillhabenTabAction.OnCategorySelect -> selectCategory(action.treeId)
+            is WillhabenTabAction.OnCategoryBrowse -> _state.update { it.browsedTo(action.treeId) }
+            is WillhabenTabAction.OnCategoryBreadcrumbClick -> _state.update { it.browsedTo(action.treeId) }
             is WillhabenTabAction.OnAttributeValueToggle -> toggleAttribute(action.attributeCode, action.valueCode)
             is WillhabenTabAction.OnLocationSelect -> {
                 val location = locations.firstOrNull { it.id == action.locationId } ?: return
@@ -169,13 +173,40 @@ class WillhabenTabViewModel(
         }
     }
 
+    /** Shows the children of [treeId] (top level for null) with the path to it as breadcrumb. */
+    private fun WillhabenTabState.browsedTo(treeId: Int?): WillhabenTabState {
+        val currentTree = tree ?: return this
+        val path = treeId?.let { currentTree.pathOf(it) }.orEmpty()
+        val children = path.lastOrNull()?.children ?: currentTree.root.children
+        return copy(
+            categoryBreadcrumb = path.map { it.toNode() },
+            categoryLevel = children.map { it.toNode() },
+        )
+    }
+
+    private fun WillhabenCategory.toNode() = CategoryNodeUi(treeId = treeId, label = label, hasChildren = children.isNotEmpty())
+
+    /**
+     * Leaf categories whose path contains every word. Categories whose own name matches come first
+     * (exact, then starting with the word, then containing it), then matches in parent categories.
+     */
     private fun searchCategories(query: String): List<CategoryOptionUi> {
-        val leaves = tree?.leaves() ?: return emptyList()
         val words = query.trim().lowercase().split(' ').filter { it.isNotEmpty() }
+        if (words.isEmpty()) return emptyList()
+        val leaves = tree?.leaves() ?: return emptyList()
         return leaves
             .filter { path -> words.all { word -> path.any { it.label.lowercase().contains(word) } } }
+            .map { path -> path.toOption() to rank(path.last().label.lowercase(), words) }
+            .sortedWith(compareBy({ it.second }, { it.first.pathText }))
             .take(MAX_CATEGORY_RESULTS)
-            .map { it.toOption() }
+            .map { it.first }
+    }
+
+    private fun rank(label: String, words: List<String>): Int = when {
+        words.any { label == it } -> 0
+        words.any { label.startsWith(it) } -> 1
+        words.any { label.contains(it) } -> 2
+        else -> 3
     }
 
     private fun selectCategory(treeId: Int) {
@@ -247,9 +278,11 @@ class WillhabenTabViewModel(
         }
     }
 
-    private fun selectedCategory(): WillhabenCategory? {
+    private fun selectedCategory(): WillhabenCategory? = selectedCategoryPath()?.last()
+
+    private fun selectedCategoryPath(): List<WillhabenCategory>? {
         val leafId = fields.categoryPath.lastOrNull()?.treeId ?: return null
-        return tree?.pathOf(leafId)?.last()
+        return tree?.pathOf(leafId)
     }
 
     /** Copies the stored fields into the state; the shipping price text is left alone while typing. */
