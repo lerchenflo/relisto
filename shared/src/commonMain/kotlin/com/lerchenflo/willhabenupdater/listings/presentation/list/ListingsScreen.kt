@@ -57,7 +57,9 @@ import com.lerchenflo.willhabenupdater.app.navigation.ObserveAsEvents
 import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
 import com.lerchenflo.willhabenupdater.listings.presentation.editor.ListingEditorRoot
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.AccountViewModel
-import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.MarketStatusRoot
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.ImportButton
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.LoggedInMarketsRow
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation.account.ObserveAccountEvents
 import com.lerchenflo.willhabenupdater.sharedUi.ListingImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -92,9 +94,11 @@ fun ListingsRoot(
     viewModel: ListingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val accountState by accountViewModel.state.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    ObserveAccountEvents(accountViewModel, snackbarHostState)
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is ListingsEvent.ShowMessage -> scope.launch {
@@ -107,13 +111,8 @@ fun ListingsRoot(
         state = state,
         onAction = viewModel::onAction,
         snackbarHostState = snackbarHostState,
-        marketStatusContent = {
-            MarketStatusRoot(
-                viewModel = accountViewModel,
-                snackbarHostState = snackbarHostState,
-                onOpenSettings = { viewModel.onAction(ListingsAction.OnSettingsClick) },
-            )
-        },
+        marketActions = { ImportButton(state = accountState, onAction = accountViewModel::onAction) },
+        loggedInMarkets = { LoggedInMarketsRow(state = accountState) },
         headerActions = headerActions,
         editorContent = { listingId ->
             ListingEditorRoot(
@@ -131,7 +130,8 @@ fun ListingsScreen(
     state: ListingsState,
     onAction: (ListingsAction) -> Unit,
     snackbarHostState: SnackbarHostState,
-    marketStatusContent: @Composable () -> Unit,
+    marketActions: @Composable () -> Unit,
+    loggedInMarkets: @Composable () -> Unit,
     editorContent: @Composable (listingId: Long) -> Unit,
     headerActions: @Composable () -> Unit = {},
 ) {
@@ -140,7 +140,8 @@ fun ListingsScreen(
             ListingListPane(
                 state = state,
                 onAction = onAction,
-                marketStatusContent = marketStatusContent,
+                marketActions = marketActions,
+                loggedInMarkets = loggedInMarkets,
                 headerActions = headerActions,
                 modifier = Modifier.width(380.dp).fillMaxHeight(),
             )
@@ -167,7 +168,8 @@ fun ListingsScreen(
 private fun ListingListPane(
     state: ListingsState,
     onAction: (ListingsAction) -> Unit,
-    marketStatusContent: @Composable () -> Unit,
+    marketActions: @Composable () -> Unit,
+    loggedInMarkets: @Composable () -> Unit,
     headerActions: @Composable () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -178,12 +180,13 @@ private fun ListingListPane(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f),
             )
-            marketStatusContent()
+            marketActions()
             headerActions()
             IconButton(onClick = { onAction(ListingsAction.OnSettingsClick) }) {
                 Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.listings_settings))
             }
         }
+        loggedInMarkets()
         Button(onClick = { onAction(ListingsAction.OnNewListingClick) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(Modifier.width(8.dp))
@@ -352,7 +355,8 @@ private fun ListingsScreenPreview() {
             ),
             onAction = {},
             snackbarHostState = SnackbarHostState(),
-            marketStatusContent = {},
+            marketActions = {},
+            loggedInMarkets = {},
             editorContent = {},
         )
     }

@@ -83,12 +83,10 @@ class AppSmokeTest {
             onAllNodesWithText("No listings yet. Create your first one.").fetchSemanticsNodes().isNotEmpty()
         }
         assertThat(onAllNodesWithText("Log in to willhaben").fetchSemanticsNodes()).isEmpty()
-        waitUntil(timeoutMillis = 5_000) {
-            onAllNodesWithContentDescription("willhaben: not logged in").fetchSemanticsNodes().isNotEmpty()
-        }
+        // Home only lists the marketplaces the user is logged in to
+        assertThat(onAllNodesWithContentDescription("willhaben: logged in").fetchSemanticsNodes()).isEmpty()
 
-        // The market icon opens the settings with the login
-        onNode(hasContentDescription("willhaben: not logged in") and hasClickAction()).performClick()
+        onNode(hasContentDescription("Settings") and hasClickAction()).performClick()
 
         waitUntil(timeoutMillis = 5_000) {
             onAllNodesWithText("Log in to willhaben").fetchSemanticsNodes().isNotEmpty()

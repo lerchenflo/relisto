@@ -83,7 +83,7 @@ Same local listings on Kleinanzeigen, Shpock and Facebook Marketplace. Each mark
 - [ ] 8.2 Per marketplace, before code: analyse its web client like PLAN.md section 3; write the result
   into PLAN.md section 7; ask the open decisions.
 - [ ] 8.3 Per marketplace: login + session storage (embedded browser like willhaben); login/logout in the
-  settings and a market icon in the home header that shows the login state (like willhaben).
+  settings and the market's logo in the "logged in" row below the home header (like willhaben).
 - [ ] 8.4 Per marketplace: field mapping (category, condition, location, delivery) and the editor tab.
 - [ ] 8.5 Per marketplace: import my listings and match them to existing local listings (confirm in UI).
 - [ ] 8.6 Per marketplace: publish, push changes, images, status actions, renew if the marketplace has expiry.
