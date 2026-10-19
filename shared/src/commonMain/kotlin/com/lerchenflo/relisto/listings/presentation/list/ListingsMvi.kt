@@ -29,10 +29,23 @@ data class ListingListItemUi(
     val updatedText: String,
     /** willhaben's status text for published listings, e.g. "Abgelaufen". */
     val willhabenStatus: String? = null,
+    /** Shown as willhaben logo plus a state icon; null for listings that are only local. */
+    val willhabenState: WillhabenStateUi? = null,
     /** Expired on willhaben, so it can be renewed. */
     val canRenew: Boolean = false,
     val isChecked: Boolean = false,
 )
+
+enum class WillhabenStateUi {
+    ONLINE,
+    EXPIRED,
+    DRAFT,
+    IN_REVIEW,
+    SOLD,
+    DEACTIVATED,
+    RESERVED,
+    OTHER
+}
 
 enum class ListingFilter {
     ACTIVE,

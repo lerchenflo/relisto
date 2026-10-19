@@ -1,5 +1,6 @@
 package com.lerchenflo.relisto.listings.presentation.list
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PauseCircle
+import androidx.compose.material.icons.filled.Sell
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -47,6 +56,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -63,6 +74,7 @@ import com.lerchenflo.relisto.marketplace.willhaben.presentation.account.LoggedI
 import com.lerchenflo.relisto.marketplace.willhaben.presentation.account.ObserveAccountEvents
 import com.lerchenflo.relisto.sharedUi.ListingImage
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import relisto.shared.generated.resources.Res
@@ -91,6 +103,7 @@ import relisto.shared.generated.resources.listings_settings
 import relisto.shared.generated.resources.listings_untitled
 import relisto.shared.generated.resources.listings_updated
 import relisto.shared.generated.resources.listings_willhaben_status
+import relisto.shared.generated.resources.market_willhaben
 import relisto.shared.generated.resources.renew_check_description
 import relisto.shared.generated.resources.renew_checked
 import relisto.shared.generated.resources.renew_clear
@@ -327,6 +340,47 @@ private fun SelectionBar(state: ListingsState, onAction: (ListingsAction) -> Uni
     }
 }
 
+/** willhaben logo plus an icon for the listing's state there; the status text is read out for accessibility. */
+@Composable
+private fun WillhabenStateBadge(state: WillhabenStateUi, statusText: String?) {
+    val description = stringResource(Res.string.listings_willhaben_status, statusText ?: state.name)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = description },
+    ) {
+        Image(
+            painter = painterResource(Res.drawable.market_willhaben),
+            contentDescription = null,
+            modifier = Modifier.size(16.dp).clip(RoundedCornerShape(3.dp)),
+        )
+        Spacer(Modifier.width(2.dp))
+        Icon(
+            imageVector = state.icon(),
+            contentDescription = null,
+            tint = state.tint(),
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
+private fun WillhabenStateUi.icon(): ImageVector = when (this) {
+    WillhabenStateUi.ONLINE -> Icons.Default.CheckCircle
+    WillhabenStateUi.EXPIRED -> Icons.Default.Timer
+    WillhabenStateUi.DRAFT -> Icons.Default.Edit
+    WillhabenStateUi.IN_REVIEW -> Icons.Default.HourglassTop
+    WillhabenStateUi.SOLD -> Icons.Default.Sell
+    WillhabenStateUi.DEACTIVATED -> Icons.Default.PauseCircle
+    WillhabenStateUi.RESERVED -> Icons.Default.Bookmark
+    WillhabenStateUi.OTHER -> Icons.Default.Info
+}
+
+@Composable
+private fun WillhabenStateUi.tint(): Color = when (this) {
+    WillhabenStateUi.ONLINE -> MaterialTheme.colorScheme.primary
+    WillhabenStateUi.EXPIRED -> MaterialTheme.colorScheme.error
+    else -> MaterialTheme.colorScheme.onSurfaceVariant
+}
+
 @Composable
 private fun ListingListItem(
     item: ListingListItemUi,
@@ -361,14 +415,9 @@ private fun ListingListItem(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
-                    item.willhabenStatus?.let { status ->
+                    item.willhabenState?.let { state ->
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(Res.string.listings_willhaben_status, status),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary,
-                            maxLines = 1,
-                        )
+                        WillhabenStateBadge(state = state, statusText = item.willhabenStatus)
                     }
                 }
                 Text(
@@ -396,7 +445,7 @@ private fun ListingsScreenPreview() {
         ListingsScreen(
             state = ListingsState(
                 listings = listOf(
-                    ListingListItemUi(1, "Kinderfahrrad 20 Zoll", "45 €", null, 4, "18.10.2026 19:05", willhabenStatus = "Abgelaufen", canRenew = true, isChecked = true),
+                    ListingListItemUi(1, "Kinderfahrrad 20 Zoll", "45 €", null, 4, "18.10.2026 19:05", willhabenStatus = "Abgelaufen", willhabenState = WillhabenStateUi.EXPIRED, canRenew = true, isChecked = true),
                     ListingListItemUi(2, "Esstisch Eiche massiv", "120 €", null, 2, "17.10.2026 08:30"),
                     ListingListItemUi(3, "", null, null, 0, "16.10.2026 21:12"),
                 ),

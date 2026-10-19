@@ -11,7 +11,9 @@ import com.lerchenflo.relisto.listings.domain.ListingContent
 import com.lerchenflo.relisto.listings.domain.ListingRepository
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
+import com.lerchenflo.relisto.marketplace.domain.PublicationStatus
 import com.lerchenflo.relisto.marketplace.domain.canRenew
+import com.lerchenflo.relisto.marketplace.domain.isExpired
 import com.lerchenflo.relisto.marketplace.willhaben.presentation.toUiText
 import com.lerchenflo.relisto.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
@@ -50,6 +52,7 @@ class ListingsViewModel(
 
     private var allListings: List<Listing> = emptyList()
     private var willhabenStatusByListing: Map<Long, String> = emptyMap()
+    private var willhabenStateByListing: Map<Long, WillhabenStateUi> = emptyMap()
     private var expiredListingIds: Set<Long> = emptySet()
 
     init {
@@ -63,6 +66,7 @@ class ListingsViewModel(
                     .filter { it.statusText != null }
                     .associate { it.listingId to it.statusText!! }
                 val now = timeProvider.nowEpochMillis()
+                willhabenStateByListing = willhaben.mapNotNull { status -> status.toStateUi(now)?.let { status.listingId to it } }.toMap()
                 expiredListingIds = willhaben.filter { it.canRenew(now) }.map { it.listingId }.toSet()
                 _state.update { it.withVisibleListings() }
             }
@@ -207,6 +211,20 @@ class ListingsViewModel(
         )
     }
 
+    private fun PublicationStatus.toStateUi(now: Long): WillhabenStateUi? = when {
+        statusText == null && expiresAt == null -> null
+        isDraft -> WillhabenStateUi.DRAFT
+        isExpired(now) -> WillhabenStateUi.EXPIRED
+        else -> when (statusText) {
+            null, "Online", "Aktiv" -> WillhabenStateUi.ONLINE
+            "in Warteschlange" -> WillhabenStateUi.IN_REVIEW
+            "Verkauft" -> WillhabenStateUi.SOLD
+            "Deaktiviert" -> WillhabenStateUi.DEACTIVATED
+            "Reserviert" -> WillhabenStateUi.RESERVED
+            else -> WillhabenStateUi.OTHER
+        }
+    }
+
     private fun Listing.toListItemUi(checkedIds: Set<Long>) = ListingListItemUi(
         id = id,
         title = title,
@@ -215,6 +233,7 @@ class ListingsViewModel(
         imageCount = images.size,
         updatedText = formatDateTime(updatedAt),
         willhabenStatus = willhabenStatusByListing[id],
+        willhabenState = willhabenStateByListing[id],
         canRenew = !archived && id in expiredListingIds,
         isChecked = id in checkedIds,
     )

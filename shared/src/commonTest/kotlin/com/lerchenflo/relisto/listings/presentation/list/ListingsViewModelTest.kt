@@ -201,6 +201,40 @@ class ListingsViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun willhabenStatusBecomesAStateForTheIcon() = runTest {
+        val texts = listOf("Online", "Abgelaufen", "Bearbeitung", "in Warteschlange", "Verkauft", "Deaktiviert", "Reserviert", "Neu")
+        repository.listings.value = texts.indices.map { listing(it + 1L) }
+        statuses.statuses.value = texts.mapIndexed { index, text ->
+            PublicationStatus(index + 1L, Marketplace.WILLHABEN, text, expiresAt = 20_000L, syncState = SyncState.SYNCED)
+        } + PublicationStatus(9, Marketplace.WILLHABEN, "Online", expiresAt = 5_000L, syncState = SyncState.SYNCED)
+        repository.listings.value = repository.listings.value + listing(9)
+
+        val states = viewModel().state.value.listings.associate { it.id to it.willhabenState }
+
+        assertThat(states).isEqualTo(
+            mapOf(
+                1L to WillhabenStateUi.ONLINE,
+                2L to WillhabenStateUi.EXPIRED,
+                3L to WillhabenStateUi.DRAFT,
+                4L to WillhabenStateUi.IN_REVIEW,
+                5L to WillhabenStateUi.SOLD,
+                6L to WillhabenStateUi.DEACTIVATED,
+                7L to WillhabenStateUi.RESERVED,
+                8L to WillhabenStateUi.OTHER,
+                // End date passed since the last import
+                9L to WillhabenStateUi.EXPIRED,
+            )
+        )
+    }
+
+    @Test
+    fun localOnlyListingHasNoWillhabenState() = runTest {
+        repository.listings.value = listOf(listing(1))
+
+        assertThat(viewModel().state.value.listings.single().willhabenState).isNull()
+    }
+
+    @Test
     fun onlyExpiredWillhabenListingsCanBeRenewed() = runTest {
         expiredAndOnlineListings()
 

@@ -130,3 +130,5 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
 - 2026-10-19 – Live: "Aprilia SX 50" renewed (→ "in Warteschlange"). willhaben's copy replaces the expired
   listing, so the publication now follows the draft right after the copy; drafts ("Bearbeitung") get
   "Fertigstellen" (finish instead of copy), deactivated listings are never renewed.
+- 2026-10-19 – List rows show the willhaben logo plus a state icon (pen = draft, timer = expired, check =
+  online, hourglass = in review, tag = sold, pause = deactivated, bookmark = reserved) instead of text.
