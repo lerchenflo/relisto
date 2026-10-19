@@ -2,10 +2,13 @@ package com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation
 
 import androidx.compose.runtime.Stable
 import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenVertical
 import com.lerchenflo.willhabenupdater.utilities.UiText
 
 @Stable
 data class WillhabenTabState(
+    /** Category, details and delivery options only exist for marketplace listings. */
+    val vertical: WillhabenVertical = WillhabenVertical.MARKETPLACE,
     val isTreeLoading: Boolean = true,
     val treeError: UiText? = null,
     /** "Sport / Sportgeräte › Fahrräder"; null when no category is chosen. */

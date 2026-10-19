@@ -99,7 +99,7 @@ class AdJsonPatcherTest {
     fun otherVerticalsOnlyGetKeysTheyAlreadyHave() {
         // Auto & Motor JSON is not recorded yet: never add marketplace keys or attributes to it
         val motorJson = AppJson.parseToJsonElement(
-            """{"heading":"Alt","price":200.0,"vehicleMileage":12000,
+            """{"heading":"Alt","price":200.0,"vehicleMileage":12000,"locationId":117,
                "treeAttributes":[{"attributeNode":{"code":"Zustand"},"selectedAttributeValueNodes":[{"code":"gebraucht"}]}]}"""
         ).jsonObject
 
@@ -108,6 +108,8 @@ class AdJsonPatcherTest {
         assertThat(json.text("heading")).isEqualTo("Rasentraktor Kart")
         assertThat((json["price"] as JsonPrimitive).content).isEqualTo("180.5")
         assertThat(json.text("vehicleMileage")).isEqualTo("12000")
+        // The location goes with the postcode, so it is written when the JSON has it
+        assertThat(json.text("locationId")).isEqualTo("200")
         assertThat(json["treeAttributes"]).isEqualTo(motorJson["treeAttributes"])
         assertThat(json.keys).isEqualTo(motorJson.keys)
     }

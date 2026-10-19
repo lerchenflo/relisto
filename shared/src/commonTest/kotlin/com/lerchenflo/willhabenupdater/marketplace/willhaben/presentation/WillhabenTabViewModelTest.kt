@@ -25,6 +25,7 @@ import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCat
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCategoryTree
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenListingFields
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLocation
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenVertical
 import com.lerchenflo.willhabenupdater.testutil.FakeImporter
 import com.lerchenflo.willhabenupdater.testutil.FakeListingRepository
 import com.lerchenflo.willhabenupdater.testutil.FakePublicationStatusRepository
@@ -121,6 +122,19 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
 
         assertThat(viewModel.state.value.treeError).isNull()
         assertThat(viewModel.state.value.isTreeLoading).isFalse()
+    }
+
+    @Test
+    fun marketplaceListingShowsMarketplaceSections() = runTest {
+        assertThat(viewModel().state.value.vertical).isEqualTo(WillhabenVertical.MARKETPLACE)
+    }
+
+    @Test
+    fun motorListingIsMarkedAsAutoAndMotor() = runTest {
+        // Category, details and delivery only exist for marketplace listings
+        fieldsSource.fields.value = mapOf(1L to WillhabenListingFields(adTypeId = 21))
+
+        assertThat(viewModel().state.value.vertical).isEqualTo(WillhabenVertical.MOTOR)
     }
 
     @Test

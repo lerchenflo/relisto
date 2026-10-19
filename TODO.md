@@ -13,11 +13,10 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
 The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
 
-- [ ] V.4 Live test with one Auto & Motor listing (ask which one first). Motor JSON is captured and
+- [ ] V.4 Live test with "Beta RR 50" (chosen 2026-10-19; the user starts it in the app, auto renew
+  stays on for all listings). Motor JSON is captured and
   uses the marketplace text keys (see `docs/willhaben-api.md`). Watch: `presave` link in the motor
   copy, product 40021 accepted, `paymentURI`; free motor listings run 7 days only.
-- [ ] V.5 Editor willhaben tab for motor listings: hide marketplace category, attributes and delivery;
-  show the vertical ("Auto & Motor") instead.
 
 ## Next session
 
@@ -26,13 +25,13 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
   release workflow asset names (keep `upgradeUuid` and bundle ID so updates still install over the old app).
 - [ ] N.2 Live test of "Neu veröffentlichen" with "Rasentraktor Kart" (willhaben id 704262322); check the
   captured responses in `docs/api-samples/` step by step (mask contact data, never print it).
-- [ ] N.3 Ask: bulk delete = local only, or also delete on willhaben (status action `3` + delete reason)?
 
 ## Multi-selection (user request 2026-10-18)
 
 - [ ] M.1 Checkbox for every listing (today only expired ones), "select all visible", clear selection.
 - [ ] M.2 Bulk actions on the selection: renew expired (exists for expired ones), archive / unarchive,
-  delete locally (one confirmation for all), delete on willhaben (after N.3).
+  delete with one confirmation that asks each time: only locally, or locally and on willhaben
+  (status action `3` + delete reason; decided 2026-10-19).
 - [ ] M.3 Bulk deactivate / activate / reserved / sold on willhaben (after 5.3).
 - [ ] M.4 Bulk publish to all marketplaces (after Phase 6 and Phase 8).
 

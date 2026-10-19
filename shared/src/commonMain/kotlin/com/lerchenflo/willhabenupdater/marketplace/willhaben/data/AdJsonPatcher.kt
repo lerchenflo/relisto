@@ -61,8 +61,9 @@ object AdJsonPatcher {
             "price" to (content.priceCents?.let { JsonPrimitive(it / 100.0) } ?: JsonNull),
             "postCode" to JsonPrimitive(content.postcode),
         )
+        val location = fields.locationId?.let { mapOf("locationId" to JsonPrimitive(it)) } ?: emptyMap()
         if (!WillhabenAdTypes.isMarketplace(fields.adTypeId)) {
-            return JsonObject(serverJson + textValues.filterKeys { it in serverJson })
+            return JsonObject(serverJson + (textValues + location).filterKeys { it in serverJson })
         }
 
         val managedAttributes = buildMap {
@@ -80,7 +81,7 @@ object AdJsonPatcher {
         return JsonObject(
             serverJson + textValues +
                 ("treeAttributes" to patchAttributes(serverJson["treeAttributes"] as? JsonArray, managedAttributes)) +
-                (fields.locationId?.let { mapOf("locationId" to JsonPrimitive(it)) } ?: emptyMap())
+                location
         )
     }
 

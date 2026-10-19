@@ -65,6 +65,11 @@
 
     <!-- willhaben tab -->
     <string name="willhaben_tab">willhaben</string>
+    <string name="willhaben_vertical">Section: %1$s</string>
+    <string name="willhaben_vertical_marketplace">Marketplace</string>
+    <string name="willhaben_vertical_motor">Cars &amp; Motor</string>
+    <string name="willhaben_vertical_real_estate">Real estate</string>
+    <string name="willhaben_vertical_hint">Category, details and handover are only available for marketplace listings here. Title, text, price, location and images are used when renewing.</string>
     <string name="willhaben_category">Category</string>
     <string name="willhaben_category_none">No category chosen</string>
     <string name="willhaben_category_choose">Choose category</string>

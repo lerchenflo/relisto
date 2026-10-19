@@ -65,6 +65,11 @@
 
     <!-- willhaben tab -->
     <string name="willhaben_tab">willhaben</string>
+    <string name="willhaben_vertical">Bereich: %1$s</string>
+    <string name="willhaben_vertical_marketplace">Marktplatz</string>
+    <string name="willhaben_vertical_motor">Auto &amp; Motor</string>
+    <string name="willhaben_vertical_real_estate">Immobilien</string>
+    <string name="willhaben_vertical_hint">Kategorie, Details und Übergabe gibt es hier nur für Marktplatz-Anzeigen. Titel, Text, Preis, Ort und Bilder werden beim Erneuern übernommen.</string>
     <string name="willhaben_category">Kategorie</string>
     <string name="willhaben_category_none">Keine Kategorie gewählt</string>
     <string name="willhaben_category_choose">Kategorie wählen</string>

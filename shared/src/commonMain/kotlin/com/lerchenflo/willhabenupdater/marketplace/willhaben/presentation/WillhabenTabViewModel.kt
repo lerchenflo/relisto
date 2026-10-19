@@ -23,6 +23,7 @@ import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenCat
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenListingFields
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenLocation
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenVertical
 import com.lerchenflo.willhabenupdater.utilities.PriceFormatter
 import com.lerchenflo.willhabenupdater.utilities.toUiText
 import kotlinx.coroutines.channels.Channel
@@ -287,6 +288,7 @@ class WillhabenTabViewModel(
 
     /** Copies the stored fields into the state; the shipping price text is left alone while typing. */
     private fun WillhabenTabState.withFields(): WillhabenTabState = copy(
+        vertical = WillhabenVertical.of(fields.adTypeId) ?: WillhabenVertical.MARKETPLACE,
         categoryPathText = fields.categoryPath.takeIf { it.isNotEmpty() }?.joinToString(PATH_SEPARATOR) { it.label },
         attributeFields = attributeFields(),
         selectedLocationId = fields.locationId,

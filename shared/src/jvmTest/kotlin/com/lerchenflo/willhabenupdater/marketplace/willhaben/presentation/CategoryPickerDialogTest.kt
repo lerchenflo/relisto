@@ -1,11 +1,15 @@
 package com.lerchenflo.willhabenupdater.marketplace.willhaben.presentation
 
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenVertical
 import java.util.Locale
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -53,5 +57,16 @@ class CategoryPickerDialogTest {
         onNodeWithText("All categories").performClick()
 
         assertThat(actions).containsExactly(WillhabenTabAction.OnCategoryBreadcrumbClick(null))
+    }
+
+    @Test
+    fun motorListingHidesMarketplaceSections() = runComposeUiTest {
+        setContent {
+            WillhabenTabScreen(state = WillhabenTabState(isTreeLoading = false, vertical = WillhabenVertical.MOTOR), onAction = {})
+        }
+
+        assertThat(onAllNodesWithText("Choose category").fetchSemanticsNodes()).isEmpty()
+        assertThat(onAllNodesWithText("Delivery").fetchSemanticsNodes()).isEmpty()
+        assertThat(onAllNodesWithText("Section: Cars & Motor").fetchSemanticsNodes()).hasSize(1)
     }
 }

@@ -113,3 +113,6 @@ Next: see "Next session" in TODO.md (product name, live renew test, bulk delete 
 - 2026-10-19 – Category picker step by step (breadcrumb, ranked search); sold or deactivated listings
   no longer count as expired (their past end date made them renewable before); renew always sets the
   ad type's free product like the web client. Motor JSON documented.
+- 2026-10-19 – Editor willhaben tab shows the section ("Auto & Motor") instead of marketplace category,
+  details and delivery for other verticals. Decisions: live test with "Beta RR 50", auto renew for all
+  listings, bulk delete asks each time (local / local + willhaben).

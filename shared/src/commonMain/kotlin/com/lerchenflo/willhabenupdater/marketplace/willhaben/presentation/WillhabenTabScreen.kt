@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lerchenflo.willhabenupdater.app.navigation.ObserveAsEvents
 import com.lerchenflo.willhabenupdater.app.theme.WillhabenUpdaterTheme
 import com.lerchenflo.willhabenupdater.marketplace.domain.SyncState
+import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.WillhabenVertical
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -80,6 +81,11 @@ import willhabenupdater.shared.generated.resources.willhaben_attribute_required
 import willhabenupdater.shared.generated.resources.willhaben_attributes
 import willhabenupdater.shared.generated.resources.willhaben_attributes_hint
 import willhabenupdater.shared.generated.resources.willhaben_category
+import willhabenupdater.shared.generated.resources.willhaben_vertical
+import willhabenupdater.shared.generated.resources.willhaben_vertical_hint
+import willhabenupdater.shared.generated.resources.willhaben_vertical_marketplace
+import willhabenupdater.shared.generated.resources.willhaben_vertical_motor
+import willhabenupdater.shared.generated.resources.willhaben_vertical_real_estate
 import willhabenupdater.shared.generated.resources.willhaben_category_all
 import willhabenupdater.shared.generated.resources.willhaben_category_choose
 import willhabenupdater.shared.generated.resources.willhaben_category_close
@@ -135,12 +141,17 @@ fun WillhabenTabScreen(
         state.publication?.let { publication ->
             PublicationSection(publication = publication, isRepublishing = state.isRepublishing, onAction = onAction)
         }
-        CategorySection(state = state, onAction = onAction)
-        if (state.attributeFields.isNotEmpty()) {
-            AttributesSection(state = state, onAction = onAction)
+        if (state.vertical == WillhabenVertical.MARKETPLACE) {
+            CategorySection(state = state, onAction = onAction)
+            if (state.attributeFields.isNotEmpty()) {
+                AttributesSection(state = state, onAction = onAction)
+            }
+            LocationSection(state = state, onAction = onAction)
+            DeliverySection(state = state, onAction = onAction)
+        } else {
+            VerticalSection(vertical = state.vertical)
+            LocationSection(state = state, onAction = onAction)
         }
-        LocationSection(state = state, onAction = onAction)
-        DeliverySection(state = state, onAction = onAction)
     }
 
     if (state.isCategoryPickerOpen) {
@@ -484,6 +495,25 @@ private fun CategoryPickerDialog(state: WillhabenTabState, onAction: (WillhabenT
             }
         },
     )
+}
+
+/** Listings outside the marketplace (e.g. motorbikes) have no marketplace category or delivery options. */
+@Composable
+private fun VerticalSection(vertical: WillhabenVertical) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(Res.string.willhaben_vertical, stringResource(vertical.label())), style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(Res.string.willhaben_vertical_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private fun WillhabenVertical.label(): StringResource = when (this) {
+    WillhabenVertical.MARKETPLACE -> Res.string.willhaben_vertical_marketplace
+    WillhabenVertical.MOTOR -> Res.string.willhaben_vertical_motor
+    WillhabenVertical.REAL_ESTATE -> Res.string.willhaben_vertical_real_estate
 }
 
 @Composable
