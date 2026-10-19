@@ -108,5 +108,7 @@ Next: see "Next session" in TODO.md (product name, live renew test, bulk delete 
   market icon with the login state (opens the settings) and an import icon. One app-wide `AccountViewModel`.
 - 2026-10-19 – Home: row below the header lists the logged-in marketplaces with their logo
   (willhaben favicon in `drawable/market_willhaben.png`); import stays an icon in the header.
+- 2026-10-19 – Category picker step by step (breadcrumb, ranked search); sold listings are never
+  "expired" (auto renew skipped them only by luck before); renew always sets the ad type's free product.
 - 2026-10-19 – All verticals: web client analysed (bbx-adin bundles), import and renew for Auto & Motor
   and other ad types with a free product, ad type kept in the willhaben fields JSON (no schema change).

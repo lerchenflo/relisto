@@ -13,11 +13,11 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
 The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
 
-- [ ] V.4 Live test with one Auto & Motor listing (ask which one first). Before: run an import so the
-  motor JSON is captured (`docs/api-samples/*iad_motor_get*`); check its keys for title, description,
-  price, location and images (mask contact data) and extend `WillhabenListingMapper` / `AdJsonPatcher`
-  if they differ. Watch whether the copy carries the old product 2443 or none (then the free 40021 is
-  used); free motor listings run 7 days only.
+- [ ] V.4 Live test with one Auto & Motor listing (ask which one first). Motor JSON is captured and
+  uses the marketplace text keys (see `docs/willhaben-api.md`). Watch: `presave` link in the motor
+  copy, product 40021 accepted, `paymentURI`; free motor listings run 7 days only.
+- [ ] V.5 Editor willhaben tab for motor listings: hide marketplace category, attributes and delivery;
+  show the vertical ("Auto & Motor") instead.
 
 ## Next session
 
@@ -73,6 +73,9 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
 - [ ] 7.8 Document session lifetime, CSRF cookie timing and silent re-login in `docs/willhaben-api.md`.
 - [ ] 7.9 Run the `kmp-crash-guard` and `flow-stability` skills on the finished flows.
 - [ ] 7.10 Production release: from here on never drop the database (Room migrations only).
+- [ ] 7.11 Throttle requests to willhaben so the API is not abused and the account is not banned:
+  pause between requests (import detail GETs, image downloads/uploads, bulk and auto renew), at most
+  one request at a time, back off on `429`/`503`; keep 7.7 (parallel uploads) within that limit.
 
 ## Phase 8 – Other marketplaces (last step)
 

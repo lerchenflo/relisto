@@ -77,7 +77,15 @@ Edit-form JSON per vertical, as the web client builds the route:
 | ESTATE | `GET /iad/estate/{adId}` |
 | MOTOR | `GET /iad/motor/get/{adId}` |
 
-The motor edit JSON shape is not yet captured; verify it in the live test (TODO V.4).
+Motor edit JSON (`GET /iad/motor/get/{adId}`, recorded 2026-10-19 for four motorbikes, `adTypeId` 21):
+- Same text keys as the marketplace: `heading`, `description`, `price`, `postCode`, `locationId`,
+  `location`, `endDate`, `adId`, `adUuid`, `adTypeId`, `productId` (old listings: `2443`), `verticalId` 3.
+- No marketplace category: `categoryTreeId` is `0`, no `treeAttributes`. Vehicle data are plain keys
+  (`make`, `model`, `year`, `month`, `mileage`, `engineEffect`, `engineVolume`, `fuel`, `color`,
+  `vehicleType`, `nationalCode`, `equipment`, ...); `condition` is a code string (e.g. `"70"`).
+- Also contains contact data (name, phone, email, street, IP address): never read or logged.
+- Links: `selfLinkSave` (`/motor/save/mc`), `selfLinkEdit` (`/motor/edit/mc`), `selfLinkActivate`,
+  `selfLinkDelete`, `imageList` / `imageOrder` (`/atimage/{adId}`), `advertURI` (`/motor/get/{adId}`).
 
 Status action links seen in my-adverts (`advertEditStatusActionsList.contextLinkList`):
 - `6` "Neu veröffentlichen": `/bap/copy/{adId}` or `/motor/copy/{adId}` on service `iad` (POST).
@@ -104,7 +112,9 @@ Real estate and commercial marketplace groups have no free product. Older motor 
 
 ### Renew flow of the web client (`/iad/myprofile/renewad`)
 
-1. `POST` the status link `6` (copy) → new draft with a new `adId`.
+1. `POST` the status link `6` (copy) → new draft with a new `adId`. The "my adverts" page then sets
+   `productId` to a product of the listing's ad type from `/iad/productgroups/{loginId}` (replacing the
+   copied one) and `POST`s the draft to its `presave` link.
 2. The form opens at `/iad/anzeigenaufgabe/motor?adId=…` (marketplace: `/iad/anzeigenaufgabe/marktplatz?adId=…`).
 3. Motor only, "pakete" step: bundles from `GET /iad/upselling/{adId}`; choosing one is
    `PUT /iad/upselling/new/{adId}` (the free bundle's button reads "Jetzt veröffentlichen").
