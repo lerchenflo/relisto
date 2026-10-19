@@ -13,7 +13,10 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
 The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
 
-- [ ] V.4 "Beta RR 50": draft 1415790914 ("Bearbeitung") – add a photo, then "Fertigstellen".
+- [ ] V.4 "Beta RR 50": draft 1415790914 ("Bearbeitung"). Free package gone (Basic now € 4.99, likely
+  because "Aprilia SX 50" used the free motorbike listing); retry when Basic is € 0 again.
+- [ ] V.7 Paid-package message: name the cheapest package and its price ("Basic – 14 Tage: € 4,99"),
+  and say that nothing was booked.
   ("Aprilia SX 50" renewed OK on 2026-10-19 → "in Warteschlange"; the user took it offline again.)
 
 ## Next session
