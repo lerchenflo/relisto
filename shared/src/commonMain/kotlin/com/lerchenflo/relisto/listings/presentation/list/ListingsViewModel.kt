@@ -87,26 +87,59 @@ class ListingsViewModel(
                 it.copy(searchQuery = action.query).withVisibleListings()
             }
             is ListingsAction.OnFilterChange -> _state.update {
-                it.copy(filter = action.filter).withVisibleListings()
+                it.copy(filter = action.filter, checkedListingIds = emptySet()).withVisibleListings()
             }
             is ListingsAction.OnListingClick -> _state.update { it.copy(selectedListingId = action.listingId) }
             ListingsAction.OnNewListingClick -> createListing()
             ListingsAction.OnSettingsClick -> viewModelScope.launch { navigator.navigate(Route.Settings) }
             is ListingsAction.OnListingCheckedChange -> _state.update { state ->
-                val checked = when {
-                    !action.checked -> state.checkedListingIds - action.listingId
-                    action.listingId in renewableIds() -> state.checkedListingIds + action.listingId
-                    else -> state.checkedListingIds
-                }
+                val checked = if (action.checked) state.checkedListingIds + action.listingId else state.checkedListingIds - action.listingId
                 state.copy(checkedListingIds = checked).withVisibleListings()
             }
             ListingsAction.OnSelectAllExpiredClick -> _state.update {
                 it.copy(checkedListingIds = renewableIds()).withVisibleListings()
             }
+            ListingsAction.OnSelectAllVisibleClick -> _state.update { state ->
+                state.copy(checkedListingIds = state.listings.map { it.id }.toSet()).withVisibleListings()
+            }
             ListingsAction.OnClearCheckedClick -> _state.update {
                 it.copy(checkedListingIds = emptySet()).withVisibleListings()
             }
             ListingsAction.OnRenewCheckedClick -> renewChecked()
+            ListingsAction.OnArchiveCheckedClick -> setCheckedArchived(true)
+            ListingsAction.OnUnarchiveCheckedClick -> setCheckedArchived(false)
+            ListingsAction.OnDeleteCheckedClick -> _state.update {
+                it.copy(isDeleteConfirmOpen = it.checkedListingIds.isNotEmpty())
+            }
+            ListingsAction.OnDeleteCheckedDismiss -> _state.update { it.copy(isDeleteConfirmOpen = false) }
+            ListingsAction.OnDeleteCheckedConfirm -> deleteChecked()
+        }
+    }
+
+    private fun setCheckedArchived(archived: Boolean) {
+        val ids = _state.value.checkedListingIds
+        _state.update { it.copy(checkedListingIds = emptySet()).withVisibleListings() }
+        viewModelScope.launch {
+            ids.forEach { id ->
+                listingRepository.setArchived(id, archived).onFailure { error ->
+                    _events.send(ListingsEvent.ShowMessage(error.toUiText()))
+                    return@launch
+                }
+            }
+        }
+    }
+
+    /** Deletes the checked listings locally; willhaben is not touched. */
+    private fun deleteChecked() {
+        val ids = _state.value.checkedListingIds
+        _state.update { it.copy(isDeleteConfirmOpen = false, checkedListingIds = emptySet()).withVisibleListings() }
+        viewModelScope.launch {
+            ids.forEach { id ->
+                listingRepository.deleteListing(id).onFailure { error ->
+                    _events.send(ListingsEvent.ShowMessage(error.toUiText()))
+                    return@launch
+                }
+            }
         }
     }
 
@@ -137,7 +170,8 @@ class ListingsViewModel(
     }
 
     private fun renewChecked() {
-        val ids = allListings.map { it.id }.filter { it in _state.value.checkedListingIds }
+        val renewable = renewableIds()
+        val ids = allListings.map { it.id }.filter { it in _state.value.checkedListingIds && it in renewable }
         if (ids.isEmpty() || _state.value.isRenewing) return
         _state.update { it.copy(isRenewing = true) }
         viewModelScope.launch {
@@ -152,19 +186,25 @@ class ListingsViewModel(
         }
     }
 
-    /** Expired listings that are not archived; only these can be checked. */
+    /** Expired listings that are not archived; only these can be renewed. */
     private fun renewableIds(): Set<Long> =
         allListings.filter { !it.archived && it.id in expiredListingIds }.map { it.id }.toSet()
 
     private fun ListingsState.withVisibleListings(): ListingsState {
         val query = searchQuery.trim()
-        val visible = allListings
-            .filter { it.archived == (filter == ListingFilter.ARCHIVED) }
+        val inFilter = allListings.filter { it.archived == (filter == ListingFilter.ARCHIVED) }
+        // Checked listings that left the current filter (archived, deleted) drop out; a search only hides them
+        val checked = checkedListingIds intersect inFilter.map { it.id }.toSet()
+        val visible = inFilter
             .filter { query.isEmpty() || it.title.contains(query, ignoreCase = true) || it.description.contains(query, ignoreCase = true) }
-            .map { it.toListItemUi(checkedListingIds) }
-        // Checked listings that are no longer renewable (renewed, archived, deleted) drop out
+            .map { it.toListItemUi(checked) }
         val renewable = renewableIds()
-        return copy(listings = visible, checkedListingIds = checkedListingIds intersect renewable, renewableCount = renewable.size)
+        return copy(
+            listings = visible,
+            checkedListingIds = checked,
+            renewableCount = renewable.size,
+            checkedRenewableCount = (checked intersect renewable).size,
+        )
     }
 
     private fun Listing.toListItemUi(checkedIds: Set<Long>) = ListingListItemUi(

@@ -154,7 +154,11 @@
     <string name="renew_select_all">Select all expired (%1$d)</string>
     <string name="renew_clear">Clear selection</string>
     <string name="renew_running">Renewing …</string>
-    <string name="renew_check_description">Select for renewing</string>
+    <string name="renew_check_description">Select</string>
+    <string name="listings_select_all_visible">Select all</string>
+    <string name="listings_checked_count">%1$d selected</string>
+    <string name="listings_delete_checked_title">Delete %1$d listings?</string>
+    <string name="listings_delete_checked_text">The listings and their images are removed from this computer. Listings on willhaben stay unchanged.</string>
     <string name="auto_renew_done">Renewed automatically: %1$d, failed: %2$d</string>
     <string name="settings_auto_renew">Renew expired listings automatically on start</string>
     <string name="settings_auto_renew_hint">After login, every expired willhaben listing is published again with the local content. Paid extras are never booked.</string>

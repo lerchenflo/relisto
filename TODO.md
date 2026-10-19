@@ -25,10 +25,8 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
 
 ## Multi-selection (user request 2026-10-18)
 
-- [ ] M.1 Checkbox for every listing (today only expired ones), "select all visible", clear selection.
-- [ ] M.2 Bulk actions on the selection: renew expired (exists for expired ones), archive / unarchive,
-  delete with one confirmation that asks each time: only locally, or locally and on willhaben
-  (status action `3` + delete reason; decided 2026-10-19).
+- [ ] M.2 Bulk delete dialog: add the second choice "locally and on willhaben" (status action `3` +
+  delete reason; decided 2026-10-19 "ask each time"), after 5.3. Local delete exists.
 - [ ] M.3 Bulk deactivate / activate / reserved / sold on willhaben (after 5.3).
 - [ ] M.4 Bulk publish to all marketplaces (after Phase 6 and Phase 8).
 

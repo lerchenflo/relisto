@@ -154,7 +154,11 @@
     <string name="renew_select_all">Alle abgelaufenen auswählen (%1$d)</string>
     <string name="renew_clear">Auswahl aufheben</string>
     <string name="renew_running">Wird erneuert …</string>
-    <string name="renew_check_description">Zum Erneuern auswählen</string>
+    <string name="renew_check_description">Auswählen</string>
+    <string name="listings_select_all_visible">Alle auswählen</string>
+    <string name="listings_checked_count">%1$d ausgewählt</string>
+    <string name="listings_delete_checked_title">%1$d Anzeigen löschen?</string>
+    <string name="listings_delete_checked_text">Die Anzeigen und ihre Bilder werden von diesem Computer entfernt. Anzeigen auf willhaben bleiben unverändert.</string>
     <string name="auto_renew_done">Automatisch erneuert: %1$d, fehlgeschlagen: %2$d</string>
     <string name="settings_auto_renew">Abgelaufene Anzeigen beim Start automatisch erneuern</string>
     <string name="settings_auto_renew_hint">Nach dem Anmelden werden alle abgelaufenen willhaben-Anzeigen mit dem lokalen Inhalt neu veröffentlicht. Kostenpflichtige Extras werden nie gebucht.</string>

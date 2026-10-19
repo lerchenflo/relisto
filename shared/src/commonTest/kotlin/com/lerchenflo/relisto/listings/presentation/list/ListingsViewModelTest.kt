@@ -213,17 +213,103 @@ class ListingsViewModelTest : MainDispatcherTest() {
     }
 
     @Test
-    fun expiredListingsCanBeCheckedAndUnchecked() = runTest {
+    fun anyListingCanBeCheckedAndUnchecked() = runTest {
         expiredAndOnlineListings()
         val viewModel = viewModel()
 
         viewModel.onAction(ListingsAction.OnListingCheckedChange(1, true))
         viewModel.onAction(ListingsAction.OnListingCheckedChange(2, true))
-        assertThat(viewModel.state.value.checkedListingIds).isEqualTo(setOf(1L))
-        assertThat(viewModel.state.value.listings.first { it.id == 1L }.isChecked).isTrue()
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(4, true))
+        assertThat(viewModel.state.value.checkedListingIds).isEqualTo(setOf(1L, 2L, 4L))
+        assertThat(viewModel.state.value.checkedRenewableCount).isEqualTo(1)
+        assertThat(viewModel.state.value.listings.first { it.id == 2L }.isChecked).isTrue()
 
         viewModel.onAction(ListingsAction.OnListingCheckedChange(1, false))
+        assertThat(viewModel.state.value.checkedListingIds).isEqualTo(setOf(2L, 4L))
+    }
+
+    @Test
+    fun selectAllVisibleChecksOnlyTheShownListings() = runTest {
+        repository.listings.value = listOf(listing(1, title = "Rad"), listing(2, title = "Tisch"), listing(3, title = "Radhelm"))
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnSearchQueryChange("rad"))
+
+        viewModel.onAction(ListingsAction.OnSelectAllVisibleClick)
+
+        assertThat(viewModel.state.value.checkedListingIds).isEqualTo(setOf(1L, 3L))
+    }
+
+    @Test
+    fun switchingBetweenActiveAndArchivedClearsTheSelection() = runTest {
+        expiredAndOnlineListings()
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(2, true))
+
+        viewModel.onAction(ListingsAction.OnFilterChange(ListingFilter.ARCHIVED))
+
         assertThat(viewModel.state.value.checkedListingIds).isEmpty()
+    }
+
+    @Test
+    fun renewingTheSelectionRenewsOnlyTheExpiredListings() = runTest {
+        expiredAndOnlineListings()
+        val viewModel = viewModel()
+        listOf(1L, 2L, 3L, 4L).forEach { viewModel.onAction(ListingsAction.OnListingCheckedChange(it, true)) }
+
+        viewModel.onAction(ListingsAction.OnRenewCheckedClick)
+
+        assertThat(publisher.republished).containsExactly(1L, 3L)
+    }
+
+    @Test
+    fun checkedListingsAreArchivedAndRestoredTogether() = runTest {
+        expiredAndOnlineListings()
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(1, true))
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(4, true))
+
+        viewModel.onAction(ListingsAction.OnArchiveCheckedClick)
+
+        assertThat(repository.listings.value.filter { it.archived }.map { it.id }).containsExactly(1L, 4L)
+        assertThat(viewModel.state.value.checkedListingIds).isEmpty()
+
+        viewModel.onAction(ListingsAction.OnFilterChange(ListingFilter.ARCHIVED))
+        viewModel.onAction(ListingsAction.OnSelectAllVisibleClick)
+        viewModel.onAction(ListingsAction.OnUnarchiveCheckedClick)
+
+        assertThat(repository.listings.value.none { it.archived }).isTrue()
+    }
+
+    @Test
+    fun checkedListingsAreDeletedLocallyAfterOneConfirmation() = runTest {
+        expiredAndOnlineListings()
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(2, true))
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(4, true))
+
+        viewModel.onAction(ListingsAction.OnDeleteCheckedClick)
+        assertThat(viewModel.state.value.isDeleteConfirmOpen).isTrue()
+        assertThat(repository.listings.value.size).isEqualTo(4)
+
+        viewModel.onAction(ListingsAction.OnDeleteCheckedConfirm)
+
+        assertThat(repository.listings.value.map { it.id }).containsExactly(1L, 3L)
+        assertThat(viewModel.state.value.isDeleteConfirmOpen).isFalse()
+        assertThat(viewModel.state.value.checkedListingIds).isEmpty()
+    }
+
+    @Test
+    fun dismissedDeleteKeepsEverything() = runTest {
+        expiredAndOnlineListings()
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(2, true))
+        viewModel.onAction(ListingsAction.OnDeleteCheckedClick)
+
+        viewModel.onAction(ListingsAction.OnDeleteCheckedDismiss)
+
+        assertThat(repository.listings.value.size).isEqualTo(4)
+        assertThat(viewModel.state.value.isDeleteConfirmOpen).isFalse()
+        assertThat(viewModel.state.value.checkedListingIds).isEqualTo(setOf(2L))
     }
 
     @Test

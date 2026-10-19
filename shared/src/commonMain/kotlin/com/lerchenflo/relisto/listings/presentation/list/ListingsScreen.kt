@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,7 +67,16 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import relisto.shared.generated.resources.Res
 import relisto.shared.generated.resources.app_name
+import relisto.shared.generated.resources.editor_archive
+import relisto.shared.generated.resources.editor_delete
+import relisto.shared.generated.resources.editor_delete_cancel
+import relisto.shared.generated.resources.editor_delete_confirm
+import relisto.shared.generated.resources.editor_unarchive
+import relisto.shared.generated.resources.listings_checked_count
 import relisto.shared.generated.resources.listings_cover_image
+import relisto.shared.generated.resources.listings_delete_checked_text
+import relisto.shared.generated.resources.listings_delete_checked_title
+import relisto.shared.generated.resources.listings_select_all_visible
 import relisto.shared.generated.resources.listings_empty_active
 import relisto.shared.generated.resources.listings_empty_archived
 import relisto.shared.generated.resources.listings_empty_search
@@ -212,8 +222,8 @@ private fun ListingListPane(
                 label = { Text(stringResource(Res.string.listings_filter_archived)) },
             )
         }
-        if (state.renewableCount > 0 || state.isRenewing) {
-            RenewBar(state = state, onAction = onAction)
+        if (state.listings.isNotEmpty() || state.isRenewing) {
+            SelectionBar(state = state, onAction = onAction)
         }
         when {
             state.isLoading -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -243,10 +253,10 @@ private fun ListingListPane(
     }
 }
 
-/** Renewing several expired listings at once. */
+/** Selecting listings and acting on all of them at once: renew the expired ones, archive, delete. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun RenewBar(state: ListingsState, onAction: (ListingsAction) -> Unit) {
+private fun SelectionBar(state: ListingsState, onAction: (ListingsAction) -> Unit) {
     if (state.isRenewing) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -255,21 +265,65 @@ private fun RenewBar(state: ListingsState, onAction: (ListingsAction) -> Unit) {
         }
         return
     }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
         if (state.checkedListingIds.isEmpty()) {
-            OutlinedButton(onClick = { onAction(ListingsAction.OnSelectAllExpiredClick) }) {
-                Text(stringResource(Res.string.renew_select_all, state.renewableCount))
+            TextButton(onClick = { onAction(ListingsAction.OnSelectAllVisibleClick) }) {
+                Text(stringResource(Res.string.listings_select_all_visible))
+            }
+            if (state.renewableCount > 0) {
+                OutlinedButton(onClick = { onAction(ListingsAction.OnSelectAllExpiredClick) }) {
+                    Text(stringResource(Res.string.renew_select_all, state.renewableCount))
+                }
             }
         } else {
-            Button(onClick = { onAction(ListingsAction.OnRenewCheckedClick) }) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(Res.string.renew_checked, state.checkedListingIds.size))
+            Text(
+                stringResource(Res.string.listings_checked_count, state.checkedListingIds.size),
+                style = MaterialTheme.typography.labelLarge,
+            )
+            if (state.checkedRenewableCount > 0) {
+                Button(onClick = { onAction(ListingsAction.OnRenewCheckedClick) }) {
+                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(Res.string.renew_checked, state.checkedRenewableCount))
+                }
+            }
+            if (state.filter == ListingFilter.ACTIVE) {
+                OutlinedButton(onClick = { onAction(ListingsAction.OnArchiveCheckedClick) }) {
+                    Text(stringResource(Res.string.editor_archive))
+                }
+            } else {
+                OutlinedButton(onClick = { onAction(ListingsAction.OnUnarchiveCheckedClick) }) {
+                    Text(stringResource(Res.string.editor_unarchive))
+                }
+            }
+            OutlinedButton(onClick = { onAction(ListingsAction.OnDeleteCheckedClick) }) {
+                Text(stringResource(Res.string.editor_delete), color = MaterialTheme.colorScheme.error)
             }
             TextButton(onClick = { onAction(ListingsAction.OnClearCheckedClick) }) {
                 Text(stringResource(Res.string.renew_clear))
             }
         }
+    }
+    if (state.isDeleteConfirmOpen) {
+        AlertDialog(
+            onDismissRequest = { onAction(ListingsAction.OnDeleteCheckedDismiss) },
+            title = { Text(stringResource(Res.string.listings_delete_checked_title, state.checkedListingIds.size)) },
+            text = { Text(stringResource(Res.string.listings_delete_checked_text)) },
+            confirmButton = {
+                TextButton(onClick = { onAction(ListingsAction.OnDeleteCheckedConfirm) }) {
+                    Text(stringResource(Res.string.editor_delete_confirm), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onAction(ListingsAction.OnDeleteCheckedDismiss) }) {
+                    Text(stringResource(Res.string.editor_delete_cancel))
+                }
+            },
+        )
     }
 }
 
@@ -287,14 +341,12 @@ private fun ListingListItem(
         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick),
     ) {
         Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (item.canRenew) {
-                val checkDescription = stringResource(Res.string.renew_check_description)
-                Checkbox(
-                    checked = item.isChecked,
-                    onCheckedChange = onCheckedChange,
-                    modifier = Modifier.semantics { contentDescription = checkDescription },
-                )
-            }
+            val checkDescription = stringResource(Res.string.renew_check_description)
+            Checkbox(
+                checked = item.isChecked,
+                onCheckedChange = onCheckedChange,
+                modifier = Modifier.semantics { contentDescription = checkDescription },
+            )
             ListingImage(
                 filePath = item.coverImagePath,
                 contentDescription = stringResource(Res.string.listings_cover_image, title),

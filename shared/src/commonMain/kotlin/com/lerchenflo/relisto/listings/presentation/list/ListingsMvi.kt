@@ -10,11 +10,14 @@ data class ListingsState(
     val searchQuery: String = "",
     val filter: ListingFilter = ListingFilter.ACTIVE,
     val isLoading: Boolean = true,
-    /** Expired listings checked for renewing them together. */
+    /** Listings checked for a bulk action (renew, archive, delete); only listings of the current filter. */
     val checkedListingIds: Set<Long> = emptySet(),
     /** Number of expired listings that can be renewed. */
     val renewableCount: Int = 0,
+    /** Expired listings among the checked ones; only these are renewed. */
+    val checkedRenewableCount: Int = 0,
     val isRenewing: Boolean = false,
+    val isDeleteConfirmOpen: Boolean = false,
 )
 
 data class ListingListItemUi(
@@ -44,8 +47,14 @@ sealed interface ListingsAction {
     data object OnSettingsClick : ListingsAction
     data class OnListingCheckedChange(val listingId: Long, val checked: Boolean) : ListingsAction
     data object OnSelectAllExpiredClick : ListingsAction
+    data object OnSelectAllVisibleClick : ListingsAction
     data object OnClearCheckedClick : ListingsAction
     data object OnRenewCheckedClick : ListingsAction
+    data object OnArchiveCheckedClick : ListingsAction
+    data object OnUnarchiveCheckedClick : ListingsAction
+    data object OnDeleteCheckedClick : ListingsAction
+    data object OnDeleteCheckedConfirm : ListingsAction
+    data object OnDeleteCheckedDismiss : ListingsAction
 }
 
 sealed interface ListingsEvent {

@@ -119,3 +119,5 @@ Next: see "Next session" in TODO.md (product name, live renew test, bulk delete 
 - 2026-10-19 – Renamed to Relisto everywhere: package `com.lerchenflo.relisto`, Android ids, bundle ID,
   resources package, theme, data folder `Relisto`, DB `relisto.db`, GitHub repo `lerchenflo/relisto`.
   No data migration (user decision); the old data folder is not used anymore.
+- 2026-10-19 – Multi-selection: checkbox on every listing, select all / all expired, bulk renew (expired
+  ones only), archive / restore, local delete with one confirmation.
