@@ -70,17 +70,19 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 
 Phases 1-4 done. Phase 5 in progress: renewing expired listings is built, not yet tested live.
 - Single renew: editor willhaben tab shows status / expiry / sync state, "Neu veröffentlichen" with
-  confirmation (`WillhabenRepublisher`: copy → presave → images → finish → reload → stop on
-  `paymentURI` → activate).
-- Bulk renew: checkboxes on expired listings in the list, "Ausgewählte erneuern".
+  confirmation (`WillhabenRepublisher`: free product lookup → copy → presave → images → finish →
+  reload → stop on `paymentURI` → activate).
+- Multi-selection in the list: checkbox on every listing; bulk renew (expired ones only), archive /
+  restore, local delete.
 - Auto renew: setting "Abgelaufene Anzeigen beim Start automatisch erneuern" (default off), runs
-  once per app run at the first login (`WillhabenRenewer.renewAllExpired`).
+  once per app run at the first login (`WillhabenRenewer.renewAllExpired`); sold, reserved and
+  deactivated listings are never renewed.
 - The expired original of a renewed listing is skipped by the import (`replacedRemoteIds`, DB v2).
 - Update icon in the home header opens the GitHub release page.
 - All willhaben verticals are imported (Auto & Motor via `/iad/motor/get/{id}`, jobs skipped) and
   renewed when willhaben has a free product for the ad type (`WillhabenAdTypes`, `/iad/productgroups`).
 
-Next: see "Next session" in TODO.md (product name, live renew test, bulk delete scope).
+Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Phase 5.1 onwards.
 
 ## Progress log
 

@@ -13,8 +13,8 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
 The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
 
-- [ ] V.4 Live test with "Beta RR 50" (chosen 2026-10-19; the user starts it in the app, auto renew
-  stays on for all listings). Motor JSON is captured and
+- [ ] V.4 Live test with "Beta RR 50" (chosen 2026-10-19; the user starts it in the app with
+  `:desktopApp:run` so responses are captured). Motor JSON is captured and
   uses the marketplace text keys (see `docs/willhaben-api.md`). Watch: `presave` link in the motor
   copy, product 40021 accepted, `paymentURI`; free motor listings run 7 days only.
 
