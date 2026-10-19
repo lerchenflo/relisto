@@ -175,6 +175,9 @@
     <string name="listings_checked_count">%1$d selected</string>
     <string name="listings_delete_checked_title">Delete %1$d listings?</string>
     <string name="listings_delete_checked_text">The listings and their images are removed from this computer. Listings on willhaben stay unchanged.</string>
+    <string name="listings_delete_local">Delete locally only</string>
+    <string name="listings_delete_everywhere">Delete locally and on willhaben</string>
+    <string name="listings_delete_checked_text_willhaben">The listings and their images are removed from this computer. Listings that are on willhaben can be deleted there too.</string>
     <string name="auto_renew_done">Renewed automatically: %1$d, failed: %2$d</string>
     <string name="settings_auto_renew">Renew expired listings automatically on start</string>
     <string name="settings_auto_renew_hint">After login, every expired willhaben listing is published again with the local content. Paid extras are never booked.</string>

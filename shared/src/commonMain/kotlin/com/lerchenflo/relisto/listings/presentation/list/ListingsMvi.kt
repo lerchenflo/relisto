@@ -18,6 +18,9 @@ data class ListingsState(
     val checkedRenewableCount: Int = 0,
     val isRenewing: Boolean = false,
     val isDeleteConfirmOpen: Boolean = false,
+    /** Some checked listings are on willhaben and can be deleted there too. */
+    val canDeleteCheckedOnWillhaben: Boolean = false,
+    val isDeleting: Boolean = false,
 )
 
 data class ListingListItemUi(
@@ -67,6 +70,7 @@ sealed interface ListingsAction {
     data object OnUnarchiveCheckedClick : ListingsAction
     data object OnDeleteCheckedClick : ListingsAction
     data object OnDeleteCheckedConfirm : ListingsAction
+    data object OnDeleteCheckedEverywhereConfirm : ListingsAction
     data object OnDeleteCheckedDismiss : ListingsAction
 }
 

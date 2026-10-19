@@ -108,4 +108,18 @@ class WillhabenStatusActionRunnerTest {
             .isEqualTo(Result.Error(StatusActionError.Failed(DataError.Network.BAD_REQUEST)))
         assertThat(importer.calls).isEqualTo(0)
     }
+
+    @Test
+    fun severalListingsAreChangedOneAfterAnotherWithOneImport() = runTest {
+        val first = publishedListing(inactiveActions)
+        val second = publishedListing(inactiveActions)
+        val withoutAction = publishedListing(null)
+
+        val result = runner.performAll(listOf(first, second, withoutAction), WillhabenStatusAction.DELETE)
+
+        assertThat(result.succeeded).isEqualTo(setOf(first, second))
+        assertThat(result.firstError).isEqualTo(StatusActionError.NotAvailable)
+        assertThat(calls.size).isEqualTo(2)
+        assertThat(importer.calls).isEqualTo(1)
+    }
 }

@@ -135,3 +135,5 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
 - 2026-10-19 – Status actions (5.3): links from my-adverts stored per import (`remoteActionsJson`, DB v3
   with AutoMigration + test); willhaben tab buttons for activate, deactivate, reserved, sold, delete
   (sold/delete confirmed); `PUT`/`DELETE` like the web client; "Inaktiv" shown as deactivated.
+- 2026-10-19 – Bulk delete asks "nur lokal" or "lokal und auf willhaben" (DELETE per listing, one import
+  at the end; a listing whose willhaben delete failed stays locally).

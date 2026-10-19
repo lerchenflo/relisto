@@ -87,6 +87,9 @@ import relisto.shared.generated.resources.editor_unarchive
 import relisto.shared.generated.resources.listings_checked_count
 import relisto.shared.generated.resources.listings_cover_image
 import relisto.shared.generated.resources.listings_delete_checked_text
+import relisto.shared.generated.resources.listings_delete_checked_text_willhaben
+import relisto.shared.generated.resources.listings_delete_everywhere
+import relisto.shared.generated.resources.listings_delete_local
 import relisto.shared.generated.resources.listings_delete_checked_title
 import relisto.shared.generated.resources.listings_select_all_visible
 import relisto.shared.generated.resources.listings_empty_active
@@ -325,10 +328,28 @@ private fun SelectionBar(state: ListingsState, onAction: (ListingsAction) -> Uni
         AlertDialog(
             onDismissRequest = { onAction(ListingsAction.OnDeleteCheckedDismiss) },
             title = { Text(stringResource(Res.string.listings_delete_checked_title, state.checkedListingIds.size)) },
-            text = { Text(stringResource(Res.string.listings_delete_checked_text)) },
+            text = {
+                Text(
+                    stringResource(
+                        if (state.canDeleteCheckedOnWillhaben) Res.string.listings_delete_checked_text_willhaben
+                        else Res.string.listings_delete_checked_text
+                    )
+                )
+            },
             confirmButton = {
-                TextButton(onClick = { onAction(ListingsAction.OnDeleteCheckedConfirm) }) {
-                    Text(stringResource(Res.string.editor_delete_confirm), color = MaterialTheme.colorScheme.error)
+                // Asked each time (decision 2026-10-19): only here, or here and on willhaben
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(onClick = { onAction(ListingsAction.OnDeleteCheckedConfirm) }) {
+                        Text(
+                            stringResource(if (state.canDeleteCheckedOnWillhaben) Res.string.listings_delete_local else Res.string.editor_delete_confirm),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    if (state.canDeleteCheckedOnWillhaben) {
+                        TextButton(onClick = { onAction(ListingsAction.OnDeleteCheckedEverywhereConfirm) }) {
+                            Text(stringResource(Res.string.listings_delete_everywhere), color = MaterialTheme.colorScheme.error)
+                        }
+                    }
                 }
             },
             dismissButton = {

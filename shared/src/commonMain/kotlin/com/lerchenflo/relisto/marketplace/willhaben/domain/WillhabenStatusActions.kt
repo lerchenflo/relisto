@@ -35,7 +35,16 @@ sealed interface StatusActionError : Error {
     data class Failed(val error: DataError) : StatusActionError
 }
 
+data class BulkActionResult(
+    val succeeded: Set<Long>,
+    /** Error of the first listing the action failed for. */
+    val firstError: StatusActionError?,
+)
+
 interface WillhabenStatusActions {
     /** Runs [action] on the listing's willhaben listing and imports again, so status and actions are current. */
     suspend fun perform(listingId: Long, action: WillhabenStatusAction): EmptyResult<StatusActionError>
+
+    /** Runs [action] on several listings one after another (a failure does not stop the others), then imports once. */
+    suspend fun performAll(listingIds: List<Long>, action: WillhabenStatusAction): BulkActionResult
 }

@@ -19,6 +19,8 @@ import com.lerchenflo.relisto.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenListingFields
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenRenewer
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActions
 import com.lerchenflo.relisto.settings.domain.SettingsDataSource
 import com.lerchenflo.relisto.utilities.TimeProvider
 import com.lerchenflo.relisto.utilities.UiText
@@ -41,6 +43,7 @@ class ListingsViewModel(
     private val navigator: Navigator,
     private val publicationStatuses: PublicationStatusRepository,
     private val renewer: WillhabenRenewer,
+    private val statusActions: WillhabenStatusActions,
     private val timeProvider: TimeProvider,
 ) : ViewModel() {
 
@@ -54,6 +57,7 @@ class ListingsViewModel(
     private var willhabenStatusByListing: Map<Long, String> = emptyMap()
     private var willhabenStateByListing: Map<Long, WillhabenStateUi> = emptyMap()
     private var expiredListingIds: Set<Long> = emptySet()
+    private var deletableOnWillhabenIds: Set<Long> = emptySet()
 
     init {
         viewModelScope.launch {
@@ -66,6 +70,9 @@ class ListingsViewModel(
                     .filter { it.statusText != null }
                     .associate { it.listingId to it.statusText!! }
                 val now = timeProvider.nowEpochMillis()
+                deletableOnWillhabenIds = willhaben
+                    .filter { WillhabenStatusAction.DELETE.name in it.availableActions }
+                    .map { it.listingId }.toSet()
                 willhabenStateByListing = willhaben.mapNotNull { status -> status.toStateUi(now)?.let { status.listingId to it } }.toMap()
                 expiredListingIds = willhaben.filter { it.canRenew(now) }.map { it.listingId }.toSet()
                 _state.update { it.withVisibleListings() }
@@ -116,7 +123,8 @@ class ListingsViewModel(
                 it.copy(isDeleteConfirmOpen = it.checkedListingIds.isNotEmpty())
             }
             ListingsAction.OnDeleteCheckedDismiss -> _state.update { it.copy(isDeleteConfirmOpen = false) }
-            ListingsAction.OnDeleteCheckedConfirm -> deleteChecked()
+            ListingsAction.OnDeleteCheckedConfirm -> deleteChecked(alsoOnWillhaben = false)
+            ListingsAction.OnDeleteCheckedEverywhereConfirm -> deleteChecked(alsoOnWillhaben = true)
         }
     }
 
@@ -133,17 +141,26 @@ class ListingsViewModel(
         }
     }
 
-    /** Deletes the checked listings locally; willhaben is not touched. */
-    private fun deleteChecked() {
-        val ids = _state.value.checkedListingIds
-        _state.update { it.copy(isDeleteConfirmOpen = false, checkedListingIds = emptySet()).withVisibleListings() }
+    /**
+     * Deletes the checked listings locally, and first on willhaben when asked. A listing whose
+     * willhaben deletion failed stays locally, so nothing is lost without notice.
+     */
+    private fun deleteChecked(alsoOnWillhaben: Boolean) {
+        val checked = _state.value.checkedListingIds
+        _state.update { it.copy(isDeleteConfirmOpen = false, checkedListingIds = emptySet(), isDeleting = true).withVisibleListings() }
         viewModelScope.launch {
-            ids.forEach { id ->
+            val onWillhaben = if (alsoOnWillhaben) checked.filter { it in deletableOnWillhabenIds } else emptyList()
+            val result = if (onWillhaben.isEmpty()) null else statusActions.performAll(onWillhaben, WillhabenStatusAction.DELETE)
+            val failedOnWillhaben = onWillhaben.toSet() - result?.succeeded.orEmpty()
+            _state.update { it.copy(isDeleting = false) }
+            (checked - failedOnWillhaben).forEach { id ->
                 listingRepository.deleteListing(id).onFailure { error ->
                     _events.send(ListingsEvent.ShowMessage(error.toUiText()))
                     return@launch
                 }
             }
+            // Reported after the local deletion: sending waits until the screen reads it
+            result?.firstError?.let { _events.send(ListingsEvent.ShowMessage(it.toUiText())) }
         }
     }
 
@@ -208,6 +225,7 @@ class ListingsViewModel(
             checkedListingIds = checked,
             renewableCount = renewable.size,
             checkedRenewableCount = (checked intersect renewable).size,
+            canDeleteCheckedOnWillhaben = checked.any { it in deletableOnWillhabenIds },
         )
     }
 

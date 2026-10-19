@@ -39,7 +39,7 @@ class CookieWillhabenSessionRepository(
                 Result.Error(LoginError.NETWORK)
             }
             is Result.Success -> if (check.data is LoginCheck.LoggedIn) {
-                publish(SessionState.LoggedIn((check.data as LoginCheck.LoggedIn).displayName))
+                publish(SessionState.LoggedIn((check.data).displayName))
                 Result.Success(Unit)
             } else {
                 cookiesStorage.clear()

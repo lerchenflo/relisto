@@ -3,6 +3,7 @@ package com.lerchenflo.relisto.listings.presentation.list
 import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.containsOnly
 import assertk.assertions.isEqualTo
 import assertk.assertions.isEmpty
 import assertk.assertions.isFalse
@@ -26,6 +27,8 @@ import com.lerchenflo.relisto.testutil.FakeImporter
 import com.lerchenflo.relisto.testutil.FakeListingRepository
 import com.lerchenflo.relisto.testutil.FakePublicationStatusRepository
 import com.lerchenflo.relisto.testutil.FakePublisher
+import com.lerchenflo.relisto.testutil.FakeStatusActions
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.testutil.FakeSettingsDataSource
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
 import com.lerchenflo.relisto.testutil.FakeWillhabenFieldsDataSource
@@ -50,7 +53,9 @@ class ListingsViewModelTest : MainDispatcherTest() {
     private val time = FakeTimeProvider(now = 10_000L)
     private val renewer = WillhabenRenewer(publisher, importer, statuses, time)
 
-    private fun viewModel() = ListingsViewModel(repository, settings, willhabenFields, navigator, statuses, renewer, time)
+    private val statusActions = FakeStatusActions()
+
+    private fun viewModel() = ListingsViewModel(repository, settings, willhabenFields, navigator, statuses, renewer, statusActions, time)
 
     /** Listings 1 and 3 are expired on willhaben, 2 is online, 4 exists only locally. */
     private fun expiredAndOnlineListings() {
@@ -331,6 +336,54 @@ class ListingsViewModelTest : MainDispatcherTest() {
         assertThat(repository.listings.value.map { it.id }).containsExactly(1L, 3L)
         assertThat(viewModel.state.value.isDeleteConfirmOpen).isFalse()
         assertThat(viewModel.state.value.checkedListingIds).isEmpty()
+    }
+
+    /** Listing 1 and 2 are on willhaben and can be deleted there, 3 only locally. */
+    private fun deletableOnWillhaben() {
+        repository.listings.value = listOf(listing(1), listing(2), listing(3))
+        statuses.statuses.value = listOf(
+            PublicationStatus(1, Marketplace.WILLHABEN, "Online", null, SyncState.SYNCED, availableActions = setOf("DELETE")),
+            PublicationStatus(2, Marketplace.WILLHABEN, "Abgelaufen", null, SyncState.SYNCED, availableActions = setOf("DELETE")),
+        )
+    }
+
+    @Test
+    fun deleteDialogOffersWillhabenOnlyForListingsThatAreThere() = runTest {
+        deletableOnWillhaben()
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(3, true))
+        viewModel.onAction(ListingsAction.OnDeleteCheckedClick)
+        assertThat(viewModel.state.value.canDeleteCheckedOnWillhaben).isFalse()
+
+        viewModel.onAction(ListingsAction.OnListingCheckedChange(1, true))
+
+        assertThat(viewModel.state.value.canDeleteCheckedOnWillhaben).isTrue()
+    }
+
+    @Test
+    fun deleteEverywhereDeletesOnWillhabenThenLocally() = runTest {
+        deletableOnWillhaben()
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnSelectAllVisibleClick)
+        viewModel.onAction(ListingsAction.OnDeleteCheckedClick)
+
+        viewModel.onAction(ListingsAction.OnDeleteCheckedEverywhereConfirm)
+
+        assertThat(statusActions.performed).containsOnly(1L to WillhabenStatusAction.DELETE, 2L to WillhabenStatusAction.DELETE)
+        assertThat(repository.listings.value).isEmpty()
+    }
+
+    @Test
+    fun listingThatCouldNotBeDeletedOnWillhabenStaysLocally() = runTest {
+        deletableOnWillhaben()
+        statusActions.failingIds = setOf(2L)
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnSelectAllVisibleClick)
+        viewModel.onAction(ListingsAction.OnDeleteCheckedClick)
+
+        viewModel.onAction(ListingsAction.OnDeleteCheckedEverywhereConfirm)
+
+        assertThat(repository.listings.value.map { it.id }).containsExactly(2L)
     }
 
     @Test

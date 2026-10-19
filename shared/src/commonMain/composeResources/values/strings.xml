@@ -175,6 +175,9 @@
     <string name="listings_checked_count">%1$d ausgewählt</string>
     <string name="listings_delete_checked_title">%1$d Anzeigen löschen?</string>
     <string name="listings_delete_checked_text">Die Anzeigen und ihre Bilder werden von diesem Computer entfernt. Anzeigen auf willhaben bleiben unverändert.</string>
+    <string name="listings_delete_local">Nur lokal löschen</string>
+    <string name="listings_delete_everywhere">Lokal und auf willhaben löschen</string>
+    <string name="listings_delete_checked_text_willhaben">Die Anzeigen und ihre Bilder werden von diesem Computer entfernt. Anzeigen, die auf willhaben sind, können dort auch gelöscht werden.</string>
     <string name="auto_renew_done">Automatisch erneuert: %1$d, fehlgeschlagen: %2$d</string>
     <string name="settings_auto_renew">Abgelaufene Anzeigen beim Start automatisch erneuern</string>
     <string name="settings_auto_renew_hint">Nach dem Anmelden werden alle abgelaufenen willhaben-Anzeigen mit dem lokalen Inhalt neu veröffentlicht. Kostenpflichtige Extras werden nie gebucht.</string>

@@ -341,4 +341,18 @@ class FakeStatusActions : com.lerchenflo.relisto.marketplace.willhaben.domain.Wi
         performed += listingId to action
         return result
     }
+
+    /** Listing ids for which [performAll] fails. */
+    var failingIds: Set<Long> = emptySet()
+
+    override suspend fun performAll(
+        listingIds: List<Long>,
+        action: com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction,
+    ): com.lerchenflo.relisto.marketplace.willhaben.domain.BulkActionResult {
+        listingIds.forEach { performed += it to action }
+        return com.lerchenflo.relisto.marketplace.willhaben.domain.BulkActionResult(
+            succeeded = listingIds.filter { it !in failingIds }.toSet(),
+            firstError = if (listingIds.any { it in failingIds }) com.lerchenflo.relisto.marketplace.willhaben.domain.StatusActionError.NotAvailable else null,
+        )
+    }
 }
