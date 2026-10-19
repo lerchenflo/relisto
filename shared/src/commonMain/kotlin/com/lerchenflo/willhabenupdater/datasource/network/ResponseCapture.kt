@@ -27,7 +27,7 @@ internal class ResponseCaptureWriter(private val directory: String) {
 
     private companion object {
         /** Only listing data is recorded, never the user's profile, chats or other personal data. */
-        val LISTING_ENDPOINTS = Regex("^/webapi/(myatz/|iad/(bap|bapcom|productgroups|categorytree|locations|deletereasons|soldreasons)(/|$)|iad-upload/|p2p-aggregator/)")
+        val LISTING_ENDPOINTS = Regex("^/webapi/(myatz/|iad/(bap|bapcom|motor|estate|productgroups|categorytree|locations|deletereasons|soldreasons)(/|$)|iad-upload/|p2p-aggregator/)")
     }
 
     private val mutex = Mutex()

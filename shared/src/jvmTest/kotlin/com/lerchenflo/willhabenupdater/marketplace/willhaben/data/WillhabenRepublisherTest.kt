@@ -56,6 +56,26 @@ class WillhabenRepublisherTest {
         calls += call
         (request.body as? OutgoingContent.ByteArrayContent)?.let { bodies[call] = it.bytes().decodeToString() }
         when (call) {
+            "GET /webapi/iad/productgroups" -> json(
+                """{"productGroupList":[
+                   {"adTypeId":67,"productContextLinkList":{"productContextLink":[{"adTypeId":67,"price":0.00,"id":"67"}]}},
+                   {"adTypeId":21,"productContextLinkList":{"productContextLink":[{"adTypeId":21,"price":0.00,"id":"40021"}]}},
+                   {"adTypeId":1,"productContextLinkList":{"productContextLink":[{"adTypeId":1,"price":49.00,"id":"1001"}]}}]}"""
+            )
+            "POST /webapi/iad/motor/copy/111" -> json(
+                """{"heading":"Alt","price":900.0,"adId":null,"productId":null,"vehicleMileage":12000,
+                   "contextLinkList":{"contextLink":[{"id":"presave","serviceName":"iad","relativePath":"/motor/presave"}]}}"""
+            )
+            "POST /webapi/iad/motor/presave" -> json(
+                """{"adId":333,"adUuid":"uuid-333","contextLinkList":{"contextLink":[
+                   {"id":"selfLinkFinish","serviceName":"iad","relativePath":"/motor/finish"}]}}"""
+            )
+            "POST /webapi/iad/motor/finish" -> json("{}")
+            "GET /webapi/iad/motor/get/333" -> json(
+                """{"heading":"Beta RR 50","price":800.0,"adId":333,"adUuid":"uuid-333","contextLinkList":{"contextLink":[
+                   {"id":"selfLinkActivate","serviceName":"iad","relativePath":"/motor/activate/333"}]}}"""
+            )
+            "PUT /webapi/iad/motor/activate/333" -> respond("", HttpStatusCode.OK)
             "POST /webapi/iad/bap/copy/111" ->
                 if (copyStatus != HttpStatusCode.OK) respondError(copyStatus)
                 else json(
@@ -88,6 +108,7 @@ class WillhabenRepublisherTest {
     private val republisher = WillhabenRepublisher(
         writeDataSource = KtorWillhabenWriteDataSource(client),
         listingsDataSource = KtorWillhabenListingsDataSource(client),
+        catalogDataSource = KtorWillhabenCatalogDataSource(client),
         runner = runner,
         listingRepository = listings,
         fieldsDataSource = fields,
@@ -99,11 +120,12 @@ class WillhabenRepublisherTest {
     @AfterTest
     fun tearDown() = database.close()
 
-    private suspend fun publishedListing(remoteId: String? = "111"): Long {
+    private suspend fun publishedListing(remoteId: String? = "111", adTypeId: Int? = null): Long {
         val id = (listings.createListing(ListingContent(title = "Rasentraktor Kart", description = "Gut erhalten", priceCents = 18000, postcode = "6850")) as Result.Success).data
         database.publicationDao().insert(
             ListingPublicationEntity(
-                listingId = id, marketplace = Marketplace.WILLHABEN.name, marketplaceFieldsJson = null,
+                listingId = id, marketplace = Marketplace.WILLHABEN.name,
+                marketplaceFieldsJson = adTypeId?.let { """{"adTypeId":$it}""" },
                 remoteId = remoteId, remoteUuid = "uuid-111", remoteUrl = null, remoteStatus = "Abgelaufen",
                 expiresAt = 5L, remoteSnapshotJson = "{}", remoteSnapshotHash = "old", syncState = SyncState.SYNCED.name,
                 lastSyncedAt = 1L, lastError = null,
@@ -120,6 +142,7 @@ class WillhabenRepublisherTest {
 
         assertThat(result).isEqualTo(Result.Success(Unit))
         assertThat(calls).containsExactly(
+            "GET /webapi/iad/productgroups",
             "POST /webapi/iad/bap/copy/111",
             "POST /webapi/iad/bap/presave",
             "POST /webapi/iad/bap/finish",
@@ -171,7 +194,7 @@ class WillhabenRepublisherTest {
             "PUT /webapi/iad-upload/atimage/222/order-and-associate",
         )
         assertThat(bodies.getValue("PUT /webapi/iad-upload/atimage/222/order-and-associate"))
-            .isEqualTo("""{"advertImage":[{"reference":"temp-3"},{"reference":"temp-4"}],"floorPlans":[]}""")
+            .isEqualTo("""{"advertImage":[{"reference":"temp-4"},{"reference":"temp-5"}],"floorPlans":[]}""")
     }
 
     @Test
@@ -197,6 +220,38 @@ class WillhabenRepublisherTest {
 
         assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.NotPublished))
         assertThat(calls.isEmpty()).isEqualTo(true)
+    }
+
+    @Test
+    fun motorListingIsRenewedOverTheMotorRoutesWithTheFreeProduct() = runTest {
+        val id = publishedListing(adTypeId = 21)
+
+        val result = republisher.republish(id)
+
+        assertThat(result).isEqualTo(Result.Success(Unit))
+        assertThat(calls).containsExactly(
+            "GET /webapi/iad/productgroups",
+            "POST /webapi/iad/motor/copy/111",
+            "POST /webapi/iad/motor/presave",
+            "POST /webapi/iad/motor/finish",
+            "GET /webapi/iad/motor/get/333",
+            "PUT /webapi/iad/motor/activate/333",
+        )
+        val finishBody = bodies.getValue("POST /webapi/iad/motor/finish")
+        assertThat(finishBody).contains("\"productId\":40021")
+        assertThat(finishBody).contains("\"heading\":\"Rasentraktor Kart\"")
+        // Keys the motor JSON does not have are not added
+        assertThat(finishBody).doesNotContain("treeAttributes")
+        assertThat(finishBody).doesNotContain("postCode")
+        assertThat(database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!.remoteId).isEqualTo("333")
+    }
+
+    @Test
+    fun adTypeWithoutFreeProductIsRefusedBeforeAnyWrite() = runTest {
+        val id = publishedListing(adTypeId = 1)
+
+        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.PaidProduct))
+        assertThat(calls).containsExactly("GET /webapi/iad/productgroups")
     }
 
     @Test

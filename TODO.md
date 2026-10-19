@@ -13,11 +13,11 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
 The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
 
-- [ ] V.1 Analyse the web client for the other verticals: edit form JSON (`GET /iad/motor/...`?), copy,
-  presave, images, finish, activate; write the result into `docs/willhaben-api.md` and PLAN.md.
-- [ ] V.2 Import listings of all verticals (text, images, fields, status), keep the vertical per listing.
-- [ ] V.3 Renew expired listings of all verticals (single, bulk, automatic); stop on `paymentURI`.
-- [ ] V.4 Live test with one Auto & Motor listing (ask which one first).
+- [ ] V.4 Live test with one Auto & Motor listing (ask which one first). Before: run an import so the
+  motor JSON is captured (`docs/api-samples/*iad_motor_get*`); check its keys for title, description,
+  price, location and images (mask contact data) and extend `WillhabenListingMapper` / `AdJsonPatcher`
+  if they differ. Watch whether the copy carries the old product 2443 or none (then the free 40021 is
+  used); free motor listings run 7 days only.
 
 ## Next session
 

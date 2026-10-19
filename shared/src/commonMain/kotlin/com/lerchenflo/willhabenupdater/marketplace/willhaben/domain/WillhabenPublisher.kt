@@ -6,6 +6,7 @@ import com.lerchenflo.willhabenupdater.app.domain.Error
 
 /** Steps of publishing a listing on willhaben, in this order. */
 enum class PublishStep {
+    PRODUCT,
     COPY,
     PRESAVE,
     IMAGES,
@@ -18,7 +19,7 @@ sealed interface PublishError : Error {
     /** The listing has no willhaben listing to renew. */
     data object NotPublished : PublishError
 
-    /** willhaben wants money for this listing; paid products are out of scope. */
+    /** willhaben wants money for this listing (or has no free product for its ad type); paid products are out of scope. */
     data object PaidProduct : PublishError
 
     /** An expected link is missing in willhaben's answer - the unofficial API has changed. */

@@ -2,10 +2,17 @@ package com.lerchenflo.willhabenupdater.marketplace.willhaben.data
 
 import com.lerchenflo.willhabenupdater.app.domain.DataError
 import com.lerchenflo.willhabenupdater.app.domain.Result
+import com.lerchenflo.willhabenupdater.app.domain.map
 import com.lerchenflo.willhabenupdater.datasource.network.get
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.dto.CategorySuggestionResponseDto
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.data.dto.LocationsResponseDto
 import io.ktor.client.HttpClient
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 
 /** Free private marketplace listing ("Marktplatz"). */
 internal const val MARKETPLACE_AD_TYPE_ID = 67
@@ -31,6 +38,28 @@ class KtorWillhabenCatalogDataSource(
             )
         )
     }
+
+    /**
+     * Id of the free product for listings of [adTypeId] (e.g. 67 marketplace, 40021 motorbike),
+     * null when willhaben only sells paid products for it. Products sit at any depth below the groups.
+     */
+    suspend fun fetchFreeProductId(adTypeId: Int): Result<Int?, DataError.Network> {
+        return httpClient.get<JsonObject>(route = "/iad/productgroups").map { groups ->
+            groups.allObjects()
+                .firstOrNull { it.int("adTypeId") == adTypeId && it.price() == 0.0 && it.int("id") != null }
+                ?.int("id")
+        }
+    }
+
+    private fun JsonElement.allObjects(): Sequence<JsonObject> = when (this) {
+        is JsonObject -> sequenceOf(this) + values.asSequence().flatMap { it.allObjects() }
+        is JsonArray -> asSequence().flatMap { it.allObjects() }
+        else -> emptySequence()
+    }
+
+    private fun JsonObject.int(key: String): Int? = (this[key] as? JsonPrimitive)?.intOrNull
+
+    private fun JsonObject.price(): Double? = (this["price"] as? JsonPrimitive)?.doubleOrNull
 
     suspend fun fetchLocations(postcode: String): Result<LocationsResponseDto, DataError.Network> {
         return httpClient.get(

@@ -34,7 +34,7 @@ class RoomWillhabenImporterTest {
 
     private val importer = RoomWillhabenImporter(
         source = object : WillhabenListingsSource {
-            override suspend fun fetchMyMarketplaceListings() = remote
+            override suspend fun fetchMyListings() = remote
         },
         catalogRepository = FakeWillhabenCatalogRepository(),
         listingRepository = listings,

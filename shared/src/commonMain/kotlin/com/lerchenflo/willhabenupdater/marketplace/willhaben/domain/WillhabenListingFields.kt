@@ -9,6 +9,8 @@ data class WillhabenListingFields(
     val locationId: Int? = null,
     val locationLabel: String? = null,
     val delivery: DeliveryOptions = DeliveryOptions(),
+    /** willhaben ad type, e.g. 67 marketplace or 21 motorbike; null for listings stored before it was kept (marketplace). */
+    val adTypeId: Int? = null,
 )
 
 data class WillhabenCategoryRef(

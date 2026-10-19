@@ -34,7 +34,7 @@ class RoomWillhabenImporter(
 ) : WillhabenImporter {
 
     override suspend fun importMyListings(): Result<ImportSummary, DataError> {
-        val fetchedListings = when (val fetched = source.fetchMyMarketplaceListings()) {
+        val fetchedListings = when (val fetched = source.fetchMyListings()) {
             is Result.Error -> return fetched
             is Result.Success -> fetched.data
         }

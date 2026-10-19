@@ -4,14 +4,14 @@ import com.lerchenflo.willhabenupdater.app.domain.DataError
 import com.lerchenflo.willhabenupdater.app.domain.Result
 import com.lerchenflo.willhabenupdater.marketplace.willhaben.domain.RemoteListing
 
-/** Loads all marketplace listings of the user page by page, with the full JSON of each listing. */
+/** Loads the user's listings of all verticals page by page, with the full JSON of each listing. */
 class WillhabenListingsFetcher(
     private val dataSource: KtorWillhabenListingsDataSource,
     private val runner: WillhabenRequestRunner,
     private val pageSize: Int = 30,
 ) : WillhabenListingsSource {
 
-    override suspend fun fetchMyMarketplaceListings(): Result<List<RemoteListing>, DataError.Network> {
+    override suspend fun fetchMyListings(): Result<List<RemoteListing>, DataError.Network> {
         val summaries = buildList {
             var page = 1
             while (true) {
@@ -23,8 +23,10 @@ class WillhabenListingsFetcher(
             }
         }
         return Result.Success(
-            summaries.filter { it.adTypeId == MARKETPLACE_AD_TYPE_ID }.map { summary ->
-                when (val detail = runner.run { dataSource.fetchListingJson(summary.remoteId) }) {
+            summaries.mapNotNull { summary ->
+                // Ad types without a known edit form (jobs) are skipped
+                val route = WillhabenAdTypes.detailRoute(summary.remoteId, summary.adTypeId) ?: return@mapNotNull null
+                when (val detail = runner.run { dataSource.fetchListingJson(route) }) {
                     is Result.Error -> return detail
                     is Result.Success -> RemoteListing(summary, detail.data)
                 }
@@ -33,7 +35,7 @@ class WillhabenListingsFetcher(
     }
 }
 
-/** The user's marketplace listings on willhaben with their full JSON. */
+/** The user's listings on willhaben with their full JSON. */
 interface WillhabenListingsSource {
-    suspend fun fetchMyMarketplaceListings(): Result<List<RemoteListing>, DataError.Network>
+    suspend fun fetchMyListings(): Result<List<RemoteListing>, DataError.Network>
 }

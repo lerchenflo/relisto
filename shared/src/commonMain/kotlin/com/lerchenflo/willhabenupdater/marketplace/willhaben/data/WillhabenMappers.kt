@@ -59,6 +59,7 @@ fun WillhabenFieldsDto.toFields(): WillhabenListingFields = WillhabenListingFiel
         shippingPriceCents = delivery.shippingPriceCents,
         paylivery = delivery.paylivery,
     ),
+    adTypeId = adTypeId,
 )
 
 fun WillhabenListingFields.toDto(): WillhabenFieldsDto = WillhabenFieldsDto(
@@ -72,4 +73,5 @@ fun WillhabenListingFields.toDto(): WillhabenFieldsDto = WillhabenFieldsDto(
         shippingPriceCents = delivery.shippingPriceCents,
         paylivery = delivery.paylivery,
     ),
+    adTypeId = adTypeId,
 )

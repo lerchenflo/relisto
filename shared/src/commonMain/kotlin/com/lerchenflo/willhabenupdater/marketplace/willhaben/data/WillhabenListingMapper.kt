@@ -21,8 +21,8 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 /**
- * Reads the editable willhaben listing JSON (GET /iad/bap/{adId}). Only listing fields are read;
- * the contact data in the same JSON is never touched here.
+ * Reads the editable willhaben listing JSON (GET /iad/bap/{adId}, other verticals see [WillhabenAdTypes]).
+ * Only listing fields are read; the contact data in the same JSON is never touched here.
  */
 object WillhabenListingMapper {
 
@@ -60,6 +60,7 @@ object WillhabenListingMapper {
                 pickup = HANDOVER_PICKUP in handover,
                 shipping = HANDOVER_SHIPPING in handover,
             ),
+            adTypeId = listing.summary.adTypeId ?: (json["adTypeId"] as? JsonPrimitive)?.intOrNull,
         )
         return ImportedListing(
             remoteId = listing.summary.remoteId,

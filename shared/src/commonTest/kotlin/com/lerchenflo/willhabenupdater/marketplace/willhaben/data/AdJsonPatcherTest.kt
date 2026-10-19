@@ -96,6 +96,23 @@ class AdJsonPatcherTest {
     }
 
     @Test
+    fun otherVerticalsOnlyGetKeysTheyAlreadyHave() {
+        // Auto & Motor JSON is not recorded yet: never add marketplace keys or attributes to it
+        val motorJson = AppJson.parseToJsonElement(
+            """{"heading":"Alt","price":200.0,"vehicleMileage":12000,
+               "treeAttributes":[{"attributeNode":{"code":"Zustand"},"selectedAttributeValueNodes":[{"code":"gebraucht"}]}]}"""
+        ).jsonObject
+
+        val json = AdJsonPatcher.patch(motorJson, content, fields.copy(adTypeId = 21))
+
+        assertThat(json.text("heading")).isEqualTo("Rasentraktor Kart")
+        assertThat((json["price"] as JsonPrimitive).content).isEqualTo("180.5")
+        assertThat(json.text("vehicleMileage")).isEqualTo("12000")
+        assertThat(json["treeAttributes"]).isEqualTo(motorJson["treeAttributes"])
+        assertThat(json.keys).isEqualTo(motorJson.keys)
+    }
+
+    @Test
     fun contextLinkIsFoundById() {
         assertThat(ContextLinks.find(serverJson, "imageList")).isEqualTo(ContextLink("iad", "/atimage/42"))
         assertThat(ContextLinks.find(serverJson, "selfLinkFinish")).isNull()

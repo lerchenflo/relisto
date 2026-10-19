@@ -10,6 +10,7 @@ data class WillhabenFieldsDto(
     val locationId: Int? = null,
     val locationLabel: String? = null,
     val delivery: DeliveryOptionsDto = DeliveryOptionsDto(),
+    val adTypeId: Int? = null,
 )
 
 @Serializable

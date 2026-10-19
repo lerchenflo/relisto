@@ -137,6 +137,33 @@ class WillhabenListingMapperTest {
     }
 
     @Test
+    fun adTypeIsKeptInTheFields() {
+        assertThat(map().fields.adTypeId).isEqualTo(67)
+    }
+
+    @Test
+    fun listingOfAnotherVerticalFallsBackToTheSummary() {
+        // Auto & Motor JSON (GET /iad/motor/get/{adId}) has not been recorded yet; only shared keys are known
+        val motorSummary = summary.copy(adTypeId = 21, title = "Beta RR 50 Moped / Mofa")
+
+        val imported = WillhabenListingMapper.toImportedListing(RemoteListing(motorSummary, """{"adId":1,"price":1500}""")) { null }!!
+
+        assertThat(imported.content.title).isEqualTo("Beta RR 50 Moped / Mofa")
+        assertThat(imported.content.priceCents).isEqualTo(150000L)
+        assertThat(imported.fields.adTypeId).isEqualTo(21)
+        assertThat(imported.fields.categoryPath).isEqualTo(emptyList())
+    }
+
+    @Test
+    fun adTypeDoesNotChangeTheContentHash() {
+        // Listings stored before the ad type was kept must not look changed
+        val imported = map()
+
+        assertThat(willhabenContentHash(imported.content, imported.fields))
+            .isEqualTo(willhabenContentHash(imported.content, imported.fields.copy(adTypeId = null)))
+    }
+
+    @Test
     fun brokenJsonGivesNull() {
         assertThat(WillhabenListingMapper.toImportedListing(RemoteListing(summary, "not json")) { null }).isNull()
     }

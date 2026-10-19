@@ -13,7 +13,8 @@ contact data are never captured, logged or documented.
 ## My listings – `GET /webapi/myatz/atverz/showpagedadsfromuser?page=1&rows=30&vertical=bap`
 
 - `vertical=bap` does not filter: `verticalList[]` always contains all verticals
-  (`verticalId` 5 = Marktplatz, 3 = Auto & Motor, ...). The app keeps `adTypeId == 67`.
+  (`verticalId` 5 = Marktplatz, 3 = Auto & Motor, ...). Since 2026-10-19 the app imports every
+  listing whose ad type has a known edit route (see "Other verticals" below); jobs are skipped.
 - `totalNumberOfAdvertDetails`: total over all verticals.
 - `verticalList[].advertDetails[]`:
   - `id` (string), `uuid`, `adTypeId`, `productId`, `verticalId`
@@ -49,3 +50,65 @@ for later edits but never reads, logs or captures those fields.
 Context links of a listing: `selfLinkEdit` (`/bap/edit`), `selfLinkSave` (`/bap/save`),
 `selfLinkActivate` (`/bap/activate/{id}`), `selfLinkDelete`, `imageList` (`/atimage/{id}`),
 `imageOrder` (`/atimage/{id}/order`), `moveImageToPosition`, `swapImages`, `categoryTree`.
+
+## Other verticals (Auto & Motor, Immobilien)
+
+Read from the web client's public bundles (`/bbx-adin/`, build `1064040-284338c6`) and the
+my-adverts list on 2026-10-19.
+
+Vertical ids (`verticalId`): `5` = BAP (Marktplatz), `3` = MOTOR (Auto & Motor), `2` = ESTATE
+(Immobilien), `1` = JOB.
+
+Ad type ids (`adTypeId`):
+
+| Vertical | Ad types |
+|---|---|
+| ESTATE | `1`, `2`, `3`, `4`, `5`, `6`, `8`, `15`, `16` |
+| MOTOR | `20` car (`MOTOR_CAR`), `21` motorbike & quad (`MOTOR_MC`), `25` van/truck (`MOTOR_VAN_TRUCK`), `26` caravan (`MOTOR_CARAVAN`) |
+| BAP | `67` private (`BAP_SALESOBJECT`), `68` webstore (`BAP_WEBSTOREOBJECT`), `69` commercial (`BAP_SALESOBJECT_PRO`) |
+| JOB | `401`, `402` |
+
+Edit-form JSON per vertical, as the web client builds the route:
+
+| Vertical / ad type | Route |
+|---|---|
+| BAP (`67`, `68`) | `GET /iad/bap/{adId}` |
+| BAP commercial (`69`) | `GET /iad/bapcom/{adId}` |
+| ESTATE | `GET /iad/estate/{adId}` |
+| MOTOR | `GET /iad/motor/get/{adId}` |
+
+The motor edit JSON shape is not yet captured; verify it in the live test (TODO V.4).
+
+Status action links seen in my-adverts (`advertEditStatusActionsList.contextLinkList`):
+- `6` "Neu veröffentlichen": `/bap/copy/{adId}` or `/motor/copy/{adId}` on service `iad` (POST).
+- `3` "Löschen": `/myatz/v1/bap/{adId}` or `/myatz/v1/motor/{adId}` on `publicapi`.
+- The listing's `selfLink` is `/atverz/user/{userUuid}/ad/{adId}` for every vertical.
+
+New motor listing template: `GET /iad/motor/{car|mc|van_truck|caravan}?productId=…`.
+
+### Free products – `GET /webapi/iad/productgroups`
+
+Public, but needs the `X-WH-Client` header (without it: `400`). Free products (`price` `0.00`)
+per ad type, from `productContextLinkList.productContextLink[]`:
+
+| Ad type | Product id | Runtime | Group note |
+|---|---|---|---|
+| `67` Marktplatz | `67` | 45 days | |
+| `20` Gebrauchtwagen | `40020` | 7 days | "Kostenlos bis € 22.000" |
+| `21` Motorrad & Quad | `40021` | 7 days | "Kostenlos bis € 8.000" |
+| `25` Nutzfahrzeug & Pickup | `40025` | 7 days | |
+| `26` Wohnwagen & Wohnmobil | `40026` | 7 days | |
+
+Real estate and commercial marketplace groups have no free product. Older motor listings carry
+`productId` `2443`.
+
+### Renew flow of the web client (`/iad/myprofile/renewad`)
+
+1. `POST` the status link `6` (copy) → new draft with a new `adId`.
+2. The form opens at `/iad/anzeigenaufgabe/motor?adId=…` (marketplace: `/iad/anzeigenaufgabe/marktplatz?adId=…`).
+3. Motor only, "pakete" step: bundles from `GET /iad/upselling/{adId}`; choosing one is
+   `PUT /iad/upselling/new/{adId}` (the free bundle's button reads "Jetzt veröffentlichen").
+4. Reload the listing; if there is no `paymentURI` link and `selfLinkActivate` exists, `PUT` activate.
+
+The app never calls the upselling endpoints: it copies, presaves, finishes, reloads and stops
+when `paymentURI` is present.

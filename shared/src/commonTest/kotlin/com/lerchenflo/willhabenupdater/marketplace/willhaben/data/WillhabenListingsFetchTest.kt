@@ -31,8 +31,8 @@ class WillhabenListingsFetchTest {
            "advertImageList":{"advertImage":[{"mainImageUrl":"https://cache.willhaben.at/$id.jpg"},{"mainImageUrl":null}]},
            "advertEditStatusActionsList":{"statusId":50,"statusName":"Online","contextLinkList":{"contextLink":[{"id":"2","serviceName":"iad","relativePath":"/x"}]}}}"""
 
-    private val page1 = """{"totalNumberOfAdvertDetails":3,"verticalList":[{"advertDetails":[${advert(1, 67, "Rad")},${advert(2, 20, "Auto")}]}]}"""
-    private val page2 = """{"totalNumberOfAdvertDetails":3,"verticalList":[{"advertDetails":[${advert(3, 67, "Tisch")}]}]}"""
+    private val page1 = """{"totalNumberOfAdvertDetails":4,"verticalList":[{"advertDetails":[${advert(1, 67, "Rad")},${advert(2, 21, "Moped")}]}]}"""
+    private val page2 = """{"totalNumberOfAdvertDetails":4,"verticalList":[{"advertDetails":[${advert(3, 67, "Tisch")},${advert(4, 401, "Job")}]}]}"""
 
     private val engine = MockEngine { request ->
         requests += request.url.encodedPathAndQuery
@@ -44,7 +44,8 @@ class WillhabenListingsFetchTest {
         when {
             path.endsWith("/myatz/atverz/showpagedadsfromuser") ->
                 respond(if (request.url.parameters["page"] == "1") page1 else page2, HttpStatusCode.OK, jsonHeaders)
-            path.contains("/iad/bap/") -> respond("""{"adId":${path.substringAfterLast('/')},"some":"form"}""", HttpStatusCode.OK, jsonHeaders)
+            path.contains("/iad/bap/") || path.contains("/iad/motor/get/") ->
+                respond("""{"adId":${path.substringAfterLast('/')},"some":"form"}""", HttpStatusCode.OK, jsonHeaders)
             else -> respondError(HttpStatusCode.NotFound)
         }
     }
@@ -58,27 +59,32 @@ class WillhabenListingsFetchTest {
     fun myAdvertsPageIsParsed() = runTest {
         val result = dataSource.fetchMyAdverts(page = 1, rows = 2) as Result.Success
 
-        assertThat(result.data.total).isEqualTo(3)
+        assertThat(result.data.total).isEqualTo(4)
         assertThat(result.data.adverts).containsExactly(
             RemoteListingSummary("1", "uuid-1", 67, "Rad", statusText = "Online", imageUrls = listOf("https://cache.willhaben.at/1.jpg")),
-            RemoteListingSummary("2", "uuid-2", 20, "Auto", statusText = "Online", imageUrls = listOf("https://cache.willhaben.at/2.jpg")),
+            RemoteListingSummary("2", "uuid-2", 21, "Moped", statusText = "Online", imageUrls = listOf("https://cache.willhaben.at/2.jpg")),
         )
         assertThat(requests.single()).isEqualTo("/webapi/myatz/atverz/showpagedadsfromuser?page=1&rows=2&vertical=bap")
     }
 
     @Test
-    fun allPagesAreFetchedAndOnlyMarketplaceListingsKept() = runTest {
-        val result = repository.fetchMyMarketplaceListings() as Result.Success
+    fun allPagesAreFetchedAndListingsOfAllVerticalsKept() = runTest {
+        val result = repository.fetchMyListings() as Result.Success
 
-        assertThat(result.data.map { it.summary.remoteId }).containsExactly("1", "3")
+        // Jobs have no edit form the app knows; they are skipped
+        assertThat(result.data.map { it.summary.remoteId }).containsExactly("1", "2", "3")
         assertThat(requests.filter { it.contains("showpagedadsfromuser") }.size).isEqualTo(2)
     }
 
     @Test
-    fun detailsAreLoadedForEachMarketplaceListing() = runTest {
-        val result = repository.fetchMyMarketplaceListings() as Result.Success
+    fun detailsAreLoadedFromTheRouteOfEachVertical() = runTest {
+        val result = repository.fetchMyListings() as Result.Success
 
-        assertThat(requests.filter { it.startsWith("/webapi/iad/bap/") }).containsExactly("/webapi/iad/bap/1", "/webapi/iad/bap/3")
+        assertThat(requests.filter { it.startsWith("/webapi/iad/") }).containsExactly(
+            "/webapi/iad/bap/1",
+            "/webapi/iad/motor/get/2",
+            "/webapi/iad/bap/3",
+        )
         assertThat(result.data.first().detailJson).isEqualTo("""{"adId":1,"some":"form"}""")
     }
 
@@ -86,7 +92,7 @@ class WillhabenListingsFetchTest {
     fun expiredSessionIsRenewedDuringImport() = runTest {
         unauthorizedOnce = true
 
-        val result = repository.fetchMyMarketplaceListings()
+        val result = repository.fetchMyListings()
 
         assertThat(result).isInstanceOf(Result.Success::class)
         assertThat(renewCalls).isEqualTo(1)
@@ -101,6 +107,6 @@ class WillhabenListingsFetchTest {
         )
         unauthorizedOnce = true
 
-        assertThat(loggedOutRepository.fetchMyMarketplaceListings()).isEqualTo(Result.Error(DataError.Network.UNAUTHORIZED))
+        assertThat(loggedOutRepository.fetchMyListings()).isEqualTo(Result.Error(DataError.Network.UNAUTHORIZED))
     }
 }

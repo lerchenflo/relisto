@@ -20,7 +20,7 @@ the same local listings for other marketplaces (Kleinanzeigen, Shpock, Facebook 
   needs to publish: category, condition, location, delivery options).
 - Fully usable offline: create, edit, duplicate, archive listings without a willhaben login.
 - willhaben login inside the app (my own account only).
-- Import all my existing willhaben marketplace listings into the local database.
+- Import all my existing willhaben listings into the local database (all verticals since 2026-10-19).
 - Push local changes (text, price, images) to an existing willhaben listing.
 - Create and publish a new free private marketplace listing from a local entry.
 - Status actions on existing listings: deactivate, activate, mark reserved, remove reserved,
@@ -33,14 +33,21 @@ the same local listings for other marketplaces (Kleinanzeigen, Shpock, Facebook 
 ### Out of scope (decision 2026-10-18)
 - All paid extras: upselling / "Zusatzprodukte", TOP-Anzeige, bumps, product carts, payments,
   invoices / bill requests.
-- Verticals other than the private marketplace (BAP, `adTypeId` 67): no cars/motorbikes
-  (Eurotax), no real estate, no jobs, no commercial marketplace (`adTypeId` 69), no boats
-  (paid product).
+- ~~Verticals other than the private marketplace~~ (changed 2026-10-19, see below). Still out
+  of scope unless decided later: creating or editing listings outside the private marketplace
+  (cars/motorbikes with Eurotax, real estate, commercial marketplace `adTypeId` 69, boats) and
+  job listings.
 - Chat/messages, search alerts, browsing other people's listings.
 - Paid "push to top" (bump) and fake bumps by deleting and re-creating listings.
 - Android features: the wizard's `:androidApp` module stays in the project and must keep
   compiling, but features are built and tested for desktop first. Android-specific parts
   (login WebView, storage paths) are not planned yet. No iOS.
+
+### Scope change (decision 2026-10-19)
+- All verticals are in scope for import and renew ("Import + renew now"): Auto & Motor,
+  real estate and the commercial marketplace are imported like marketplace listings, and
+  expired ones are renewed when willhaben offers a free product for their ad type. Jobs are
+  skipped. Details: `docs/willhaben-api.md`, section "Other verticals".
 
 ---
 
@@ -191,8 +198,10 @@ Delete/sold reason dialogs: `GET`/`POST /iad/deletereasons?adId={id}` and
 The app instead refuses and tells the user.
 
 Explicitly ignored endpoints: `/iad/upselling/*`, `/iad/products/privates/*` (carts, checkout),
-`/iad/payment/*`, `/iad/motor/*`, `/iad/estate/*`, `/iad/bapcom/*`,
-`/iad-upload/atimage/convert-pdf`, `/chat-api/*`, `/ad-search/*`, `/interceptor/*`, `/iad/logevent/*`.
+`/iad/payment/*`, `/iad-upload/atimage/convert-pdf`, `/chat-api/*`, `/ad-search/*`, `/interceptor/*`, `/iad/logevent/*`.
+Since 2026-10-19, `/iad/motor/*`, `/iad/estate/*` and `/iad/bapcom/*` are used for reading and
+renewing other verticals (edit routes and copy links in `docs/willhaben-api.md`); creating new
+listings there, Eurotax lookups and upselling stay unused.
 
 ### 3.4 Flow: create and publish a new listing
 
@@ -247,6 +256,7 @@ Answers go into `docs/willhaben-api.md`.
 5. [3] Is the CSRF cookie set right after login or only after the first GET?
 6. [5] Image limits: max count per listing, max file size, accepted formats.
 7. [4] Does `showpagedadsfromuser` expect `vertical=bap` repeated or comma separated?
+   **Answered:** the parameter does not filter; the list always contains all verticals.
 8. [4/5] How are expired listings shown (status values), and is republish free for marketplace?
 
 ### 3.8 Risks and mitigations
@@ -503,7 +513,7 @@ Made (all 2026-10-18, confirmed by me in the interview):
 - "Refresh" listings on willhaben = renew expired listings (no bumps).
 - Last phase: other marketplaces Kleinanzeigen, Shpock, Facebook Marketplace.
 - Generic data model now: content in `ListingEntity`, marketplace data in `ListingPublicationEntity`.
-- No paid extras, payments, upselling; private marketplace only.
+- No paid extras, payments, upselling; private marketplace only (verticals widened on 2026-10-19, see below).
 - Root package `com.lerchenflo.willhabenupdater`, app name "Willhaben Updater".
 - Login only through an embedded browser (now JavaFX WebView, see 4.1); no manual cookie paste; no password storage.
 - Session cookies stored with KSafe.
@@ -526,6 +536,10 @@ Technical defaults (decided during implementation):
 - willhaben condition ("Zustand") and handover ("Übergabe") attributes are derived from the
   neutral condition and the delivery options, so the willhaben tab does not show them.
 - Android uses stubs for image import and file picker until Android features are planned.
+- All willhaben verticals are imported and renewed (2026-10-19, interview). The ad type is stored
+  in the willhaben fields JSON (`adTypeId`, no schema change; `null` = marketplace). The free
+  product per ad type comes from `/iad/productgroups`; without a free product the app refuses
+  before copying. For non-marketplace JSON only keys that already exist are patched.
 
 Open (asked via interview when the phase starts):
 - Exact attribute fields shown per category (Phase 2/4, after the first import samples).

@@ -42,6 +42,8 @@ object ContextLinks {
  * Writes the fields the app manages into a listing JSON received from willhaben and keeps
  * everything else unchanged, so new or unknown willhaben fields survive.
  * Attributes are sent as codes only, like the willhaben web app does.
+ * Listings of other verticals (Auto & Motor, ...) only get the text keys they already have:
+ * their JSON has not been recorded yet, and marketplace attributes do not belong there.
  */
 object AdJsonPatcher {
 
@@ -53,6 +55,16 @@ object AdJsonPatcher {
     )
 
     fun patch(serverJson: JsonObject, content: ListingContent, fields: WillhabenListingFields): JsonObject {
+        val textValues = mapOf(
+            "heading" to JsonPrimitive(content.title),
+            "description" to JsonPrimitive(HtmlText.fromPlainText(content.description)),
+            "price" to (content.priceCents?.let { JsonPrimitive(it / 100.0) } ?: JsonNull),
+            "postCode" to JsonPrimitive(content.postcode),
+        )
+        if (!WillhabenAdTypes.isMarketplace(fields.adTypeId)) {
+            return JsonObject(serverJson + textValues.filterKeys { it in serverJson })
+        }
+
         val managedAttributes = buildMap {
             putAll(fields.attributes)
             content.condition?.let { put(WillhabenAttributeCodes.CONDITION, listOf(CONDITION_CODES.getValue(it))) }
@@ -66,13 +78,9 @@ object AdJsonPatcher {
         }.filterValues { it.isNotEmpty() }
 
         return JsonObject(
-            serverJson + mapOf(
-                "heading" to JsonPrimitive(content.title),
-                "description" to JsonPrimitive(HtmlText.fromPlainText(content.description)),
-                "price" to (content.priceCents?.let { JsonPrimitive(it / 100.0) } ?: JsonNull),
-                "postCode" to JsonPrimitive(content.postcode),
-                "treeAttributes" to patchAttributes(serverJson["treeAttributes"] as? JsonArray, managedAttributes),
-            ) + (fields.locationId?.let { mapOf("locationId" to JsonPrimitive(it)) } ?: emptyMap())
+            serverJson + textValues +
+                ("treeAttributes" to patchAttributes(serverJson["treeAttributes"] as? JsonArray, managedAttributes)) +
+                (fields.locationId?.let { mapOf("locationId" to JsonPrimitive(it)) } ?: emptyMap())
         )
     }
 

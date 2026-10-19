@@ -29,9 +29,9 @@ class KtorWillhabenListingsDataSource(
         ).map { it.toMyAdvertsPage() }
     }
 
-    /** Raw JSON of one marketplace listing as the edit form loads it. */
-    suspend fun fetchListingJson(adId: String): Result<String, DataError.Network> {
-        return httpClient.get<JsonObject>(route = "/iad/bap/$adId").map { it.toString() }
+    /** Raw JSON of one listing as the edit form loads it; [route] comes from [WillhabenAdTypes.detailRoute]. */
+    suspend fun fetchListingJson(route: String): Result<String, DataError.Network> {
+        return httpClient.get<JsonObject>(route = route).map { it.toString() }
     }
 
     private fun JsonObject.toMyAdvertsPage(): MyAdvertsPage {

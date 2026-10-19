@@ -32,11 +32,14 @@ import kotlinx.serialization.json.put
 /**
  * "Neu veröffentlichen" like the willhaben web app: copies the expired listing into a new draft,
  * writes the local content into it, uploads the local images, finishes and activates it.
- * Paid products are never bought: the flow stops when willhaben asks for a payment.
+ * Works for every ad type with a free product (marketplace, Auto & Motor).
+ * Paid products are never bought: ad types without a free product are refused before anything
+ * is written, and the flow stops when willhaben asks for a payment.
  */
 class WillhabenRepublisher(
     private val writeDataSource: KtorWillhabenWriteDataSource,
     private val listingsDataSource: KtorWillhabenListingsDataSource,
+    private val catalogDataSource: KtorWillhabenCatalogDataSource,
     private val runner: WillhabenRequestRunner,
     private val listingRepository: ListingRepository,
     private val fieldsDataSource: WillhabenFieldsLocalDataSource,
@@ -51,10 +54,15 @@ class WillhabenRepublisher(
         val listing = listingRepository.getListingByIdAsFlow(listingId).first() ?: return Result.Error(PublishError.NotPublished)
         val content = listing.toContent()
         val fields = fieldsDataSource.getFields(listingId) ?: WillhabenListingFields()
+        val adTypeId = fields.adTypeId ?: MARKETPLACE_AD_TYPE_ID
 
-        val copy = step(PublishStep.COPY) { writeDataSource.post("/iad/bap/copy/$remoteId") }
+        val freeProductId = step(PublishStep.PRODUCT) { catalogDataSource.fetchFreeProductId(adTypeId) }
+            .valueOr { return it } ?: return Result.Error(PublishError.PaidProduct)
+        val copyRoute = WillhabenAdTypes.copyRoute(remoteId, adTypeId) ?: return Result.Error(PublishError.MissingLink("copy"))
+
+        val copy = step(PublishStep.COPY) { writeDataSource.post(copyRoute) }
             .valueOr { return it }
-        val draft = AdJsonPatcher.patch(copy, content, fields).withDefaultProduct()
+        val draft = AdJsonPatcher.patch(copy, content, fields).withDefaultProduct(freeProductId)
 
         val presaveLink = ContextLinks.find(draft, "presave") ?: return Result.Error(PublishError.MissingLink("presave"))
         val presaved = step(PublishStep.PRESAVE) { writeDataSource.post(presaveLink.route, draft) }
@@ -68,7 +76,8 @@ class WillhabenRepublisher(
         step(PublishStep.FINISH) { writeDataSource.post(finishLink.route, saved) }.valueOr { return it }
 
         val newId = (saved["adId"] as? JsonPrimitive)?.content ?: return Result.Error(PublishError.MissingLink("adId"))
-        val reloadedJson = step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(newId) }.valueOr { return it }
+        val reloadRoute = WillhabenAdTypes.detailRoute(newId, adTypeId) ?: return Result.Error(PublishError.MissingLink("adId"))
+        val reloadedJson = step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
         val reloaded = AppJson.parseToJsonElement(reloadedJson) as JsonObject
         if (ContextLinks.find(reloaded, "paymentURI") != null) return Result.Error(PublishError.PaidProduct)
 
@@ -76,7 +85,7 @@ class WillhabenRepublisher(
             ?: return Result.Error(PublishError.MissingLink("selfLinkActivate"))
         step(PublishStep.ACTIVATE) { writeDataSource.put(activateLink.route) }.valueOr { return it }
 
-        storeNewPublication(publication, newId, reloadedJson, fields)
+        storeNewPublication(publication, newId, reloadedJson, content, fields)
         return Result.Success(Unit)
     }
 
@@ -104,10 +113,12 @@ class WillhabenRepublisher(
         old: ListingPublicationEntity,
         newId: String,
         reloadedJson: String,
+        content: ListingContent,
         fields: WillhabenListingFields,
     ) {
+        // Title and ad type are the ones just sent, for JSON that does not carry them (other verticals)
         val remote = RemoteListing(
-            summary = RemoteListingSummary(remoteId = newId, remoteUuid = null, adTypeId = null, title = null),
+            summary = RemoteListingSummary(remoteId = newId, remoteUuid = null, adTypeId = fields.adTypeId, title = content.title),
             detailJson = reloadedJson,
         )
         // The category comes from the local fields, like the importer resolves it from the catalog
@@ -145,10 +156,10 @@ class WillhabenRepublisher(
             is Result.Success -> data
         }
 
-    /** The copy of a private listing has no product yet; 67 is the free private marketplace listing. */
-    private fun JsonObject.withDefaultProduct(): JsonObject {
+    /** The copy of a private listing has no product yet; it gets the free product of its ad type. */
+    private fun JsonObject.withDefaultProduct(freeProductId: Int): JsonObject {
         val product = this["productId"]
-        return if (product == null || product is JsonNull) JsonObject(this + ("productId" to JsonPrimitive(PRIVATE_PRODUCT_ID))) else this
+        return if (product == null || product is JsonNull) JsonObject(this + ("productId" to JsonPrimitive(freeProductId))) else this
     }
 
     /** Takes the ids and links willhaben assigned to the draft. */
@@ -165,7 +176,6 @@ class WillhabenRepublisher(
 
     private companion object {
         val MARKETPLACE = Marketplace.WILLHABEN.name
-        const val PRIVATE_PRODUCT_ID = 67
         val PRESAVE_KEYS = setOf("adId", "adUuid", "productId", "contextLinkList")
     }
 }

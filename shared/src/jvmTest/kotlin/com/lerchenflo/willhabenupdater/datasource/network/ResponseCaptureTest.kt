@@ -60,6 +60,17 @@ class ResponseCaptureTest {
     }
 
     @Test
+    fun listingsOfOtherVerticalsAreWritten() = runTest {
+        val client = HttpClientFactory.createWillhabenClient(engine, captureDir = captureDir.absolutePath)
+
+        client.get("https://www.willhaben.at/webapi/iad/motor/get/1")
+        client.get("https://www.willhaben.at/webapi/iad/estate/2")
+
+        assertThat(captureDir.listFiles()!!.map { it.name.substringAfter("GET_") }.sorted())
+            .isEqualTo(listOf("iad_estate_2.json", "iad_motor_get_1.json"))
+    }
+
+    @Test
     fun userProfileAndOtherNonListingResponsesAreNeverWritten() = runTest {
         val client = HttpClientFactory.createWillhabenClient(engine, captureDir = captureDir.absolutePath)
 

@@ -77,6 +77,8 @@ Phases 1-4 done. Phase 5 in progress: renewing expired listings is built, not ye
   once per app run at the first login (`WillhabenRenewer.renewAllExpired`).
 - The expired original of a renewed listing is skipped by the import (`replacedRemoteIds`, DB v2).
 - Update icon in the home header opens the GitHub release page.
+- All willhaben verticals are imported (Auto & Motor via `/iad/motor/get/{id}`, jobs skipped) and
+  renewed when willhaben has a free product for the ad type (`WillhabenAdTypes`, `/iad/productgroups`).
 
 Next: see "Next session" in TODO.md (product name, live renew test, bulk delete scope).
 
@@ -104,3 +106,5 @@ Next: see "Next session" in TODO.md (product name, live renew test, bulk delete 
   TODO.md cleaned up to open work only. 275 tests green.
 - 2026-10-19 – willhaben login moved from the home header into the settings; the header shows a
   market icon with the login state (opens the settings) and an import icon. One app-wide `AccountViewModel`.
+- 2026-10-19 – All verticals: web client analysed (bbx-adin bundles), import and renew for Auto & Motor
+  and other ad types with a free product, ad type kept in the willhaben fields JSON (no schema change).

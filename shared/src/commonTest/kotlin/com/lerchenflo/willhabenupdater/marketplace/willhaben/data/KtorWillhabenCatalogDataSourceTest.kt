@@ -55,4 +55,35 @@ class KtorWillhabenCatalogDataSourceTest {
             Result.Success(LocationsResponseDto(listOf(LocationDto(117223, "Wien, 01. Bezirk, Innere Stadt"))))
         )
     }
+
+    /** Shape of GET /iad/productgroups as seen on 2026-10-19, shortened. */
+    private val productGroups = """
+        {"productGroupList":[
+          {"title":"Marktplatz","adTypeId":67,"productContextLinkList":{"productContextLink":[
+            {"adTypeId":67,"price":0.00,"duration":45,"id":"67","relativePath":"/bap","serviceName":"iad"}]}},
+          {"title":"Fahrzeuge","adTypeId":0,"children":[
+            {"title":"Motorrad & Quad","adTypeId":21,"productContextLinkList":{"productContextLink":[
+              {"adTypeId":21,"price":19.90,"id":"40121"},
+              {"adTypeId":21,"price":0.00,"duration":7,"id":"40021","relativePath":"/motor/mc?productId=40021"}]}}]},
+          {"title":"Haus","adTypeId":1,"productContextLinkList":{"productContextLink":[
+            {"adTypeId":1,"price":49.00,"id":"1001"}]}}
+        ]}
+    """
+
+    @Test
+    fun freeProductIsFoundPerAdType() = runTest {
+        val dataSource = dataSource(productGroups)
+
+        assertThat(dataSource.fetchFreeProductId(67)).isEqualTo(Result.Success(67))
+        assertThat(dataSource.fetchFreeProductId(21)).isEqualTo(Result.Success(40021))
+        assertThat(requestedUrls.first()).isEqualTo("https://www.willhaben.at/webapi/iad/productgroups")
+    }
+
+    @Test
+    fun adTypeWithoutFreeProductGivesNull() = runTest {
+        val dataSource = dataSource(productGroups)
+
+        assertThat(dataSource.fetchFreeProductId(1)).isEqualTo(Result.Success(null))
+        assertThat(dataSource.fetchFreeProductId(26)).isEqualTo(Result.Success(null))
+    }
 }
