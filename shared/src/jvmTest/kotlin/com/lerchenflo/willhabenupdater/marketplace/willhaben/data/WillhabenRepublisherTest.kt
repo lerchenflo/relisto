@@ -63,7 +63,7 @@ class WillhabenRepublisherTest {
                    {"adTypeId":1,"productContextLinkList":{"productContextLink":[{"adTypeId":1,"price":49.00,"id":"1001"}]}}]}"""
             )
             "POST /webapi/iad/motor/copy/111" -> json(
-                """{"heading":"Alt","price":900.0,"adId":null,"productId":null,"vehicleMileage":12000,
+                """{"heading":"Alt","price":900.0,"adId":null,"productId":2443,"vehicleMileage":12000,
                    "contextLinkList":{"contextLink":[{"id":"presave","serviceName":"iad","relativePath":"/motor/presave"}]}}"""
             )
             "POST /webapi/iad/motor/presave" -> json(
@@ -238,6 +238,7 @@ class WillhabenRepublisherTest {
             "PUT /webapi/iad/motor/activate/333",
         )
         val finishBody = bodies.getValue("POST /webapi/iad/motor/finish")
+        // The old product of the copy is replaced like the web client does
         assertThat(finishBody).contains("\"productId\":40021")
         assertThat(finishBody).contains("\"heading\":\"Rasentraktor Kart\"")
         // Keys the motor JSON does not have are not added

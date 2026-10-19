@@ -56,13 +56,14 @@ class WillhabenRepublisher(
         val fields = fieldsDataSource.getFields(listingId) ?: WillhabenListingFields()
         val adTypeId = fields.adTypeId ?: MARKETPLACE_AD_TYPE_ID
 
+        // Like the web client, the copy always gets the product for its ad type (here: the free one)
         val freeProductId = step(PublishStep.PRODUCT) { catalogDataSource.fetchFreeProductId(adTypeId) }
             .valueOr { return it } ?: return Result.Error(PublishError.PaidProduct)
         val copyRoute = WillhabenAdTypes.copyRoute(remoteId, adTypeId) ?: return Result.Error(PublishError.MissingLink("copy"))
 
         val copy = step(PublishStep.COPY) { writeDataSource.post(copyRoute) }
             .valueOr { return it }
-        val draft = AdJsonPatcher.patch(copy, content, fields).withDefaultProduct(freeProductId)
+        val draft = JsonObject(AdJsonPatcher.patch(copy, content, fields) + ("productId" to JsonPrimitive(freeProductId)))
 
         val presaveLink = ContextLinks.find(draft, "presave") ?: return Result.Error(PublishError.MissingLink("presave"))
         val presaved = step(PublishStep.PRESAVE) { writeDataSource.post(presaveLink.route, draft) }
@@ -155,12 +156,6 @@ class WillhabenRepublisher(
             is Result.Error -> onError(this)
             is Result.Success -> data
         }
-
-    /** The copy of a private listing has no product yet; it gets the free product of its ad type. */
-    private fun JsonObject.withDefaultProduct(freeProductId: Int): JsonObject {
-        val product = this["productId"]
-        return if (product == null || product is JsonNull) JsonObject(this + ("productId" to JsonPrimitive(freeProductId))) else this
-    }
 
     /** Takes the ids and links willhaben assigned to the draft. */
     private fun JsonObject.mergeIds(presaved: JsonObject): JsonObject =
