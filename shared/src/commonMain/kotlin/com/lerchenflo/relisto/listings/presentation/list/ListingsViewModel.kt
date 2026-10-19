@@ -102,6 +102,7 @@ class ListingsViewModel(
                 it.copy(filter = action.filter, checkedListingIds = emptySet()).withVisibleListings()
             }
             is ListingsAction.OnListingClick -> _state.update { it.copy(selectedListingId = action.listingId) }
+            ListingsAction.OnCloseListingClick -> _state.update { it.copy(selectedListingId = null) }
             ListingsAction.OnNewListingClick -> createListing()
             ListingsAction.OnSettingsClick -> viewModelScope.launch { navigator.navigate(Route.Settings) }
             is ListingsAction.OnListingCheckedChange -> _state.update { state ->

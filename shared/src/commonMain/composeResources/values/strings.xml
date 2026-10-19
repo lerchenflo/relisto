@@ -17,6 +17,7 @@
     <!-- Listing list -->
     <string name="listings_new">Neue Anzeige</string>
     <string name="listings_settings">Einstellungen</string>
+    <string name="listings_back_to_list">Zurück zur Liste</string>
     <string name="listings_search">Anzeigen durchsuchen</string>
     <string name="listings_filter_active">Aktiv</string>
     <string name="listings_filter_archived">Archiviert</string>
@@ -56,7 +57,7 @@
     <string name="editor_duplicate">Duplizieren</string>
     <string name="editor_delete">Löschen</string>
     <string name="editor_delete_title">Anzeige löschen?</string>
-    <string name="editor_delete_text">Die Anzeige und ihre Bilder werden von diesem Computer entfernt. Anzeigen auf willhaben bleiben unverändert.</string>
+    <string name="editor_delete_text">Die Anzeige und ihre Bilder werden von diesem Gerät entfernt. Anzeigen auf willhaben bleiben unverändert.</string>
     <string name="editor_delete_confirm">Löschen</string>
     <string name="editor_delete_cancel">Abbrechen</string>
     <string name="editor_not_found">Diese Anzeige gibt es nicht mehr.</string>
@@ -115,7 +116,7 @@
     <string name="import_done">%1$d willhaben-Anzeigen gefunden: %2$d neu, %3$d aktualisiert.</string>
 
     <!-- Update hint -->
-    <string name="update_available">Version %1$s ist verfügbar. Das Update ist freiwillig; deine Anzeigen bleiben auf diesem Computer.</string>
+    <string name="update_available">Version %1$s ist verfügbar. Das Update ist freiwillig; deine Anzeigen bleiben auf diesem Gerät.</string>
     <string name="update_download">Herunterladen</string>
     <string name="update_dismiss">Update-Hinweis ausblenden</string>
 
@@ -175,10 +176,10 @@
     <string name="listings_select_all_visible">Alle auswählen</string>
     <string name="listings_checked_count">%1$d ausgewählt</string>
     <string name="listings_delete_checked_title">%1$d Anzeigen löschen?</string>
-    <string name="listings_delete_checked_text">Die Anzeigen und ihre Bilder werden von diesem Computer entfernt. Anzeigen auf willhaben bleiben unverändert.</string>
+    <string name="listings_delete_checked_text">Die Anzeigen und ihre Bilder werden von diesem Gerät entfernt. Anzeigen auf willhaben bleiben unverändert.</string>
     <string name="listings_delete_local">Nur lokal löschen</string>
     <string name="listings_delete_everywhere">Lokal und auf willhaben löschen</string>
-    <string name="listings_delete_checked_text_willhaben">Die Anzeigen und ihre Bilder werden von diesem Computer entfernt. Anzeigen, die auf willhaben sind, können dort auch gelöscht werden.</string>
+    <string name="listings_delete_checked_text_willhaben">Die Anzeigen und ihre Bilder werden von diesem Gerät entfernt. Anzeigen, die auf willhaben sind, können dort auch gelöscht werden.</string>
     <string name="auto_renew_done">Automatisch erneuert: %1$d, fehlgeschlagen: %2$d</string>
     <string name="settings_auto_renew">Abgelaufene Anzeigen beim Start automatisch erneuern</string>
     <string name="settings_auto_renew_hint">Nach dem Anmelden werden alle abgelaufenen willhaben-Anzeigen mit dem lokalen Inhalt neu veröffentlicht. Kostenpflichtige Extras werden nie gebucht.</string>

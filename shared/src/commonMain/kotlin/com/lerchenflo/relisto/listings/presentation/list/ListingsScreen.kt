@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -19,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
@@ -55,6 +57,8 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -85,6 +89,7 @@ import relisto.shared.generated.resources.editor_delete
 import relisto.shared.generated.resources.editor_delete_cancel
 import relisto.shared.generated.resources.editor_delete_confirm
 import relisto.shared.generated.resources.editor_unarchive
+import relisto.shared.generated.resources.listings_back_to_list
 import relisto.shared.generated.resources.listings_checked_count
 import relisto.shared.generated.resources.listings_cover_image
 import relisto.shared.generated.resources.listings_delete_checked_text
@@ -151,7 +156,10 @@ fun ListingsRoot(
     )
 }
 
-/** Master-detail: listing list on the left, [editorContent] for the selected listing on the right. */
+/**
+ * Master-detail: listing list on the left, [editorContent] for the selected listing on the right.
+ * Narrow windows (phones) show one of them at a time; the editor gets a back arrow.
+ */
 @Composable
 fun ListingsScreen(
     state: ListingsState,
@@ -163,29 +171,81 @@ fun ListingsScreen(
     headerActions: @Composable () -> Unit = {},
 ) {
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
-        Row(modifier = Modifier.fillMaxSize().padding(padding)) {
-            ListingListPane(
-                state = state,
-                onAction = onAction,
-                marketActions = marketActions,
-                loggedInMarkets = loggedInMarkets,
-                headerActions = headerActions,
-                modifier = Modifier.width(380.dp).fillMaxHeight(),
-            )
-            VerticalDivider()
-            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                val selectedId = state.selectedListingId
-                if (selectedId == null) {
-                    Text(
-                        text = stringResource(Res.string.listings_select_hint),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.align(Alignment.Center).padding(32.dp),
-                    )
-                } else {
-                    key(selectedId) { editorContent(selectedId) }
-                }
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (maxWidth < COMPACT_WIDTH) {
+                CompactListingsLayout(state, onAction, marketActions, loggedInMarkets, headerActions, editorContent)
+            } else {
+                WideListingsLayout(state, onAction, marketActions, loggedInMarkets, headerActions, editorContent)
+            }
+        }
+    }
+}
+
+/** Phone: the list, or the selected listing's editor as its own screen. */
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun CompactListingsLayout(
+    state: ListingsState,
+    onAction: (ListingsAction) -> Unit,
+    marketActions: @Composable () -> Unit,
+    loggedInMarkets: @Composable () -> Unit,
+    headerActions: @Composable () -> Unit,
+    editorContent: @Composable (listingId: Long) -> Unit,
+) {
+    val selectedId = state.selectedListingId
+    if (selectedId == null) {
+        ListingListPane(
+            state = state,
+            onAction = onAction,
+            marketActions = marketActions,
+            loggedInMarkets = loggedInMarkets,
+            headerActions = headerActions,
+            modifier = Modifier.fillMaxSize(),
+        )
+        return
+    }
+    BackHandler { onAction(ListingsAction.OnCloseListingClick) }
+    Column(modifier = Modifier.fillMaxSize()) {
+        IconButton(onClick = { onAction(ListingsAction.OnCloseListingClick) }) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.listings_back_to_list))
+        }
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            key(selectedId) { editorContent(selectedId) }
+        }
+    }
+}
+
+@Composable
+private fun WideListingsLayout(
+    state: ListingsState,
+    onAction: (ListingsAction) -> Unit,
+    marketActions: @Composable () -> Unit,
+    loggedInMarkets: @Composable () -> Unit,
+    headerActions: @Composable () -> Unit,
+    editorContent: @Composable (listingId: Long) -> Unit,
+) {
+    Row(modifier = Modifier.fillMaxSize()) {
+        ListingListPane(
+            state = state,
+            onAction = onAction,
+            marketActions = marketActions,
+            loggedInMarkets = loggedInMarkets,
+            headerActions = headerActions,
+            modifier = Modifier.width(380.dp).fillMaxHeight(),
+        )
+        VerticalDivider()
+        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            val selectedId = state.selectedListingId
+            if (selectedId == null) {
+                Text(
+                    text = stringResource(Res.string.listings_select_hint),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.Center).padding(32.dp),
+                )
+            } else {
+                key(selectedId) { editorContent(selectedId) }
             }
         }
     }
@@ -486,3 +546,6 @@ private fun ListingsScreenPreview() {
         )
     }
 }
+
+/** Below this width (phones) list and editor are shown one at a time. */
+private val COMPACT_WIDTH = 720.dp

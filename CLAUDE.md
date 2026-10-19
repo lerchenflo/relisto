@@ -143,3 +143,6 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
   fixed it, app runs on the emulator. List: willhaben state aligned right.
 - 2026-10-19 – Import marks listings willhaben no longer lists (`SyncState.REMOTE_GONE`, cloud-off icon,
   status/expiry/actions cleared, local listing kept); a listing that comes back syncs normally.
+- 2026-10-19 – Phone layout: below 720 dp the list fills the screen and a listing opens as its own
+  screen (back arrow + system back via `ui-backhandler`); content stays clear of the status bar
+  (`safeDrawingPadding`); editor buttons wrap. Texts say "device"/"Gerät" instead of "computer".

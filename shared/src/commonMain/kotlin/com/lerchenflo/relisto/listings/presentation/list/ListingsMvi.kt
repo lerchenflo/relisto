@@ -61,6 +61,8 @@ sealed interface ListingsAction {
     data class OnSearchQueryChange(val query: String) : ListingsAction
     data class OnFilterChange(val filter: ListingFilter) : ListingsAction
     data class OnListingClick(val listingId: Long) : ListingsAction
+    /** Phones show the editor as its own screen; this goes back to the list. */
+    data object OnCloseListingClick : ListingsAction
     data object OnNewListingClick : ListingsAction
     data object OnSettingsClick : ListingsAction
     data class OnListingCheckedChange(val listingId: Long, val checked: Boolean) : ListingsAction

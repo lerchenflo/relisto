@@ -120,6 +120,18 @@ class ListingsViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun closingTheEditorGoesBackToTheList() = runTest {
+        // Phones show the editor as its own screen
+        repository.listings.value = listOf(listing(1))
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnListingClick(1))
+
+        viewModel.onAction(ListingsAction.OnCloseListingClick)
+
+        assertThat(viewModel.state.value.selectedListingId).isNull()
+    }
+
+    @Test
     fun selectionIsClearedWhenListingIsDeleted() = runTest {
         repository.listings.value = listOf(listing(1), listing(2))
         val viewModel = viewModel()

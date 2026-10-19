@@ -2,6 +2,7 @@ package com.lerchenflo.relisto
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -64,7 +65,8 @@ fun App() {
             // One instance for header icon and settings, so the login check and auto renew run once
             val accountViewModel = koinViewModel<AccountViewModel>()
 
-            Column(modifier = Modifier.fillMaxSize()) {
+            // Edge to edge on Android: nothing under the status or navigation bar (no insets on desktop)
+            Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
                 AppUpdateRoot(viewModel = appUpdateViewModel)
                 NavDisplay(
                     backStack = backStack,

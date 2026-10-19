@@ -84,6 +84,7 @@ kotlin {
 
             // Navigation - Navigation 3 with type-safe routes
             implementation(libs.bundles.navigation3)
+            implementation(libs.compose.backhandler)
 
             // DI - Koin for dependency injection
             api(libs.bundles.koin)

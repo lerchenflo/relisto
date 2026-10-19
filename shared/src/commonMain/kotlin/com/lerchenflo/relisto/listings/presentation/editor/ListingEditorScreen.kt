@@ -3,6 +3,8 @@ package com.lerchenflo.relisto.listings.presentation.editor
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -168,9 +170,15 @@ fun ListingEditorScreen(
     }
 }
 
+/** Wraps onto a second line on narrow screens (phones) instead of squeezing the buttons. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EditorActions(state: ListingEditorState, onAction: (ListingEditorAction) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically,
+    ) {
         if (state.archived) {
             AssistChip(onClick = {}, label = { Text(stringResource(Res.string.editor_archived_badge)) })
         }
