@@ -67,6 +67,11 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
   pause between requests (import detail GETs, image downloads/uploads, bulk and auto renew), at most
   one request at a time, back off on `429`/`503`; keep 7.7 (parallel uploads) within that limit.
 
+## Android (no features yet; app starts again since 2026-10-19)
+
+- [ ] A.1 Phone layout: one pane instead of the desktop master-detail; the update banner sits under
+  the status bar (edge-to-edge insets).
+
 ## Phase 8 – Other marketplaces (last step)
 
 Same local listings on Kleinanzeigen, Shpock and Facebook Marketplace. Each marketplace is a new

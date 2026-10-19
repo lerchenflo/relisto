@@ -137,3 +137,7 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
   (sold/delete confirmed); `PUT`/`DELETE` like the web client; "Inaktiv" shown as deactivated.
 - 2026-10-19 – Bulk delete asks "nur lokal" or "lokal und auf willhaben" (DELETE per listing, one import
   at the end; a listing whose willhaben delete failed stays locally).
+- 2026-10-19 – Android crash (`ClassNotFoundException` AndroidModulesKt) fixed: after the folder move
+  `:shared:bundleLibRuntimeToDirAndroidMain` stayed UP-TO-DATE with an old partial output (378 of 618
+  classes); deleting `shared/build/intermediates/runtime_library_classes_dir` + `androidApp/build`
+  fixed it, app runs on the emulator. List: willhaben state aligned right.

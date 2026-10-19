@@ -434,7 +434,8 @@ private fun ListingListItem(
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
+                        // Takes the free space, so the marketplace state sits at the right edge
+                        modifier = Modifier.weight(1f),
                     )
                     item.willhabenState?.let { state ->
                         Spacer(Modifier.width(8.dp))
