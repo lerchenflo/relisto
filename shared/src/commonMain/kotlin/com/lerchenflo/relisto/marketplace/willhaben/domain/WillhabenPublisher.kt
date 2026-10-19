@@ -12,6 +12,7 @@ enum class PublishStep {
     IMAGES,
     FINISH,
     RELOAD,
+    PACKAGE,
     ACTIVATE
 }
 

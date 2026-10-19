@@ -21,7 +21,11 @@ import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenListingField
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenPublisher
 import com.lerchenflo.relisto.utilities.TimeProvider
 import kotlinx.coroutines.flow.first
+import com.lerchenflo.relisto.marketplace.willhaben.data.dto.WillhabenFieldsDto
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -59,16 +63,11 @@ class WillhabenRepublisher(
         // Like the web client, the copy always gets the product for its ad type (here: the free one)
         val freeProductId = step(PublishStep.PRODUCT) { catalogDataSource.fetchFreeProductId(adTypeId) }
             .valueOr { return it } ?: return Result.Error(PublishError.PaidProduct)
-        val copyRoute = WillhabenAdTypes.copyRoute(remoteId, adTypeId) ?: return Result.Error(PublishError.MissingLink("copy"))
 
-        val copy = step(PublishStep.COPY) { writeDataSource.post(copyRoute) }
-            .valueOr { return it }
-        val draft = JsonObject(AdJsonPatcher.patch(copy, content, fields) + ("productId" to JsonPrimitive(freeProductId)))
-
-        val presaveLink = ContextLinks.find(draft, "presave") ?: return Result.Error(PublishError.MissingLink("presave"))
-        val presaved = step(PublishStep.PRESAVE) { writeDataSource.post(presaveLink.route, draft) }
-            .valueOr { return it }
-        val saved = draft.mergeIds(presaved)
+        val saved = fields.pendingDraftId
+            ?.let { draftId -> loadDraft(draftId, adTypeId).valueOr { return it } }
+            ?.let { draft -> JsonObject(AdJsonPatcher.patch(draft, content, fields) + ("productId" to JsonPrimitive(freeProductId))) }
+            ?: createDraft(publication, remoteId, adTypeId, content, fields, freeProductId).valueOr { return it }
 
         uploadImages(listing, saved)?.let { return Result.Error(it) }
 
@@ -78,17 +77,95 @@ class WillhabenRepublisher(
 
         val newId = (saved["adId"] as? JsonPrimitive)?.content ?: return Result.Error(PublishError.MissingLink("adId"))
         val reloadRoute = WillhabenAdTypes.detailRoute(newId, adTypeId) ?: return Result.Error(PublishError.MissingLink("adId"))
-        val reloadedJson = step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
-        val reloaded = AppJson.parseToJsonElement(reloadedJson) as JsonObject
+        var reloadedJson = step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
+        var reloaded = AppJson.parseToJsonElement(reloadedJson) as JsonObject
+        if (choosePackage(reloaded).valueOr { return it }) {
+            reloadedJson = step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
+            reloaded = AppJson.parseToJsonElement(reloadedJson) as JsonObject
+        }
         if (ContextLinks.find(reloaded, "paymentURI") != null) return Result.Error(PublishError.PaidProduct)
 
         val activateLink = ContextLinks.find(reloaded, "selfLinkActivate")
             ?: return Result.Error(PublishError.MissingLink("selfLinkActivate"))
         step(PublishStep.ACTIVATE) { writeDataSource.put(activateLink.route) }.valueOr { return it }
 
-        storeNewPublication(publication, newId, reloadedJson, content, fields)
+        storeNewPublication(listingId, newId, reloadedJson, content, fields)
         return Result.Success(Unit)
     }
+
+    /** Copies the expired listing into a new draft and presaves it; remembers the draft for a later resume. */
+    private suspend fun createDraft(
+        publication: ListingPublicationEntity,
+        remoteId: String,
+        adTypeId: Int,
+        content: ListingContent,
+        fields: WillhabenListingFields,
+        freeProductId: Int,
+    ): Result<JsonObject, PublishError> {
+        val copyRoute = WillhabenAdTypes.copyRoute(remoteId, adTypeId) ?: return Result.Error(PublishError.MissingLink("copy"))
+        val copy = step(PublishStep.COPY) { writeDataSource.post(copyRoute) }.valueOr { return it }
+        val draft = JsonObject(AdJsonPatcher.patch(copy, content, fields) + ("productId" to JsonPrimitive(freeProductId)))
+
+        val presaveLink = ContextLinks.find(draft, "presave") ?: return Result.Error(PublishError.MissingLink("presave"))
+        val presaved = step(PublishStep.PRESAVE) { writeDataSource.post(presaveLink.route, draft) }.valueOr { return it }
+        val saved = draft.mergeIds(presaved)
+
+        (saved["adId"] as? JsonPrimitive)?.content?.let { draftId ->
+            // Written directly: a remembered draft is no local change of the listing
+            publicationDao.update(publication.copy(marketplaceFieldsJson = fields.copy(pendingDraftId = draftId).encode()))
+        }
+        return Result.Success(saved)
+    }
+
+    /** The draft of an interrupted renew; null when it is gone on willhaben, so a new copy is made. */
+    private suspend fun loadDraft(draftId: String, adTypeId: Int): Result<JsonObject?, PublishError> {
+        val route = WillhabenAdTypes.detailRoute(draftId, adTypeId) ?: return Result.Success(null)
+        return when (val result = runner.run { listingsDataSource.fetchListingJson(route) }) {
+            is Result.Success -> Result.Success(AppJson.parseToJsonElement(result.data) as JsonObject)
+            is Result.Error ->
+                if (result.error == DataError.Network.NOT_FOUND) Result.Success(null)
+                else Result.Error(PublishError.Failed(PublishStep.RELOAD, result.error))
+        }
+    }
+
+    /**
+     * Listings that offer packages (Auto & Motor: "Basic", "Turbo", ...) need exactly one chosen before
+     * activation, like the web client's "Pakete" step. Only a free package is ever chosen.
+     * Returns true when a package was chosen now, so the listing has to be reloaded.
+     */
+    private suspend fun choosePackage(listing: JsonObject): Result<Boolean, PublishError> {
+        val groups = ((listing["upsellingProductList"] as? JsonObject)?.get("upsellingProducts") as? JsonArray)
+            .orEmpty().mapNotNull { it as? JsonObject }
+        val bundles = groups.filter { (it["isBundle"] as? JsonPrimitive)?.booleanOrNull == true }
+        if (bundles.isEmpty()) return Result.Success(false)
+
+        val products = bundles.flatMap { (it["upsellingProducts"] as? JsonArray).orEmpty().mapNotNull { p -> p as? JsonObject } }
+        val freeProduct = products.firstOrNull { it.price() == 0.0 } ?: return Result.Error(PublishError.PaidProduct)
+        val freeId = freeProduct["productId"]
+        val selected = products.filter { (it["selected"] as? JsonPrimitive)?.booleanOrNull == true }
+        if (selected.size == 1 && selected.single()["productId"] == freeId) return Result.Success(false)
+
+        val link = ContextLinks.find(listing, "upsellings") ?: return Result.Error(PublishError.MissingLink("upsellings"))
+        val body = buildJsonObject {
+            put("upsellingProducts", buildJsonArray {
+                groups.forEach { group ->
+                    val groupProducts = (group["upsellingProducts"] as? JsonArray).orEmpty().map { product ->
+                        val productObject = product as? JsonObject ?: return@map product
+                        JsonObject(productObject + ("selected" to JsonPrimitive(productObject["productId"] == freeId)))
+                    }
+                    add(JsonObject(group + ("upsellingProducts" to JsonArray(groupProducts))))
+                }
+            })
+        }
+        step(PublishStep.PACKAGE) { writeDataSource.put(link.route, body) }.valueOr { return it }
+        return Result.Success(true)
+    }
+
+    private fun JsonObject.price(): Double? = (this["price"] as? JsonPrimitive)?.doubleOrNull
+
+    private fun JsonArray?.orEmpty(): List<JsonElement> = this ?: emptyList()
+
+    private fun WillhabenListingFields.encode(): String = AppJson.encodeToString(WillhabenFieldsDto.serializer(), toDto())
 
     /** Replaces the images of the draft with the local images; returns the error, null on success. */
     private suspend fun uploadImages(listing: Listing, draft: JsonObject): PublishError? {
@@ -111,7 +188,7 @@ class WillhabenRepublisher(
     }
 
     private suspend fun storeNewPublication(
-        old: ListingPublicationEntity,
+        listingId: Long,
         newId: String,
         reloadedJson: String,
         content: ListingContent,
@@ -126,8 +203,11 @@ class WillhabenRepublisher(
         val imported = WillhabenListingMapper.toImportedListing(remote) { treeId ->
             fields.categoryPath.takeIf { it.lastOrNull()?.treeId == treeId }
         }
+        // Read again: the remembered draft may have been written since the start
+        val old = publicationDao.getByListingAndMarketplace(listingId, MARKETPLACE) ?: return
         publicationDao.update(
             old.copy(
+                marketplaceFieldsJson = fields.copy(pendingDraftId = null).encode(),
                 remoteId = newId,
                 replacedRemoteIds = listOfNotNull(old.replacedRemoteIds, old.remoteId).joinToString(","),
                 remoteUuid = imported?.remoteUuid,

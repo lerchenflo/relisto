@@ -67,6 +67,9 @@ kotlin {
 
             // Networking - OkHttp engine for Ktor
             implementation(libs.ktor.client.okhttp)
+
+            // Images - willhaben serves listing images as WebP, which ImageIO cannot read alone
+            implementation(libs.twelvemonkeys.imageio.webp)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -110,6 +113,9 @@ kotlin {
 
             // Networking - OkHttp engine for Ktor
             implementation(libs.ktor.client.okhttp)
+
+            // Images - willhaben serves listing images as WebP, which ImageIO cannot read alone
+            implementation(libs.twelvemonkeys.imageio.webp)
 
             // Login - JavaFX WebView shows the real willhaben login page. JavaFX jars are per OS;
             // their POMs pick the platform with Maven profiles Gradle ignores, so modules are listed

@@ -28,6 +28,8 @@ class KtorImageDownloader(
             "png" -> "png"
             "gif" -> "gif"
             "bmp" -> "bmp"
+            // willhaben's image server answers ".jpg" URLs with WebP
+            "webp" -> "webp"
             else -> url.substringAfterLast('/').substringAfterLast('.', "jpg").lowercase()
         }
         return Result.Success(response.readRawBytes() to extension)

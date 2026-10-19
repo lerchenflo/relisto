@@ -41,6 +41,14 @@ class KtorImageDownloaderTest {
     }
 
     @Test
+    fun webpBehindAJpgUrlIsReportedAsWebp() = runTest {
+        // willhaben's image server answers ".jpg" URLs with WebP
+        val result = downloader("image/webp").download("https://cache.willhaben.at/mmo/1/abc_123.jpg") as Result.Success
+
+        assertThat(result.data.second).isEqualTo("webp")
+    }
+
+    @Test
     fun missingImageIsReported() = runTest {
         assertThat(downloader("image/jpeg").download("https://cache.willhaben.at/missing.jpg"))
             .isEqualTo(Result.Error(DataError.Network.NOT_FOUND))

@@ -2,6 +2,7 @@ package com.lerchenflo.relisto.marketplace.willhaben.data
 
 import assertk.assertThat
 import assertk.assertions.containsExactly
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import com.lerchenflo.relisto.app.domain.DataError
@@ -23,6 +24,7 @@ class WillhabenListingsFetchTest {
     private val requests = mutableListOf<String>()
     private var unauthorizedOnce = false
     private var renewCalls = 0
+    private var imageListStatus = HttpStatusCode.OK
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
     private fun advert(id: Long, adTypeId: Int, title: String) =
@@ -44,8 +46,22 @@ class WillhabenListingsFetchTest {
         when {
             path.endsWith("/myatz/atverz/showpagedadsfromuser") ->
                 respond(if (request.url.parameters["page"] == "1") page1 else page2, HttpStatusCode.OK, jsonHeaders)
+            path == "/webapi/iad/bap/3" -> respond(
+                """{"adId":3,"contextLinkList":{"contextLink":[{"id":"imageList","serviceName":"iad","relativePath":"/atimage/3"}]}}""",
+                HttpStatusCode.OK, jsonHeaders,
+            )
             path.contains("/iad/bap/") || path.contains("/iad/motor/get/") ->
                 respond("""{"adId":${path.substringAfterLast('/')},"some":"form"}""", HttpStatusCode.OK, jsonHeaders)
+            // Same image entries as in the my-adverts list (cover image there, all images here)
+            path == "/webapi/iad/atimage/3" ->
+                if (imageListStatus != HttpStatusCode.OK) respondError(imageListStatus)
+                else respond(
+                    """{"advertImage":[
+                       {"id":1,"mainImageUrl":"https://cache.willhaben.at/3_a_hoved.jpg","referenceImageUrl":"https://cache.willhaben.at/3_a.jpg"},
+                       {"id":2,"mainImageUrl":"https://cache.willhaben.at/3_b_hoved.jpg","referenceImageUrl":"https://cache.willhaben.at/3_b.jpg"},
+                       {"id":3,"mainImageUrl":"https://cache.willhaben.at/3_c_hoved.jpg","referenceImageUrl":null}]}""",
+                    HttpStatusCode.OK, jsonHeaders,
+                )
             else -> respondError(HttpStatusCode.NotFound)
         }
     }
@@ -61,8 +77,8 @@ class WillhabenListingsFetchTest {
 
         assertThat(result.data.total).isEqualTo(4)
         assertThat(result.data.adverts).containsExactly(
-            RemoteListingSummary("1", "uuid-1", 67, "Rad", statusText = "Online", imageUrls = listOf("https://cache.willhaben.at/1.jpg")),
-            RemoteListingSummary("2", "uuid-2", 21, "Moped", statusText = "Online", imageUrls = listOf("https://cache.willhaben.at/2.jpg")),
+            RemoteListingSummary("1", "uuid-1", 67, "Rad", statusText = "Online"),
+            RemoteListingSummary("2", "uuid-2", 21, "Moped", statusText = "Online"),
         )
         assertThat(requests.single()).isEqualTo("/webapi/myatz/atverz/showpagedadsfromuser?page=1&rows=2&vertical=bap")
     }
@@ -84,8 +100,32 @@ class WillhabenListingsFetchTest {
             "/webapi/iad/bap/1",
             "/webapi/iad/motor/get/2",
             "/webapi/iad/bap/3",
+            "/webapi/iad/atimage/3",
         )
         assertThat(result.data.first().detailJson).isEqualTo("""{"adId":1,"some":"form"}""")
+    }
+
+    @Test
+    fun allImagesComeFromTheImageListInFullSize() = runTest {
+        val result = repository.fetchMyListings() as Result.Success
+
+        assertThat(result.data.first { it.summary.remoteId == "3" }.imageUrls).containsExactly(
+            "https://cache.willhaben.at/3_a.jpg",
+            "https://cache.willhaben.at/3_b.jpg",
+            "https://cache.willhaben.at/3_c_hoved.jpg",
+        )
+        // Without an image list link there are no images
+        assertThat(result.data.first { it.summary.remoteId == "1" }.imageUrls).isEmpty()
+    }
+
+    @Test
+    fun failedImageListGivesNoImagesButKeepsTheListing() = runTest {
+        // Only some of the images would let a renew replace the others on willhaben
+        imageListStatus = HttpStatusCode.InternalServerError
+
+        val result = repository.fetchMyListings() as Result.Success
+
+        assertThat(result.data.first { it.summary.remoteId == "3" }.imageUrls).isEmpty()
     }
 
     @Test

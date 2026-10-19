@@ -13,10 +13,10 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
 The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
 
-- [ ] V.4 Live test with "Beta RR 50" (chosen 2026-10-19; the user starts it in the app with
-  `:desktopApp:run` so responses are captured). Motor JSON is captured and
-  uses the marketplace text keys (see `docs/willhaben-api.md`). Watch: `presave` link in the motor
-  copy, product 40021 accepted, `paymentURI`; free motor listings run 7 days only.
+- [ ] V.4 Live test with "Beta RR 50": first run stopped at activate (no package chosen, fixed).
+  Draft 1415790914 is remembered in the local DB (`pendingDraftId`); next: import (check the
+  `/atimage` capture and that "Aprilia SX 50" gets its image), then renew "Beta RR 50" again; it
+  should continue the draft: save → choose "Basic" (€ 0) → activate.
 
 ## Next session
 
@@ -40,8 +40,7 @@ The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motor
   reserved on/off, sold (+ sold reasons), delete (`3`, + delete reasons). Hide paid actions.
 - [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if needed).
 - [ ] 5.5 Conflict dialog: local vs. willhaben side by side, "keep local" / "take willhaben".
-- [ ] 5.6 Renew: "expiring soon" filter; a failed activate after finish leaves a draft on willhaben –
-  resume it instead of copying again.
+- [ ] 5.6 Renew: "expiring soon" filter. (Resuming a draft after a failed renew exists: `pendingDraftId`.)
 - [ ] 5.7 Confirmation dialogs for destructive actions; activity log for every write.
 - [ ] 5.8 Verify each action's HTTP method and body against the real responses; update `docs/willhaben-api.md`.
 

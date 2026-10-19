@@ -69,7 +69,7 @@ object WillhabenListingMapper {
             fields = fields,
             remoteStatus = listing.summary.statusText,
             expiresAt = json.text("endDate")?.let(::parseInstantMillis),
-            imageUrls = listing.summary.imageUrls,
+            imageUrls = listing.imageUrls,
             snapshotJson = listing.detailJson,
         )
     }

@@ -47,7 +47,8 @@ class RoomWillhabenImporterTest {
     fun tearDown() = database.close()
 
     private fun remoteListing(id: String, title: String, images: List<String> = emptyList(), status: String = "Online") = RemoteListing(
-        summary = RemoteListingSummary(id, "uuid-$id", 67, title, statusText = status, imageUrls = images),
+        summary = RemoteListingSummary(id, "uuid-$id", 67, title, statusText = status),
+        imageUrls = images,
         detailJson = """{"heading":"$title","description":"Text<br />zwei","price":45.0,"postCode":"6850","locationId":7,
             "location":"Dornbirn","categoryTreeId":3653,"categoryPath":{"path":[{"label":"Garten","code":"GARDEN"}]},
             "endDate":"2026-11-01T10:00:00.000+00:00","adUuid":"uuid-$id",
@@ -104,6 +105,18 @@ class RoomWillhabenImporterTest {
         assertThat(result).isEqualTo(Result.Success(ImportSummary(found = 1, created = 0, updated = 0)))
         assertThat(allListings().size).isEqualTo(1)
         assertThat(downloader.downloaded.size).isEqualTo(1)
+    }
+
+    @Test
+    fun listingImportedWithoutImagesGetsThemOnTheNextImport() = runTest {
+        // e.g. imported while images could not be read yet
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor")))
+        importer.importMyListings()
+        remote = Result.Success(listOf(remoteListing("1", "Rasentraktor", images = listOf("https://img/1.jpg", "https://img/2.jpg"))))
+
+        importer.importMyListings()
+
+        assertThat(allListings().single().images.size).isEqualTo(2)
     }
 
     @Test

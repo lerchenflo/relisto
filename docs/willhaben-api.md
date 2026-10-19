@@ -120,5 +120,24 @@ Real estate and commercial marketplace groups have no free product. Older motor 
    `PUT /iad/upselling/new/{adId}` (the free bundle's button reads "Jetzt veröffentlichen").
 4. Reload the listing; if there is no `paymentURI` link and `selfLinkActivate` exists, `PUT` activate.
 
-The app never calls the upselling endpoints: it copies, presaves, finishes, reloads and stops
-when `paymentURI` is present.
+Live test 2026-10-19 (motorbike, `adTypeId` 21): copy, presave and save (`selfLinkFinish` =
+`/motor/save/mc`) worked; `PUT activate` answered `400` "Fehler beim Aktivieren – Bitte versuche es
+später noch einmal." because no package was chosen. The draft's `upsellingProductList` has
+`requireExactlyOneUpselling: true` and bundle groups (`isBundle`), each with `upsellingProducts`
+(`productId`, `price`, `selected`): "Basic - 14 Tage" `40050` for € 0, "Turbo - 35 Tage" `40051`
+for € 9.99, "Unlimited" `40052` for € 34.99. Choosing one is `PUT` link `upsellings`
+(`/upselling/new/{adId}`) with `{"upsellingProducts": [...the groups with "selected" set...]}`.
+The app only ever selects a package with price 0 and stops (`PaidProduct`) when there is none.
+A second copy of the same expired listing while its draft exists answered `500`; the app remembers
+the draft (`pendingDraftId` in the fields JSON) and continues it on the next renew.
+
+## Images
+
+- Neither the my-adverts entry nor the edit JSON lists all images: my-adverts has the cover only
+  (`advertImageList.advertImage[0]`, all `null` for old listings), the edit JSON only links them
+  (`imageList` → `GET /iad/atimage/{adId}`, entries like the my-adverts ones: `mainImageUrl`
+  (large preview), `referenceImageUrl` (full size), `thumbnailImageUrl`). The shape of the
+  `/atimage` answer is inferred from the my-adverts entries; verify it in the next capture.
+- `cache.willhaben.at` answers every image URL, also `.jpg` ones and any `Accept` header, with
+  `image/webp`. The app reads WebP (TwelveMonkeys) and stores it as JPEG.
+- Old listings lose their images on willhaben (the user's motorbikes from 2023 have none left).

@@ -60,6 +60,7 @@ fun WillhabenFieldsDto.toFields(): WillhabenListingFields = WillhabenListingFiel
         paylivery = delivery.paylivery,
     ),
     adTypeId = adTypeId,
+    pendingDraftId = pendingDraftId,
 )
 
 fun WillhabenListingFields.toDto(): WillhabenFieldsDto = WillhabenFieldsDto(
@@ -74,4 +75,5 @@ fun WillhabenListingFields.toDto(): WillhabenFieldsDto = WillhabenFieldsDto(
         paylivery = delivery.paylivery,
     ),
     adTypeId = adTypeId,
+    pendingDraftId = pendingDraftId,
 )

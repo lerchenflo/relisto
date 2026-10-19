@@ -123,3 +123,7 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
   No data migration (user decision); the old data folder is not used anymore.
 - 2026-10-19 – Multi-selection: checkbox on every listing, select all / all expired, bulk renew (expired
   ones only), archive / restore, local delete with one confirmation.
+- 2026-10-19 – Live renew "Beta RR 50": activate failed (motor drafts need a package). Renew now picks
+  the free package (`PUT upselling/new`, never a paid one) and continues a remembered draft
+  (`pendingDraftId`) instead of copying again. Images: willhaben serves WebP (stored as JPEG via
+  TwelveMonkeys); the import loads all images from `/atimage/{adId}` (none when that fails).

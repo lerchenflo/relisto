@@ -10,13 +10,14 @@ data class RemoteListingSummary(
     val title: String?,
     /** willhaben's own status text, e.g. "Aktiv" or "Abgelaufen". */
     val statusText: String? = null,
-    val imageUrls: List<String> = emptyList(),
 )
 
 /** A marketplace listing of the user with its full willhaben JSON (the editable listing). */
 data class RemoteListing(
     val summary: RemoteListingSummary,
     val detailJson: String,
+    /** All images in their order, full size; empty when the image list could not be loaded. */
+    val imageUrls: List<String> = emptyList(),
 )
 
 data class MyAdvertsPage(

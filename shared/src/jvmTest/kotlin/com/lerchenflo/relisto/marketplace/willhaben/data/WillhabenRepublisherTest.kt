@@ -5,6 +5,8 @@ import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.doesNotContain
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
+import assertk.assertions.isInstanceOf
 import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.datasource.network.HttpClientFactory
@@ -28,6 +30,12 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.AfterTest
 import kotlin.test.Test
 
@@ -47,6 +55,20 @@ class WillhabenRepublisherTest {
     private var withPayment = false
     private var withPresaveLink = true
     private var copyStatus = HttpStatusCode.OK
+    private var motorActivateStatus = HttpStatusCode.OK
+    /** Motor drafts offer packages like the real ones: free "Basic", paid "Turbo". */
+    private var withPackages = false
+    private var onlyPaidPackages = false
+    private var selectedPackage: Int? = null
+
+    private fun packages(): String {
+        fun product(id: Int, price: String) = """{"productId":$id,"price":$price,"selected":${selectedPackage == id},"label":"x"}"""
+        val groups = buildList {
+            if (!onlyPaidPackages) add("""{"title":"Basic","isBundle":true,"upsellingProducts":[${product(40050, "0.00")}]}""")
+            add("""{"title":"Turbo","isBundle":true,"upsellingProducts":[${product(40051, "9.99")}]}""")
+        }
+        return """"upsellingProductList":{"requireExactlyOneUpselling":true,"upsellingProducts":[${groups.joinToString(",")}]},"""
+    }
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
     private fun MockRequestHandleScope.json(body: String): HttpResponseData = respond(body, HttpStatusCode.OK, jsonHeaders)
@@ -72,10 +94,18 @@ class WillhabenRepublisherTest {
             )
             "POST /webapi/iad/motor/finish" -> json("{}")
             "GET /webapi/iad/motor/get/333" -> json(
-                """{"heading":"Beta RR 50","price":800.0,"adId":333,"adUuid":"uuid-333","contextLinkList":{"contextLink":[
+                """{"heading":"Beta RR 50","price":800.0,"adId":333,"adUuid":"uuid-333",${if (withPackages) packages() else ""}
+                   "contextLinkList":{"contextLink":[
+                   {"id":"selfLinkFinish","serviceName":"iad","relativePath":"/motor/finish"},
+                   {"id":"upsellings","serviceName":"iad","relativePath":"/upselling/new/333"},
                    {"id":"selfLinkActivate","serviceName":"iad","relativePath":"/motor/activate/333"}]}}"""
             )
-            "PUT /webapi/iad/motor/activate/333" -> respond("", HttpStatusCode.OK)
+            "PUT /webapi/iad/upselling/new/333" -> {
+                selectedPackage = 40050
+                json("{}")
+            }
+            "PUT /webapi/iad/motor/activate/333" ->
+                if (motorActivateStatus != HttpStatusCode.OK) respondError(motorActivateStatus) else respond("", HttpStatusCode.OK)
             "POST /webapi/iad/bap/copy/111" ->
                 if (copyStatus != HttpStatusCode.OK) respondError(copyStatus)
                 else json(
@@ -120,12 +150,12 @@ class WillhabenRepublisherTest {
     @AfterTest
     fun tearDown() = database.close()
 
-    private suspend fun publishedListing(remoteId: String? = "111", adTypeId: Int? = null): Long {
+    private suspend fun publishedListing(remoteId: String? = "111", adTypeId: Int? = null, pendingDraftId: String? = null): Long {
         val id = (listings.createListing(ListingContent(title = "Rasentraktor Kart", description = "Gut erhalten", priceCents = 18000, postcode = "6850")) as Result.Success).data
         database.publicationDao().insert(
             ListingPublicationEntity(
                 listingId = id, marketplace = Marketplace.WILLHABEN.name,
-                marketplaceFieldsJson = adTypeId?.let { """{"adTypeId":$it}""" },
+                marketplaceFieldsJson = """{"adTypeId":${adTypeId},"pendingDraftId":${pendingDraftId?.let { "\"$it\"" }}}""",
                 remoteId = remoteId, remoteUuid = "uuid-111", remoteUrl = null, remoteStatus = "Abgelaufen",
                 expiresAt = 5L, remoteSnapshotJson = "{}", remoteSnapshotHash = "old", syncState = SyncState.SYNCED.name,
                 lastSyncedAt = 1L, lastError = null,
@@ -245,6 +275,83 @@ class WillhabenRepublisherTest {
         assertThat(finishBody).doesNotContain("treeAttributes")
         assertThat(finishBody).doesNotContain("postCode")
         assertThat(database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!.remoteId).isEqualTo("333")
+    }
+
+    @Test
+    fun freePackageIsChosenBeforeActivating() = runTest {
+        withPackages = true
+        val id = publishedListing(adTypeId = 21)
+
+        val result = republisher.republish(id)
+
+        assertThat(result).isEqualTo(Result.Success(Unit))
+        assertThat(calls.dropWhile { it != "POST /webapi/iad/motor/finish" }).containsExactly(
+            "POST /webapi/iad/motor/finish",
+            "GET /webapi/iad/motor/get/333",
+            "PUT /webapi/iad/upselling/new/333",
+            "GET /webapi/iad/motor/get/333",
+            "PUT /webapi/iad/motor/activate/333",
+        )
+        // Exactly one package selected, the free one, like the web client's "Jetzt veröffentlichen"
+        val body = Json.parseToJsonElement(bodies.getValue("PUT /webapi/iad/upselling/new/333")).jsonObject
+        val selectedById = body.getValue("upsellingProducts").jsonArray
+            .flatMap { it.jsonObject.getValue("upsellingProducts").jsonArray }
+            .associate { it.jsonObject.getValue("productId").jsonPrimitive.int to it.jsonObject.getValue("selected").jsonPrimitive.boolean }
+        assertThat(selectedById).isEqualTo(mapOf(40050 to true, 40051 to false))
+    }
+
+    @Test
+    fun alreadySelectedFreePackageIsNotSentAgain() = runTest {
+        withPackages = true
+        selectedPackage = 40050
+        val id = publishedListing(adTypeId = 21)
+
+        assertThat(republisher.republish(id)).isEqualTo(Result.Success(Unit))
+        assertThat(calls).doesNotContain("PUT /webapi/iad/upselling/new/333")
+    }
+
+    @Test
+    fun onlyPaidPackagesStopBeforeActivating() = runTest {
+        withPackages = true
+        onlyPaidPackages = true
+        val id = publishedListing(adTypeId = 21)
+
+        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.PaidProduct))
+        assertThat(calls).doesNotContain("PUT /webapi/iad/upselling/new/333")
+        assertThat(calls).doesNotContain("PUT /webapi/iad/motor/activate/333")
+    }
+
+    @Test
+    fun failedActivationKeepsTheDraftAndTheNextRunResumesIt() = runTest {
+        motorActivateStatus = HttpStatusCode.BadRequest
+        val id = publishedListing(adTypeId = 21)
+
+        assertThat(republisher.republish(id)).isInstanceOf(Result.Error::class)
+        assertThat(fields.getFields(id)!!.pendingDraftId).isEqualTo("333")
+        // A remembered draft is no local change
+        assertThat(database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!.syncState)
+            .isEqualTo(SyncState.SYNCED.name)
+
+        motorActivateStatus = HttpStatusCode.OK
+        calls.clear()
+        assertThat(republisher.republish(id)).isEqualTo(Result.Success(Unit))
+
+        assertThat(calls).doesNotContain("POST /webapi/iad/motor/copy/111")
+        assertThat(calls).doesNotContain("POST /webapi/iad/motor/presave")
+        assertThat(calls.first { it != "GET /webapi/iad/productgroups" }).isEqualTo("GET /webapi/iad/motor/get/333")
+        assertThat(calls.last()).isEqualTo("PUT /webapi/iad/motor/activate/333")
+        assertThat(fields.getFields(id)!!.pendingDraftId).isNull()
+        assertThat(database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!.remoteId).isEqualTo("333")
+    }
+
+    @Test
+    fun rememberedDraftThatIsGoneIsReplacedByANewCopy() = runTest {
+        // e.g. deleted on willhaben in the meantime
+        val id = publishedListing(adTypeId = 21, pendingDraftId = "999")
+
+        assertThat(republisher.republish(id)).isEqualTo(Result.Success(Unit))
+        assertThat(calls).contains("GET /webapi/iad/motor/get/999")
+        assertThat(calls).contains("POST /webapi/iad/motor/copy/111")
     }
 
     @Test

@@ -16,6 +16,7 @@ import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCatalogRepos
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCategoryRef
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenImporter
 import com.lerchenflo.relisto.utilities.TimeProvider
+import kotlinx.coroutines.flow.first
 
 /**
  * Brings the user's willhaben marketplace listings into the local database:
@@ -87,10 +88,14 @@ class RoomWillhabenImporter(
                 lastError = null,
             )
         )
-        // A missing image must not stop the import
-        val images = imported.imageUrls.mapNotNull { url -> (imageDownloader.download(url) as? Result.Success)?.data }
-        if (images.isNotEmpty()) listingRepository.addImageBytes(listingId, images)
+        addImages(listingId, imported.imageUrls)
         return Result.Success(Unit)
+    }
+
+    private suspend fun addImages(listingId: Long, urls: List<String>) {
+        // A missing image must not stop the import
+        val images = urls.mapNotNull { url -> (imageDownloader.download(url) as? Result.Success)?.data }
+        if (images.isNotEmpty()) listingRepository.addImageBytes(listingId, images)
     }
 
     /** Returns true when the local content was replaced by the willhaben content. */
@@ -100,6 +105,9 @@ class RoomWillhabenImporter(
         val editedLocally = existing.syncState != SyncState.SYNCED.name && existing.syncState != SyncState.REMOTE_CHANGED.name
         val takeRemote = remoteChanged && !editedLocally
         if (takeRemote) listingRepository.updateContent(existing.listingId, imported.content)
+        // Listings imported before their images could be read get them now; existing images stay as they are
+        val hasNoImages = listingRepository.getListingByIdAsFlow(existing.listingId).first()?.images?.isEmpty() == true
+        if (hasNoImages && imported.imageUrls.isNotEmpty()) addImages(existing.listingId, imported.imageUrls)
 
         // Written after updateContent, which marks synced publications as changed
         publicationDao.update(

@@ -34,6 +34,18 @@ class KtorWillhabenListingsDataSource(
         return httpClient.get<JsonObject>(route = route).map { it.toString() }
     }
 
+    /**
+     * All images of one listing in their order ([route] is the listing's `imageList` link):
+     * the full-size image where there is one, else the large preview.
+     */
+    suspend fun fetchImageUrls(route: String): Result<List<String>, DataError.Network> {
+        return httpClient.get<JsonObject>(route = route).map { list ->
+            (list["advertImage"] as? JsonArray).orEmpty()
+                .mapNotNull { it as? JsonObject }
+                .mapNotNull { image -> image.text("referenceImageUrl") ?: image.text("mainImageUrl") }
+        }
+    }
+
     private fun JsonObject.toMyAdvertsPage(): MyAdvertsPage {
         val adverts = (this["verticalList"] as? JsonArray).orEmpty()
             .flatMap { vertical -> ((vertical as? JsonObject)?.get("advertDetails") as? JsonArray).orEmpty() }
@@ -52,8 +64,6 @@ class KtorWillhabenListingsDataSource(
             // The edit status name is what the web app shows ("Online", "Abgelaufen", ...)
             statusText = (this["advertEditStatusActionsList"] as? JsonObject)?.text("statusName")
                 ?: (this["advertStatus"] as? JsonObject)?.text("description"),
-            imageUrls = ((this["advertImageList"] as? JsonObject)?.get("advertImage") as? JsonArray).orEmpty()
-                .mapNotNull { (it as? JsonObject)?.text("mainImageUrl") },
         )
     }
 

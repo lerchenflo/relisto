@@ -56,11 +56,10 @@ class WillhabenListingMapperTest {
         adTypeId = 67,
         title = "Rasentraktor",
         statusText = "Abgelaufen",
-        imageUrls = listOf("https://cache.willhaben.at/a.jpg"),
     )
 
     private fun map(json: String = detailJson(), pathOf: (Int) -> List<WillhabenCategoryRef>? = { null }) =
-        WillhabenListingMapper.toImportedListing(RemoteListing(summary, json), pathOf)!!
+        WillhabenListingMapper.toImportedListing(RemoteListing(summary, json, imageUrls = listOf("https://cache.willhaben.at/a.jpg")), pathOf)!!
 
     @Test
     fun contentIsTakenFromTheListing() {

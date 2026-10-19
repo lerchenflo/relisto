@@ -14,6 +14,8 @@ import java.awt.image.BufferedImage
 import java.io.File
 import java.security.MessageDigest
 import javax.imageio.ImageIO
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.test.AfterTest
 import kotlin.test.Test
 
@@ -34,6 +36,27 @@ class DesktopImageStorageTest {
 
     private fun sha256(file: File): String =
         MessageDigest.getInstance("SHA-256").digest(file.readBytes()).joinToString("") { "%02x".format(it) }
+
+    /** willhaben's image server sends WebP, even for URLs ending in ".jpg". */
+    @OptIn(ExperimentalEncodingApi::class)
+    private val lossyWebp = Base64.decode("UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA")
+
+    @OptIn(ExperimentalEncodingApi::class)
+    private val losslessWebp = Base64.decode("UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==")
+
+    @Test
+    fun webpIsStoredAsJpegWhateverItsExtensionSays() = runTest {
+        listOf(lossyWebp to "jpg", losslessWebp to "webp").forEach { (bytes, extension) ->
+            val stored = (storage.importImageBytes(bytes, extension) as Result.Success).data
+
+            assertThat(stored.fileName.endsWith(".jpg")).isTrue()
+            val file = File(dirs.imagesDir, stored.fileName)
+            // JPEG files start with FF D8
+            assertThat(file.readBytes().take(2)).isEqualTo(listOf(0xFF.toByte(), 0xD8.toByte()))
+            assertThat(ImageIO.read(file).width).isEqualTo(1)
+            assertThat(stored.width to stored.height).isEqualTo(1 to 1)
+        }
+    }
 
     @Test
     fun pngIsCopiedAndNamedByItsHash() = runTest {
