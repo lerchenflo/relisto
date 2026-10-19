@@ -135,6 +135,8 @@ class RoomWillhabenImporter(
 
     private companion object {
         val MARKETPLACE = Marketplace.WILLHABEN.name
-        const val REMOTE_ID_SEPARATOR = ","
     }
 }
+
+/** Separates the ids in `replacedRemoteIds`. */
+internal const val REMOTE_ID_SEPARATOR = ","

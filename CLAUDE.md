@@ -127,3 +127,6 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
   the free package (`PUT upselling/new`, never a paid one) and continues a remembered draft
   (`pendingDraftId`) instead of copying again. Images: willhaben serves WebP (stored as JPEG via
   TwelveMonkeys); the import loads all images from `/atimage/{adId}` (none when that fails).
+- 2026-10-19 – Live: "Aprilia SX 50" renewed (→ "in Warteschlange"). willhaben's copy replaces the expired
+  listing, so the publication now follows the draft right after the copy; drafts ("Bearbeitung") get
+  "Fertigstellen" (finish instead of copy), deactivated listings are never renewed.

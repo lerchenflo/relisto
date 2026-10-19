@@ -46,9 +46,17 @@ data class PublicationUi(
     val statusText: String?,
     val expiresText: String?,
     val syncState: SyncState,
-    /** Only expired listings can be published again; a running one would be duplicated. */
-    val canRepublish: Boolean,
+    /** What the renew button does; null for running, sold or deactivated listings (a running one would be duplicated). */
+    val renewAction: RenewAction?,
 )
+
+enum class RenewAction {
+    /** Expired: copy and publish again ("Neu veröffentlichen"). */
+    REPUBLISH,
+
+    /** Draft on willhaben: save, choose the free package and activate ("Fertigstellen"). */
+    FINISH_DRAFT
+}
 
 data class CategoryOptionUi(
     val treeId: Int,

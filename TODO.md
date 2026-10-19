@@ -13,10 +13,9 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
 The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
 
-- [ ] V.4 Live test with "Beta RR 50": first run stopped at activate (no package chosen, fixed).
-  Draft 1415790914 is remembered in the local DB (`pendingDraftId`); next: import (check the
-  `/atimage` capture and that "Aprilia SX 50" gets its image), then renew "Beta RR 50" again; it
-  should continue the draft: save → choose "Basic" (€ 0) → activate.
+- [ ] V.4 "Beta RR 50": draft 1415790914 ("Bearbeitung") – add a photo, then "Fertigstellen".
+  ("Aprilia SX 50" renewed OK on 2026-10-19 → "in Warteschlange"; the user took it offline again.)
+- [ ] V.6 Deactivated listings: "Aktivieren" (status action `4`) instead of renew – part of 5.3.
 
 ## Next session
 

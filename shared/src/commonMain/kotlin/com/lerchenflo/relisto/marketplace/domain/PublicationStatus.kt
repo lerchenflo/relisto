@@ -10,7 +10,12 @@ data class PublicationStatus(
     val statusText: String?,
     val expiresAt: Long?,
     val syncState: SyncState,
-)
+    /** A draft that replaced an expired listing during a renew that did not finish (e.g. activation failed). */
+    val isRenewDraft: Boolean = false,
+) {
+    /** In editing on the marketplace ("Bearbeitung"): finished, not copied, to publish it. */
+    val isDraft: Boolean get() = statusText == WILLHABEN_DRAFT_STATUS
+}
 
 interface PublicationStatusRepository {
     fun getStatusesAsFlow(): Flow<List<PublicationStatus>>
@@ -18,6 +23,9 @@ interface PublicationStatusRepository {
 
 /** willhaben's status name of an expired listing. */
 private const val EXPIRED_STATUS = "Abgelaufen"
+
+/** willhaben's status name of a draft, e.g. the copy a renew makes before it is activated. */
+const val WILLHABEN_DRAFT_STATUS = "Bearbeitung"
 
 /** Status names of running listings; only these (or an unknown status) can run out by their end date. */
 private val RUNNING_STATUSES = setOf("Online", "Aktiv")
@@ -29,3 +37,9 @@ private val RUNNING_STATUSES = setOf("Online", "Aktiv")
 fun PublicationStatus.isExpired(nowMillis: Long): Boolean =
     statusText == EXPIRED_STATUS ||
         ((statusText == null || statusText in RUNNING_STATUSES) && expiresAt != null && expiresAt <= nowMillis)
+
+/**
+ * Renewed in bulk and automatically: expired listings, and drafts an unfinished renew left behind.
+ * Deactivated listings are activated, not renewed; drafts the user started are finished on request only.
+ */
+fun PublicationStatus.canRenew(nowMillis: Long): Boolean = isExpired(nowMillis) || isRenewDraft

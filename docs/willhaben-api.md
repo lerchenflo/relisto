@@ -128,8 +128,14 @@ später noch einmal." because no package was chosen. The draft's `upsellingProdu
 for € 9.99, "Unlimited" `40052` for € 34.99. Choosing one is `PUT` link `upsellings`
 (`/upselling/new/{adId}`) with `{"upsellingProducts": [...the groups with "selected" set...]}`.
 The app only ever selects a package with price 0 and stops (`PaidProduct`) when there is none.
-A second copy of the same expired listing while its draft exists answered `500`; the app remembers
-the draft (`pendingDraftId` in the fields JSON) and continues it on the next renew.
+The copy **replaces** the expired listing: afterwards my-adverts lists only the draft (status
+`statusId` 10 "Bearbeitung", `advertStatus` "Passiv", actions `5` "Fertigstellen" → `/motor/get/{id}`
+and `3` "Löschen"); a second copy of the old id answers `500`. The app moves the publication to the
+draft right after the copy and finishes a draft (load, save, package, activate) instead of copying.
+A successful activate answers `200` with `advertEditStatusActionsList` `statusId` 32 "in Warteschlange"
+(review queue); my-adverts may still show "Bearbeitung" for a moment. Live: "Aprilia SX 50" (with
+images) activated without a package being selected; "Beta RR 50" (no images) failed with `400`, so
+the missing image is the likely cause there.
 
 ## Images
 

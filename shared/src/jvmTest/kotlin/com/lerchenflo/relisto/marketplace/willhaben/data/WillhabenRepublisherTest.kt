@@ -150,13 +150,13 @@ class WillhabenRepublisherTest {
     @AfterTest
     fun tearDown() = database.close()
 
-    private suspend fun publishedListing(remoteId: String? = "111", adTypeId: Int? = null, pendingDraftId: String? = null): Long {
+    private suspend fun publishedListing(remoteId: String? = "111", adTypeId: Int? = null, status: String = "Abgelaufen"): Long {
         val id = (listings.createListing(ListingContent(title = "Rasentraktor Kart", description = "Gut erhalten", priceCents = 18000, postcode = "6850")) as Result.Success).data
         database.publicationDao().insert(
             ListingPublicationEntity(
                 listingId = id, marketplace = Marketplace.WILLHABEN.name,
-                marketplaceFieldsJson = """{"adTypeId":${adTypeId},"pendingDraftId":${pendingDraftId?.let { "\"$it\"" }}}""",
-                remoteId = remoteId, remoteUuid = "uuid-111", remoteUrl = null, remoteStatus = "Abgelaufen",
+                marketplaceFieldsJson = adTypeId?.let { """{"adTypeId":$it}""" },
+                remoteId = remoteId, remoteUuid = "uuid-111", remoteUrl = null, remoteStatus = status,
                 expiresAt = 5L, remoteSnapshotJson = "{}", remoteSnapshotHash = "old", syncState = SyncState.SYNCED.name,
                 lastSyncedAt = 1L, lastError = null,
             )
@@ -322,36 +322,48 @@ class WillhabenRepublisherTest {
     }
 
     @Test
-    fun failedActivationKeepsTheDraftAndTheNextRunResumesIt() = runTest {
+    fun afterTheCopyThePublicationFollowsTheDraftLikeWillhabenDoes() = runTest {
+        // willhaben replaces the expired listing by the draft; a failed activation leaves the draft
         motorActivateStatus = HttpStatusCode.BadRequest
         val id = publishedListing(adTypeId = 21)
 
         assertThat(republisher.republish(id)).isInstanceOf(Result.Error::class)
-        assertThat(fields.getFields(id)!!.pendingDraftId).isEqualTo("333")
-        // A remembered draft is no local change
-        assertThat(database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!.syncState)
-            .isEqualTo(SyncState.SYNCED.name)
 
+        val publication = database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!
+        assertThat(publication.remoteId).isEqualTo("333")
+        assertThat(publication.remoteStatus).isEqualTo("Bearbeitung")
+        assertThat(publication.replacedRemoteIds).isEqualTo("111")
+        // Following the draft is no local change
+        assertThat(publication.syncState).isEqualTo(SyncState.SYNCED.name)
+    }
+
+    @Test
+    fun draftIsFinishedWithoutCopyingAgain() = runTest {
+        motorActivateStatus = HttpStatusCode.BadRequest
+        val id = publishedListing(adTypeId = 21)
+        republisher.republish(id)
         motorActivateStatus = HttpStatusCode.OK
         calls.clear()
+
         assertThat(republisher.republish(id)).isEqualTo(Result.Success(Unit))
 
         assertThat(calls).doesNotContain("POST /webapi/iad/motor/copy/111")
         assertThat(calls).doesNotContain("POST /webapi/iad/motor/presave")
         assertThat(calls.first { it != "GET /webapi/iad/productgroups" }).isEqualTo("GET /webapi/iad/motor/get/333")
         assertThat(calls.last()).isEqualTo("PUT /webapi/iad/motor/activate/333")
-        assertThat(fields.getFields(id)!!.pendingDraftId).isNull()
-        assertThat(database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!.remoteId).isEqualTo("333")
+        val publication = database.publicationDao().getByListingAndMarketplace(id, Marketplace.WILLHABEN.name)!!
+        assertThat(publication.remoteId).isEqualTo("333")
+        assertThat(publication.remoteStatus).isNull()
+        assertThat(publication.replacedRemoteIds).isEqualTo("111")
     }
 
     @Test
-    fun rememberedDraftThatIsGoneIsReplacedByANewCopy() = runTest {
-        // e.g. deleted on willhaben in the meantime
-        val id = publishedListing(adTypeId = 21, pendingDraftId = "999")
+    fun draftThatIsGoneCannotBeFinished() = runTest {
+        // Deleted on willhaben in the meantime; the expired listing it replaced is gone too
+        val id = publishedListing(remoteId = "999", adTypeId = 21, status = "Bearbeitung")
 
-        assertThat(republisher.republish(id)).isEqualTo(Result.Success(Unit))
-        assertThat(calls).contains("GET /webapi/iad/motor/get/999")
-        assertThat(calls).contains("POST /webapi/iad/motor/copy/111")
+        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.NotPublished))
+        assertThat(calls).doesNotContain("POST /webapi/iad/motor/copy/999")
     }
 
     @Test

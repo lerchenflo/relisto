@@ -146,6 +146,10 @@
     <string name="republish_confirm">Veröffentlichen</string>
     <string name="republish_running">Wird neu veröffentlicht …</string>
     <string name="republish_done">Anzeige neu veröffentlicht</string>
+    <string name="finish_draft_button">Fertigstellen</string>
+    <string name="finish_draft_confirm_title">Entwurf fertigstellen?</string>
+    <string name="finish_draft_confirm_text">Der Entwurf auf willhaben wird mit dem lokalen Titel, Text, Preis und den lokalen Bildern gespeichert und veröffentlicht. Nur ein kostenloses Paket wird gewählt, nichts wird gebucht.</string>
+    <string name="finish_draft_running">Wird fertiggestellt …</string>
     <string name="republish_error_not_published">Diese Anzeige ist nicht auf willhaben.</string>
     <string name="republish_error_paid">willhaben verlangt eine Zahlung. Abgebrochen, es wurde nichts gebucht.</string>
     <string name="republish_error_api_changed">willhaben hat die Schnittstelle geändert (%1$s fehlt).</string>

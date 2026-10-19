@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -80,6 +81,10 @@ import relisto.shared.generated.resources.willhaben_attribute_choose
 import relisto.shared.generated.resources.willhaben_attribute_required
 import relisto.shared.generated.resources.willhaben_attributes
 import relisto.shared.generated.resources.willhaben_attributes_hint
+import relisto.shared.generated.resources.finish_draft_button
+import relisto.shared.generated.resources.finish_draft_confirm_text
+import relisto.shared.generated.resources.finish_draft_confirm_title
+import relisto.shared.generated.resources.finish_draft_running
 import relisto.shared.generated.resources.willhaben_category
 import relisto.shared.generated.resources.willhaben_vertical
 import relisto.shared.generated.resources.willhaben_vertical_hint
@@ -158,7 +163,7 @@ fun WillhabenTabScreen(
         CategoryPickerDialog(state = state, onAction = onAction)
     }
     if (state.isRepublishConfirmOpen) {
-        RepublishConfirmDialog(onAction = onAction)
+        RepublishConfirmDialog(action = state.publication?.renewAction ?: RenewAction.REPUBLISH, onAction = onAction)
     }
 }
 
@@ -173,17 +178,18 @@ private fun PublicationSection(publication: PublicationUi, isRepublishing: Boole
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        val action = publication.renewAction
         if (isRepublishing) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(Res.string.republish_running))
+                Text(stringResource(if (action == RenewAction.FINISH_DRAFT) Res.string.finish_draft_running else Res.string.republish_running))
             }
-        } else if (publication.canRepublish) {
+        } else if (action != null) {
             Button(onClick = { onAction(WillhabenTabAction.OnRepublishClick) }, modifier = Modifier.padding(top = 8.dp)) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
+                Icon(if (action == RenewAction.FINISH_DRAFT) Icons.Default.Edit else Icons.Default.Refresh, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(Res.string.republish_button))
+                Text(stringResource(if (action == RenewAction.FINISH_DRAFT) Res.string.finish_draft_button else Res.string.republish_button))
             }
         }
         HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
@@ -191,11 +197,12 @@ private fun PublicationSection(publication: PublicationUi, isRepublishing: Boole
 }
 
 @Composable
-private fun RepublishConfirmDialog(onAction: (WillhabenTabAction) -> Unit) {
+private fun RepublishConfirmDialog(action: RenewAction, onAction: (WillhabenTabAction) -> Unit) {
+    val finish = action == RenewAction.FINISH_DRAFT
     AlertDialog(
         onDismissRequest = { onAction(WillhabenTabAction.OnRepublishDismiss) },
-        title = { Text(stringResource(Res.string.republish_confirm_title)) },
-        text = { Text(stringResource(Res.string.republish_confirm_text)) },
+        title = { Text(stringResource(if (finish) Res.string.finish_draft_confirm_title else Res.string.republish_confirm_title)) },
+        text = { Text(stringResource(if (finish) Res.string.finish_draft_confirm_text else Res.string.republish_confirm_text)) },
         confirmButton = {
             Button(onClick = { onAction(WillhabenTabAction.OnRepublishConfirm) }) {
                 Text(stringResource(Res.string.republish_confirm))
@@ -551,7 +558,7 @@ private fun WillhabenTabScreenPreview() {
                     statusText = "Abgelaufen",
                     expiresText = "02.12.2026 10:00",
                     syncState = SyncState.SYNCED,
-                    canRepublish = true,
+                    renewAction = RenewAction.REPUBLISH,
                 ),
                 categoryPathText = "Sport / Sportgeräte › Fahrräder › Kinderfahrräder",
                 attributeFields = listOf(

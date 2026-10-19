@@ -4,7 +4,7 @@ import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
-import com.lerchenflo.relisto.marketplace.domain.isExpired
+import com.lerchenflo.relisto.marketplace.domain.canRenew
 import com.lerchenflo.relisto.utilities.TimeProvider
 import kotlinx.coroutines.flow.first
 
@@ -44,7 +44,7 @@ class WillhabenRenewer(
         (importer.importMyListings() as? Result.Error)?.let { return it }
         val now = timeProvider.nowEpochMillis()
         val expiredIds = statuses.getStatusesAsFlow().first()
-            .filter { it.marketplace == Marketplace.WILLHABEN && it.isExpired(now) }
+            .filter { it.marketplace == Marketplace.WILLHABEN && it.canRenew(now) }
             .map { it.listingId }
         return Result.Success(renew(expiredIds))
     }

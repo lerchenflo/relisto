@@ -11,6 +11,7 @@ import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatus
 import com.lerchenflo.relisto.marketplace.domain.SyncState
+import com.lerchenflo.relisto.marketplace.domain.canRenew
 import com.lerchenflo.relisto.marketplace.domain.isExpired
 import com.lerchenflo.relisto.testutil.FakeImporter
 import com.lerchenflo.relisto.testutil.FakePublicationStatusRepository
@@ -27,8 +28,8 @@ class WillhabenRenewerTest {
     private val time = FakeTimeProvider(now = 10_000L)
     private val renewer = WillhabenRenewer(publisher, importer, statuses, time)
 
-    private fun status(listingId: Long, text: String?, expiresAt: Long? = null) =
-        PublicationStatus(listingId, Marketplace.WILLHABEN, text, expiresAt, SyncState.SYNCED)
+    private fun status(listingId: Long, text: String?, expiresAt: Long? = null, isRenewDraft: Boolean = false) =
+        PublicationStatus(listingId, Marketplace.WILLHABEN, text, expiresAt, SyncState.SYNCED, isRenewDraft = isRenewDraft)
 
     @Test
     fun expiredMeansExpiredStatusOrPassedEndDate() {
@@ -44,6 +45,26 @@ class WillhabenRenewerTest {
         assertThat(status(1, "Verkauft", expiresAt = 9_000L).isExpired(time.now)).isFalse()
         assertThat(status(1, "Deaktiviert", expiresAt = 9_000L).isExpired(time.now)).isFalse()
         assertThat(status(1, "Reserviert", expiresAt = 9_000L).isExpired(time.now)).isFalse()
+    }
+
+    @Test
+    fun expiredListingsAndDraftsOfARenewCanBeRenewed() {
+        assertThat(status(1, "Abgelaufen").canRenew(time.now)).isTrue()
+        // A draft a renew left behind (e.g. activation failed) is finished by the next renew
+        assertThat(status(1, "Bearbeitung", isRenewDraft = true).canRenew(time.now)).isTrue()
+        // Drafts the user started on willhaben are only finished on request, never in bulk
+        assertThat(status(1, "Bearbeitung").canRenew(time.now)).isFalse()
+        assertThat(status(1, "Bearbeitung").isDraft).isTrue()
+        assertThat(status(1, "Deaktiviert", expiresAt = 9_000L).canRenew(time.now)).isFalse()
+    }
+
+    @Test
+    fun renewAllExpiredAlsoFinishesDraftsOfARenew() = runTest {
+        statuses.statuses.value = listOf(status(1, "Bearbeitung", isRenewDraft = true), status(2, "Bearbeitung"))
+
+        renewer.renewAllExpired()
+
+        assertThat(publisher.republished).containsExactly(1L)
     }
 
     @Test

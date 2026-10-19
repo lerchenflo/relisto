@@ -5,6 +5,7 @@ import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatus
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
 import com.lerchenflo.relisto.marketplace.domain.SyncState
+import com.lerchenflo.relisto.marketplace.domain.WILLHABEN_DRAFT_STATUS
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -22,6 +23,7 @@ class RoomPublicationStatusRepository(
                     statusText = row.remoteStatus,
                     expiresAt = row.expiresAt,
                     syncState = SyncState.entries.firstOrNull { it.name == row.syncState } ?: SyncState.LOCAL_ONLY,
+                    isRenewDraft = row.remoteStatus == WILLHABEN_DRAFT_STATUS && !row.replacedRemoteIds.isNullOrBlank(),
                 )
             }
         }

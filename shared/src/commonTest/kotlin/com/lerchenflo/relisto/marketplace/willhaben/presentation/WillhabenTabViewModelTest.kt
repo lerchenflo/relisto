@@ -390,21 +390,37 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
         assertThat(publication.statusText).isEqualTo("Abgelaufen")
         assertThat(publication.expiresText).isNotNull()
         assertThat(publication.syncState).isEqualTo(SyncState.SYNCED)
-        assertThat(publication.canRepublish).isTrue()
+        assertThat(publication.renewAction).isEqualTo(RenewAction.REPUBLISH)
     }
 
     @Test
     fun runningListingCannotBeRepublished() = runTest {
         publishedAs("Online", expiresAt = 20_000L)
 
-        assertThat(viewModel().state.value.publication!!.canRepublish).isFalse()
+        assertThat(viewModel().state.value.publication!!.renewAction).isNull()
+    }
+
+    @Test
+    fun draftCanBeFinished() = runTest {
+        // "Bearbeitung" on willhaben: continue the draft instead of copying
+        publishedAs("Bearbeitung")
+
+        assertThat(viewModel().state.value.publication!!.renewAction).isEqualTo(RenewAction.FINISH_DRAFT)
+    }
+
+    @Test
+    fun deactivatedListingIsNotRenewed() = runTest {
+        // Deactivated listings are activated again, not renewed (status actions, later)
+        publishedAs("Deaktiviert", expiresAt = 5_000L)
+
+        assertThat(viewModel().state.value.publication!!.renewAction).isNull()
     }
 
     @Test
     fun passedEndDateCountsAsExpired() = runTest {
         publishedAs("Online", expiresAt = 9_000L)
 
-        assertThat(viewModel().state.value.publication!!.canRepublish).isTrue()
+        assertThat(viewModel().state.value.publication!!.renewAction).isEqualTo(RenewAction.REPUBLISH)
     }
 
     @Test

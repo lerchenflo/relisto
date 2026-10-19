@@ -11,7 +11,7 @@ import com.lerchenflo.relisto.listings.domain.ListingContent
 import com.lerchenflo.relisto.listings.domain.ListingRepository
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
-import com.lerchenflo.relisto.marketplace.domain.isExpired
+import com.lerchenflo.relisto.marketplace.domain.canRenew
 import com.lerchenflo.relisto.marketplace.willhaben.presentation.toUiText
 import com.lerchenflo.relisto.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
@@ -63,7 +63,7 @@ class ListingsViewModel(
                     .filter { it.statusText != null }
                     .associate { it.listingId to it.statusText!! }
                 val now = timeProvider.nowEpochMillis()
-                expiredListingIds = willhaben.filter { it.isExpired(now) }.map { it.listingId }.toSet()
+                expiredListingIds = willhaben.filter { it.canRenew(now) }.map { it.listingId }.toSet()
                 _state.update { it.withVisibleListings() }
             }
         }

@@ -12,6 +12,7 @@ import com.lerchenflo.relisto.listings.domain.ListingRepository
 import com.lerchenflo.relisto.marketplace.data.ListingPublicationEntity
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.SyncState
+import com.lerchenflo.relisto.marketplace.domain.WILLHABEN_DRAFT_STATUS
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
 import com.lerchenflo.relisto.marketplace.willhaben.domain.RemoteListing
@@ -21,7 +22,6 @@ import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenListingField
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenPublisher
 import com.lerchenflo.relisto.utilities.TimeProvider
 import kotlinx.coroutines.flow.first
-import com.lerchenflo.relisto.marketplace.willhaben.data.dto.WillhabenFieldsDto
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.booleanOrNull
@@ -64,10 +64,13 @@ class WillhabenRepublisher(
         val freeProductId = step(PublishStep.PRODUCT) { catalogDataSource.fetchFreeProductId(adTypeId) }
             .valueOr { return it } ?: return Result.Error(PublishError.PaidProduct)
 
-        val saved = fields.pendingDraftId
-            ?.let { draftId -> loadDraft(draftId, adTypeId).valueOr { return it } }
-            ?.let { draft -> JsonObject(AdJsonPatcher.patch(draft, content, fields) + ("productId" to JsonPrimitive(freeProductId))) }
-            ?: createDraft(publication, remoteId, adTypeId, content, fields, freeProductId).valueOr { return it }
+        val saved = if (publication.remoteStatus == WILLHABEN_DRAFT_STATUS) {
+            // A draft (e.g. left by a renew whose activation failed) is finished, not copied again
+            val draft = loadDraft(remoteId, adTypeId).valueOr { return it } ?: return Result.Error(PublishError.NotPublished)
+            JsonObject(AdJsonPatcher.patch(draft, content, fields) + ("productId" to JsonPrimitive(freeProductId)))
+        } else {
+            createDraft(publication, remoteId, adTypeId, content, fields, freeProductId).valueOr { return it }
+        }
 
         uploadImages(listing, saved)?.let { return Result.Error(it) }
 
@@ -93,7 +96,10 @@ class WillhabenRepublisher(
         return Result.Success(Unit)
     }
 
-    /** Copies the expired listing into a new draft and presaves it; remembers the draft for a later resume. */
+    /**
+     * Copies the expired listing into a new draft and presaves it. willhaben replaces the expired listing
+     * by the draft, so the publication follows it at once: a failed step later leaves a draft to finish.
+     */
     private suspend fun createDraft(
         publication: ListingPublicationEntity,
         remoteId: String,
@@ -111,13 +117,21 @@ class WillhabenRepublisher(
         val saved = draft.mergeIds(presaved)
 
         (saved["adId"] as? JsonPrimitive)?.content?.let { draftId ->
-            // Written directly: a remembered draft is no local change of the listing
-            publicationDao.update(publication.copy(marketplaceFieldsJson = fields.copy(pendingDraftId = draftId).encode()))
+            // Written directly: following the draft is no local change of the listing
+            publicationDao.update(
+                publication.copy(
+                    remoteId = draftId,
+                    replacedRemoteIds = listOfNotNull(publication.replacedRemoteIds, remoteId).joinToString(REMOTE_ID_SEPARATOR),
+                    remoteStatus = WILLHABEN_DRAFT_STATUS,
+                    remoteUrl = "https://www.willhaben.at/iad/object?adId=$draftId",
+                    expiresAt = null,
+                )
+            )
         }
         return Result.Success(saved)
     }
 
-    /** The draft of an interrupted renew; null when it is gone on willhaben, so a new copy is made. */
+    /** The draft's JSON; null when the draft is gone on willhaben. */
     private suspend fun loadDraft(draftId: String, adTypeId: Int): Result<JsonObject?, PublishError> {
         val route = WillhabenAdTypes.detailRoute(draftId, adTypeId) ?: return Result.Success(null)
         return when (val result = runner.run { listingsDataSource.fetchListingJson(route) }) {
@@ -165,7 +179,6 @@ class WillhabenRepublisher(
 
     private fun JsonArray?.orEmpty(): List<JsonElement> = this ?: emptyList()
 
-    private fun WillhabenListingFields.encode(): String = AppJson.encodeToString(WillhabenFieldsDto.serializer(), toDto())
 
     /** Replaces the images of the draft with the local images; returns the error, null on success. */
     private suspend fun uploadImages(listing: Listing, draft: JsonObject): PublishError? {
@@ -203,13 +216,11 @@ class WillhabenRepublisher(
         val imported = WillhabenListingMapper.toImportedListing(remote) { treeId ->
             fields.categoryPath.takeIf { it.lastOrNull()?.treeId == treeId }
         }
-        // Read again: the remembered draft may have been written since the start
+        // Read again: the publication followed the draft since the start
         val old = publicationDao.getByListingAndMarketplace(listingId, MARKETPLACE) ?: return
         publicationDao.update(
             old.copy(
-                marketplaceFieldsJson = fields.copy(pendingDraftId = null).encode(),
                 remoteId = newId,
-                replacedRemoteIds = listOfNotNull(old.replacedRemoteIds, old.remoteId).joinToString(","),
                 remoteUuid = imported?.remoteUuid,
                 remoteUrl = "https://www.willhaben.at/iad/object?adId=$newId",
                 remoteStatus = null,

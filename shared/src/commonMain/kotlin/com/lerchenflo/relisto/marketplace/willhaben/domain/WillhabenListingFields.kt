@@ -11,8 +11,6 @@ data class WillhabenListingFields(
     val delivery: DeliveryOptions = DeliveryOptions(),
     /** willhaben ad type, e.g. 67 marketplace or 21 motorbike; null for listings stored before it was kept (marketplace). */
     val adTypeId: Int? = null,
-    /** Draft on willhaben left by an interrupted renew; the next renew continues it instead of copying again. */
-    val pendingDraftId: String? = null,
 )
 
 data class WillhabenCategoryRef(

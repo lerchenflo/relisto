@@ -143,7 +143,11 @@ class WillhabenTabViewModel(
             statusText = statusText,
             expiresText = expiresAt?.let(::formatDateTime),
             syncState = syncState,
-            canRepublish = isExpired(timeProvider.nowEpochMillis()),
+            renewAction = when {
+                isDraft -> RenewAction.FINISH_DRAFT
+                isExpired(timeProvider.nowEpochMillis()) -> RenewAction.REPUBLISH
+                else -> null
+            },
         )
     }
 

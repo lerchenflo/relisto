@@ -146,6 +146,10 @@
     <string name="republish_confirm">Publish</string>
     <string name="republish_running">Republishing …</string>
     <string name="republish_done">Listing republished</string>
+    <string name="finish_draft_button">Finish</string>
+    <string name="finish_draft_confirm_title">Finish the draft?</string>
+    <string name="finish_draft_confirm_text">The draft on willhaben is saved with the local title, text, price and images, and published. Only a free package is chosen, nothing is booked.</string>
+    <string name="finish_draft_running">Finishing …</string>
     <string name="republish_error_not_published">This listing is not on willhaben.</string>
     <string name="republish_error_paid">willhaben asks for a payment. Cancelled, nothing was bought.</string>
     <string name="republish_error_api_changed">willhaben changed its interface (%1$s is missing).</string>
