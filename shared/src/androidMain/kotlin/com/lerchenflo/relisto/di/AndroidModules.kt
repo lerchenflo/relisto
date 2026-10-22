@@ -1,6 +1,6 @@
 package com.lerchenflo.relisto.di
 
-import android.content.Context
+import androidx.activity.ComponentActivity
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
@@ -40,7 +40,7 @@ val androidPlatformModule = module {
         createDataStore { File(get<AppDirectories>().dataDir, DATA_STORE_FILE_NAME).absolutePath }
     }
     single<HttpClientEngine> { OkHttp.create() }
-    singleOf(::AndroidImageStorage) { bind<ImageStorage>() }
+    single<ImageStorage> { AndroidImageStorage(androidContext(), get()) }
     singleOf(::AndroidImagePicker) { bind<ImagePicker>() }
     single<SecureStorage> { KSafeSecureStorage(KSafe(androidContext(), fileName = "relisto")) }
     singleOf(::AndroidWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
@@ -48,12 +48,13 @@ val androidPlatformModule = module {
     single<AppVersionProvider> { AndroidAppVersionProvider(androidContext()) }
 }
 
-/** Starts Koin once; called from the Android entry point. */
-fun initKoin(context: Context) {
+/** Starts Koin once and connects the activity to the photo picker; called from the Android entry point. */
+fun initKoin(activity: ComponentActivity) {
     if (KoinPlatform.getKoinOrNull() == null) {
         startKoin {
-            androidContext(context.applicationContext)
+            androidContext(activity.applicationContext)
             modules(androidPlatformModule, datasourceModule, presentationModule)
         }
     }
+    KoinPlatform.getKoin().get<AndroidImagePicker>().register(activity)
 }

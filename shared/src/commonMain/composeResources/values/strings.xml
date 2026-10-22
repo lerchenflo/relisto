@@ -47,6 +47,7 @@
     <string name="editor_postcode">Postleitzahl</string>
     <string name="editor_images">Bilder</string>
     <string name="editor_images_hint">Bilddateien hier ablegen oder hinzufügen. Zum Sortieren ziehen; das erste Bild ist das Titelbild.</string>
+    <string name="editor_images_hint_touch">Bilder hinzufügen. Zum Sortieren lange drücken und ziehen; das erste Bild ist das Titelbild.</string>
     <string name="editor_images_add">Bilder hinzufügen</string>
     <string name="editor_image_remove">Bild entfernen</string>
     <string name="editor_image_cover">Titelbild</string>

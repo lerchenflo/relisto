@@ -47,6 +47,7 @@
     <string name="editor_postcode">Postcode</string>
     <string name="editor_images">Images</string>
     <string name="editor_images_hint">Drop image files here or add them. Drag to reorder; the first image is the cover.</string>
+    <string name="editor_images_hint_touch">Add images. Long-press and drag to reorder; the first image is the cover.</string>
     <string name="editor_images_add">Add images</string>
     <string name="editor_image_remove">Remove image</string>
     <string name="editor_image_cover">Cover</string>

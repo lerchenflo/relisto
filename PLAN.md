@@ -535,7 +535,11 @@ Technical defaults (decided during implementation):
   scales thumbnails, no separate thumbnail folder.
 - willhaben condition ("Zustand") and handover ("Übergabe") attributes are derived from the
   neutral condition and the delivery options, so the willhaben tab does not show them.
-- Android uses stubs for image import and file picker until Android features are planned.
+- Android: system photo picker (`PickMultipleVisualMedia`) and an image storage like desktop
+  (2026-10-22); formats other than JPEG/PNG/GIF/BMP are stored as JPEG.
+- One root `Scaffold` in `App.kt` (like SchneaggchatV3) handles all window insets and snackbars;
+  screens are drawn inside it without their own Scaffold. Below 720 dp the editor is its own
+  screen with a top bar (back arrow, icon buttons).
 - All willhaben verticals are imported and renewed (2026-10-19, interview). The ad type is stored
   in the willhaben fields JSON (`adTypeId`, no schema change; `null` = marketplace). The free
   product per ad type comes from `/iad/productgroups`; without a free product the app refuses

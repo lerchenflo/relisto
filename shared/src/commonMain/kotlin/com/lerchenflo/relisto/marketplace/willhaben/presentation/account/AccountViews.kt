@@ -47,7 +47,6 @@ import relisto.shared.generated.resources.account_login
 import relisto.shared.generated.resources.account_logout
 import relisto.shared.generated.resources.account_status_logged_in
 import relisto.shared.generated.resources.import_button
-import relisto.shared.generated.resources.import_running
 import relisto.shared.generated.resources.market_willhaben
 
 /** Shows the account messages on [snackbarHostState]; only the visible screen collects them. */
@@ -102,12 +101,9 @@ fun LoggedInMarketsRow(
 }
 
 @Composable
-fun AccountSettingsRoot(
-    viewModel: AccountViewModel,
-    snackbarHostState: SnackbarHostState,
-) {
+fun AccountSettingsRoot(viewModel: AccountViewModel) {
+    // Account messages are shown by the app root, which observes the shared view model once
     val state by viewModel.state.collectAsStateWithLifecycle()
-    ObserveAccountEvents(viewModel, snackbarHostState)
     AccountSection(state = state, onAction = viewModel::onAction)
 }
 

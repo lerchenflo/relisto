@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Archive
@@ -36,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -63,6 +65,7 @@ import com.lerchenflo.relisto.marketplace.willhaben.presentation.WillhabenTabRoo
 import com.lerchenflo.relisto.sharedUi.ConditionSelector
 import com.lerchenflo.relisto.sharedUi.ImageDropArea
 import com.lerchenflo.relisto.sharedUi.ListingImage
+import com.lerchenflo.relisto.sharedUi.usesTouchInput
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -86,6 +89,7 @@ import relisto.shared.generated.resources.editor_image_remove
 import relisto.shared.generated.resources.editor_images
 import relisto.shared.generated.resources.editor_images_add
 import relisto.shared.generated.resources.editor_images_hint
+import relisto.shared.generated.resources.editor_images_hint_touch
 import relisto.shared.generated.resources.editor_marketplaces
 import relisto.shared.generated.resources.editor_not_found
 import relisto.shared.generated.resources.editor_postcode
@@ -94,6 +98,7 @@ import relisto.shared.generated.resources.editor_price_invalid
 import relisto.shared.generated.resources.editor_title
 import relisto.shared.generated.resources.editor_title_counter
 import relisto.shared.generated.resources.editor_unarchive
+import relisto.shared.generated.resources.listings_back_to_list
 import relisto.shared.generated.resources.willhaben_tab
 
 @Composable
@@ -101,6 +106,7 @@ fun ListingEditorRoot(
     listingId: Long,
     snackbarHostState: SnackbarHostState,
     onListingDuplicated: (Long) -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: ListingEditorViewModel = koinViewModel(key = "editor-$listingId") { parametersOf(listingId) },
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -121,33 +127,37 @@ fun ListingEditorRoot(
         marketplaceContent = {
             WillhabenTabRoot(listingId = listingId, snackbarHostState = snackbarHostState)
         },
+        onBack = onBack,
     )
 }
 
+/**
+ * [onBack] is set on phones, where the editor is its own screen: a top bar with a back arrow and
+ * icon buttons replaces the labelled buttons, and the content uses less padding.
+ */
 @Composable
 fun ListingEditorScreen(
     state: ListingEditorState,
     onAction: (ListingEditorAction) -> Unit,
     marketplaceContent: @Composable () -> Unit,
+    onBack: (() -> Unit)? = null,
 ) {
     when {
         state.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        state.notFound -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(stringResource(Res.string.editor_not_found), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        else -> Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            EditorActions(state = state, onAction = onAction)
-            ContentFields(state = state, onAction = onAction)
-            ImagesSection(state = state, onAction = onAction)
-            HorizontalDivider()
-            Text(stringResource(Res.string.editor_marketplaces), style = MaterialTheme.typography.titleMedium)
-            PrimaryTabRow(selectedTabIndex = 0, modifier = Modifier.widthIn(max = 400.dp)) {
-                Tab(selected = true, onClick = {}, text = { Text(stringResource(Res.string.willhaben_tab)) })
+        state.notFound -> Column(Modifier.fillMaxSize()) {
+            if (onBack != null) BackButton(onBack)
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(stringResource(Res.string.editor_not_found), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            marketplaceContent()
+        }
+        onBack != null -> Column(Modifier.fillMaxSize()) {
+            CompactEditorTopBar(state = state, onAction = onAction, onBack = onBack)
+            EditorContent(state, onAction, marketplaceContent, Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+        }
+        else -> Column(Modifier.fillMaxSize()) {
+            EditorContent(state, onAction, marketplaceContent, Modifier.padding(24.dp)) {
+                EditorActions(state = state, onAction = onAction)
+            }
         }
     }
 
@@ -167,6 +177,65 @@ fun ListingEditorScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun EditorContent(
+    state: ListingEditorState,
+    onAction: (ListingEditorAction) -> Unit,
+    marketplaceContent: @Composable () -> Unit,
+    modifier: Modifier,
+    header: @Composable () -> Unit = {},
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).then(modifier),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        header()
+        ContentFields(state = state, onAction = onAction)
+            ImagesSection(state = state, onAction = onAction)
+            HorizontalDivider()
+            Text(stringResource(Res.string.editor_marketplaces), style = MaterialTheme.typography.titleMedium)
+            PrimaryTabRow(selectedTabIndex = 0, modifier = Modifier.widthIn(max = 400.dp)) {
+                Tab(selected = true, onClick = {}, text = { Text(stringResource(Res.string.willhaben_tab)) })
+            }
+            marketplaceContent()
+    }
+}
+
+@Composable
+private fun BackButton(onBack: () -> Unit) {
+    IconButton(onClick = onBack) {
+        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.listings_back_to_list))
+    }
+}
+
+/** Phone top bar: back arrow, archived badge, icon buttons for duplicate, archive and delete. */
+@Composable
+private fun CompactEditorTopBar(state: ListingEditorState, onAction: (ListingEditorAction) -> Unit, onBack: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(end = 4.dp)) {
+        BackButton(onBack)
+        Spacer(Modifier.weight(1f))
+        if (state.archived) {
+            AssistChip(onClick = {}, label = { Text(stringResource(Res.string.editor_archived_badge)) })
+        }
+        IconButton(onClick = { onAction(ListingEditorAction.OnDuplicateClick) }) {
+            Icon(Icons.Outlined.ContentCopy, contentDescription = stringResource(Res.string.editor_duplicate))
+        }
+        IconButton(onClick = { onAction(ListingEditorAction.OnArchiveToggleClick) }) {
+            Icon(
+                if (state.archived) Icons.Outlined.Unarchive else Icons.Outlined.Archive,
+                contentDescription = stringResource(if (state.archived) Res.string.editor_unarchive else Res.string.editor_archive),
+            )
+        }
+        IconButton(onClick = { onAction(ListingEditorAction.OnDeleteClick) }) {
+            Icon(
+                Icons.Outlined.Delete,
+                contentDescription = stringResource(Res.string.editor_delete),
+                tint = MaterialTheme.colorScheme.error,
+            )
+        }
     }
 }
 
@@ -264,20 +333,22 @@ private fun ImagesSection(state: ListingEditorState, onAction: (ListingEditorAct
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(Res.string.editor_images), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        stringResource(Res.string.editor_images_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    stringResource(Res.string.editor_images),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
                 OutlinedButton(onClick = { onAction(ListingEditorAction.OnAddImagesClick) }) {
                     Icon(Icons.Default.AddPhotoAlternate, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(Res.string.editor_images_add))
                 }
             }
+            Text(
+                stringResource(if (usesTouchInput) Res.string.editor_images_hint_touch else Res.string.editor_images_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             if (state.images.isNotEmpty()) {
                 ReorderableImageRow(images = state.images, onAction = onAction)
             }
@@ -297,7 +368,8 @@ private fun ReorderableImageRow(images: List<ListingImageUi>, onAction: (Listing
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     shadowElevation = if (isDragging) 8.dp else 0.dp,
-                    modifier = Modifier.draggableHandle(),
+                    // Touch: a long press starts the drag, so the row still scrolls with a swipe
+                    modifier = if (usesTouchInput) Modifier.longPressDraggableHandle() else Modifier.draggableHandle(),
                 ) {
                     Box(modifier = Modifier.size(140.dp)) {
                         ListingImage(

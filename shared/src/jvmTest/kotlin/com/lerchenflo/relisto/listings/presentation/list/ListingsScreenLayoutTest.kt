@@ -2,12 +2,12 @@ package com.lerchenflo.relisto.listings.presentation.list
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.compose.ui.unit.dp
@@ -44,10 +44,13 @@ class ListingsScreenLayoutTest {
             ListingsScreen(
                 state = state,
                 onAction = { actions += it },
-                snackbarHostState = SnackbarHostState(),
                 marketActions = {},
                 loggedInMarkets = {},
-                editorContent = { Text("EDITOR") },
+                editorContent = { _, onBack ->
+                    Text("EDITOR")
+                    // The phone editor draws the back arrow in its own top bar
+                    if (onBack != null) IconButton(onClick = onBack) { Text("BACK") }
+                },
             )
         }
     }
@@ -58,6 +61,7 @@ class ListingsScreenLayoutTest {
 
         assertThat(onAllNodesWithText("Kinderfahrrad").fetchSemanticsNodes()).isNotEmpty()
         assertThat(onAllNodesWithText("EDITOR").fetchSemanticsNodes()).isNotEmpty()
+        assertThat(onAllNodesWithText("BACK").fetchSemanticsNodes()).isEmpty()
     }
 
     @Test
@@ -67,7 +71,7 @@ class ListingsScreenLayoutTest {
         assertThat(onAllNodesWithText("EDITOR").fetchSemanticsNodes()).isNotEmpty()
         assertThat(onAllNodesWithText("Kinderfahrrad").fetchSemanticsNodes()).isEmpty()
 
-        onNodeWithContentDescription("Back to the list").performClick()
+        onNodeWithText("BACK").performClick()
 
         assertThat(actions).containsExactly(ListingsAction.OnCloseListingClick)
     }

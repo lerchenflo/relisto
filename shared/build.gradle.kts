@@ -68,8 +68,8 @@ kotlin {
             // Networking - OkHttp engine for Ktor
             implementation(libs.ktor.client.okhttp)
 
-            // Images - willhaben serves listing images as WebP, which ImageIO cannot read alone
-            implementation(libs.twelvemonkeys.imageio.webp)
+            // Images - system photo picker (ActivityResult API)
+            implementation(libs.androidx.activity.compose)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

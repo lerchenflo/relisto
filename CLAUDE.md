@@ -149,3 +149,7 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
 - 2026-10-22 – Paid-package stop names the cheapest package and price ("Basic - 14 Tage für 4,99 €")
   and says nothing was booked. V.4 dropped: new listings only on the marketplace (motor: one free
   listing per user); motor import/renew code kept.
+- 2026-10-22 – One root Scaffold in `App.kt` like SchneaggchatV3 (`contentWindowInsets = safeDrawing`:
+  system bars, camera cutout, keyboard; the only snackbar host); screens have no Scaffold of their own.
+  Phone editor: top bar with back arrow and icon buttons. Android: photo picker + image storage
+  (content URIs, WebP/HEIC stored as JPEG), long-press to reorder images.

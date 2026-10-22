@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircle
@@ -44,8 +43,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,7 +51,6 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -76,7 +72,6 @@ import com.lerchenflo.relisto.listings.presentation.editor.ListingEditorRoot
 import com.lerchenflo.relisto.marketplace.willhaben.presentation.account.AccountViewModel
 import com.lerchenflo.relisto.marketplace.willhaben.presentation.account.ImportButton
 import com.lerchenflo.relisto.marketplace.willhaben.presentation.account.LoggedInMarketsRow
-import com.lerchenflo.relisto.marketplace.willhaben.presentation.account.ObserveAccountEvents
 import com.lerchenflo.relisto.sharedUi.ListingImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -89,7 +84,6 @@ import relisto.shared.generated.resources.editor_delete
 import relisto.shared.generated.resources.editor_delete_cancel
 import relisto.shared.generated.resources.editor_delete_confirm
 import relisto.shared.generated.resources.editor_unarchive
-import relisto.shared.generated.resources.listings_back_to_list
 import relisto.shared.generated.resources.listings_checked_count
 import relisto.shared.generated.resources.listings_cover_image
 import relisto.shared.generated.resources.listings_delete_checked_text
@@ -122,15 +116,14 @@ import relisto.shared.generated.resources.renew_select_all
 @Composable
 fun ListingsRoot(
     accountViewModel: AccountViewModel,
+    snackbarHostState: SnackbarHostState,
     headerActions: @Composable () -> Unit = {},
     viewModel: ListingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val accountState by accountViewModel.state.collectAsStateWithLifecycle()
-    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    ObserveAccountEvents(accountViewModel, snackbarHostState)
     ObserveAsEvents(viewModel.events) { event ->
         when (event) {
             is ListingsEvent.ShowMessage -> scope.launch {
@@ -142,15 +135,15 @@ fun ListingsRoot(
     ListingsScreen(
         state = state,
         onAction = viewModel::onAction,
-        snackbarHostState = snackbarHostState,
         marketActions = { ImportButton(state = accountState, onAction = accountViewModel::onAction) },
         loggedInMarkets = { LoggedInMarketsRow(state = accountState) },
         headerActions = headerActions,
-        editorContent = { listingId ->
+        editorContent = { listingId, onBack ->
             ListingEditorRoot(
                 listingId = listingId,
                 snackbarHostState = snackbarHostState,
                 onListingDuplicated = { newId -> viewModel.onAction(ListingsAction.OnListingClick(newId)) },
+                onBack = onBack,
             )
         },
     )
@@ -158,25 +151,22 @@ fun ListingsRoot(
 
 /**
  * Master-detail: listing list on the left, [editorContent] for the selected listing on the right.
- * Narrow windows (phones) show one of them at a time; the editor gets a back arrow.
+ * Narrow windows (phones) show one of them at a time; the editor gets a back action to draw.
  */
 @Composable
 fun ListingsScreen(
     state: ListingsState,
     onAction: (ListingsAction) -> Unit,
-    snackbarHostState: SnackbarHostState,
     marketActions: @Composable () -> Unit,
     loggedInMarkets: @Composable () -> Unit,
-    editorContent: @Composable (listingId: Long) -> Unit,
+    editorContent: @Composable (listingId: Long, onBack: (() -> Unit)?) -> Unit,
     headerActions: @Composable () -> Unit = {},
 ) {
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
-        BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (maxWidth < COMPACT_WIDTH) {
-                CompactListingsLayout(state, onAction, marketActions, loggedInMarkets, headerActions, editorContent)
-            } else {
-                WideListingsLayout(state, onAction, marketActions, loggedInMarkets, headerActions, editorContent)
-            }
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        if (maxWidth < COMPACT_WIDTH) {
+            CompactListingsLayout(state, onAction, marketActions, loggedInMarkets, headerActions, editorContent)
+        } else {
+            WideListingsLayout(state, onAction, marketActions, loggedInMarkets, headerActions, editorContent)
         }
     }
 }
@@ -190,7 +180,7 @@ private fun CompactListingsLayout(
     marketActions: @Composable () -> Unit,
     loggedInMarkets: @Composable () -> Unit,
     headerActions: @Composable () -> Unit,
-    editorContent: @Composable (listingId: Long) -> Unit,
+    editorContent: @Composable (listingId: Long, onBack: (() -> Unit)?) -> Unit,
 ) {
     val selectedId = state.selectedListingId
     if (selectedId == null) {
@@ -205,14 +195,7 @@ private fun CompactListingsLayout(
         return
     }
     BackHandler { onAction(ListingsAction.OnCloseListingClick) }
-    Column(modifier = Modifier.fillMaxSize()) {
-        IconButton(onClick = { onAction(ListingsAction.OnCloseListingClick) }) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.listings_back_to_list))
-        }
-        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            key(selectedId) { editorContent(selectedId) }
-        }
-    }
+    key(selectedId) { editorContent(selectedId) { onAction(ListingsAction.OnCloseListingClick) } }
 }
 
 @Composable
@@ -222,7 +205,7 @@ private fun WideListingsLayout(
     marketActions: @Composable () -> Unit,
     loggedInMarkets: @Composable () -> Unit,
     headerActions: @Composable () -> Unit,
-    editorContent: @Composable (listingId: Long) -> Unit,
+    editorContent: @Composable (listingId: Long, onBack: (() -> Unit)?) -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
         ListingListPane(
@@ -245,7 +228,7 @@ private fun WideListingsLayout(
                     modifier = Modifier.align(Alignment.Center).padding(32.dp),
                 )
             } else {
-                key(selectedId) { editorContent(selectedId) }
+                key(selectedId) { editorContent(selectedId, null) }
             }
         }
     }
@@ -539,10 +522,9 @@ private fun ListingsScreenPreview() {
                 renewableCount = 1,
             ),
             onAction = {},
-            snackbarHostState = SnackbarHostState(),
             marketActions = {},
             loggedInMarkets = {},
-            editorContent = {},
+            editorContent = { _, _ -> },
         )
     }
 }
