@@ -20,6 +20,7 @@ import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.SyncState
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
+import com.lerchenflo.relisto.testutil.FakeImageDownloader
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
 import com.lerchenflo.relisto.testutil.InMemoryImageStorage
 import com.lerchenflo.relisto.testutil.inMemoryDatabase
@@ -74,10 +75,14 @@ class WillhabenListingUpdaterTest {
             "PUT /webapi/iad/bap/edit" -> if (editStatus == HttpStatusCode.OK) respond("{}", HttpStatusCode.OK, json) else respondError(editStatus)
             "POST /webapi/iad-upload/atimage/temp" -> respond("""{"reference":"temp-${calls.size}"}""", HttpStatusCode.OK, json)
             "PUT /webapi/iad-upload/atimage/111/order-and-associate" -> respond("""{"advertImage":[]}""", HttpStatusCode.OK, json)
+            "GET /webapi/iad/atimage/111" -> respond(
+                """{"advertImage":[{"referenceImageUrl":"https://cache.willhaben.at/remote-1.jpg"}]}""", HttpStatusCode.OK, json,
+            )
             else -> respondError(HttpStatusCode.NotFound)
         }
     }
 
+    private val downloader = FakeImageDownloader()
     private val client = HttpClientFactory.createWillhabenClient(engine)
     private val runner = WillhabenRequestRunner(renewSession = { false }, backoff = {})
     private val updater = WillhabenListingUpdater(
@@ -88,6 +93,7 @@ class WillhabenListingUpdaterTest {
         listingRepository = listings,
         fieldsDataSource = fields,
         publicationDao = database.publicationDao(),
+        imageDownloader = downloader,
         activityLog = activityLog,
         timeProvider = time,
     )
@@ -206,6 +212,32 @@ class WillhabenListingUpdaterTest {
         assertThat(updater.pushChanges(gone)).isEqualTo(Result.Error(PublishError.NotPublished))
         assertThat(updater.pushChanges(local)).isEqualTo(Result.Error(PublishError.NotPublished))
         assertThat(calls).containsExactly()
+    }
+
+    @Test
+    fun remoteVersionIsReadFromTheSnapshot() = runTest {
+        val id = editedListing()
+
+        assertThat(updater.remoteContent(id)?.title).isEqualTo("Rasentraktor Kart")
+    }
+
+    @Test
+    fun takingWillhabensVersionReplacesLocalContentAndImages() = runTest {
+        remoteHeading = "Changed on the website"
+        val id = editedListing(syncState = SyncState.CONFLICT)
+        listings.addImageBytes(id, listOf("local".encodeToByteArray() to "jpg"))
+
+        assertThat(updater.takeRemote(id)).isEqualTo(Result.Success(Unit))
+
+        val listing = listings.getListingByIdAsFlow(id).first()!!
+        assertThat(listing.title).isEqualTo("Changed on the website")
+        assertThat(downloader.downloaded).containsExactly("https://cache.willhaben.at/remote-1.jpg")
+        assertThat(listing.images.size).isEqualTo(1)
+        val publication = publication(id)
+        assertThat(publication.syncState).isEqualTo(SyncState.SYNCED.name)
+        assertThat(publication.syncedImagesHash).isEqualTo(listing.images.map { it.sha256 }.imagesFingerprint())
+        assertThat(publication.remoteSnapshotJson!!).contains("Changed on the website")
+        assertThat(calls).doesNotContain("PUT /webapi/iad/bap/edit")
     }
 
     private companion object {

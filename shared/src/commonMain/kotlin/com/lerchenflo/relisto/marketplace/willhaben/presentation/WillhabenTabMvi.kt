@@ -40,6 +40,10 @@ data class WillhabenTabState(
     val publication: PublicationUi? = null,
     val isRepublishConfirmOpen: Boolean = false,
     val isRepublishing: Boolean = false,
+    val isPushing: Boolean = false,
+    /** Local and willhaben version side by side while the user resolves a conflict. */
+    val conflict: ConflictUi? = null,
+    val isResolvingConflict: Boolean = false,
     /** Status changes willhaben offers right now (activate, deactivate, sold, ...). */
     val statusActions: List<WillhabenStatusAction> = emptyList(),
     /** Sold and delete are confirmed first. */
@@ -54,6 +58,22 @@ data class PublicationUi(
     val syncState: SyncState,
     /** What the renew button does; null for running, sold or deactivated listings (a running one would be duplicated). */
     val renewAction: RenewAction?,
+    /** Local edits of a listing that is on willhaben (not expired, not a draft) can be sent. */
+    val canPush: Boolean = false,
+    /** Changed on both sides; the user picks the version that wins. */
+    val hasConflict: Boolean = false,
+)
+
+data class ConflictUi(
+    val local: ListingVersionUi,
+    val remote: ListingVersionUi,
+)
+
+data class ListingVersionUi(
+    val title: String,
+    /** "45 €"; empty without price. */
+    val priceText: String,
+    val description: String,
 )
 
 enum class RenewAction {
@@ -117,6 +137,11 @@ sealed interface WillhabenTabAction {
     data class OnStatusActionClick(val action: WillhabenStatusAction) : WillhabenTabAction
     data object OnStatusActionConfirm : WillhabenTabAction
     data object OnStatusActionDismiss : WillhabenTabAction
+    data object OnPushChangesClick : WillhabenTabAction
+    data object OnResolveConflictClick : WillhabenTabAction
+    data object OnKeepLocalClick : WillhabenTabAction
+    data object OnTakeRemoteClick : WillhabenTabAction
+    data object OnConflictDismiss : WillhabenTabAction
 }
 
 sealed interface WillhabenTabEvent {

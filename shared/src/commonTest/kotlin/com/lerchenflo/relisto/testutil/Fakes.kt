@@ -357,3 +357,28 @@ class FakeStatusActions : com.lerchenflo.relisto.marketplace.willhaben.domain.Wi
         )
     }
 }
+
+class FakeUpdater : com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenUpdater {
+    var result: com.lerchenflo.relisto.app.domain.EmptyResult<com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError> =
+        Result.Success(Unit)
+    var takeRemoteResult: com.lerchenflo.relisto.app.domain.EmptyResult<com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError> =
+        Result.Success(Unit)
+    /** Listing id and whether willhaben's version was overwritten. */
+    val pushed = mutableListOf<Pair<Long, Boolean>>()
+    val takenRemote = mutableListOf<Long>()
+    var remote: ListingContent? = null
+    var pending: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
+    override suspend fun pushChanges(listingId: Long, overwriteRemote: Boolean): com.lerchenflo.relisto.app.domain.EmptyResult<com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError> {
+        pushed += listingId to overwriteRemote
+        pending?.await()
+        return result
+    }
+
+    override suspend fun takeRemote(listingId: Long): com.lerchenflo.relisto.app.domain.EmptyResult<com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError> {
+        takenRemote += listingId
+        return takeRemoteResult
+    }
+
+    override suspend fun remoteContent(listingId: Long): ListingContent? = remote
+}

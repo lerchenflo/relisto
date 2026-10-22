@@ -5,13 +5,18 @@ import androidx.lifecycle.viewModelScope
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.app.domain.onFailure
 import com.lerchenflo.relisto.app.domain.onSuccess
+import com.lerchenflo.relisto.listings.domain.ListingContent
 import com.lerchenflo.relisto.listings.domain.ListingRepository
+import com.lerchenflo.relisto.listings.domain.toContent
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatus
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
+import com.lerchenflo.relisto.marketplace.domain.SyncState
 import com.lerchenflo.relisto.marketplace.domain.isExpired
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenImporter
+import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenPublisher
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenUpdater
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActions
 import com.lerchenflo.relisto.utilities.TimeProvider
@@ -39,6 +44,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import relisto.shared.generated.resources.Res
+import relisto.shared.generated.resources.conflict_resolved
+import relisto.shared.generated.resources.push_done
 import relisto.shared.generated.resources.republish_done
 import relisto.shared.generated.resources.status_action_done
 
@@ -53,6 +60,7 @@ class WillhabenTabViewModel(
     private val listingRepository: ListingRepository,
     private val publicationStatuses: PublicationStatusRepository,
     private val publisher: WillhabenPublisher,
+    private val updater: WillhabenUpdater,
     private val importer: WillhabenImporter,
     private val statusActions: WillhabenStatusActions,
     private val timeProvider: TimeProvider,
@@ -136,8 +144,55 @@ class WillhabenTabViewModel(
                 }
             WillhabenTabAction.OnStatusActionConfirm -> _state.value.confirmStatusAction?.let(::performStatusAction)
             WillhabenTabAction.OnStatusActionDismiss -> _state.update { it.copy(confirmStatusAction = null) }
+            WillhabenTabAction.OnPushChangesClick -> pushChanges()
+            WillhabenTabAction.OnResolveConflictClick -> viewModelScope.launch { openConflict() }
+            WillhabenTabAction.OnKeepLocalClick -> resolveConflict(keepLocal = true)
+            WillhabenTabAction.OnTakeRemoteClick -> resolveConflict(keepLocal = false)
+            WillhabenTabAction.OnConflictDismiss -> _state.update { it.copy(conflict = null) }
         }
     }
+
+    private fun pushChanges() {
+        if (_state.value.isPushing) return
+        _state.update { it.copy(isPushing = true) }
+        viewModelScope.launch {
+            val result = updater.pushChanges(listingId)
+            _state.update { it.copy(isPushing = false) }
+            when {
+                result is Result.Success -> _events.send(WillhabenTabEvent.ShowMessage(UiText.StringResourceText(Res.string.push_done)))
+                (result as Result.Error).error == PublishError.Conflict -> openConflict()
+                else -> _events.send(WillhabenTabEvent.ShowMessage(result.error.toUiText()))
+            }
+        }
+    }
+
+    private suspend fun openConflict() {
+        val local = listingRepository.getListingByIdAsFlow(listingId).first() ?: return
+        val remote = updater.remoteContent(listingId) ?: return
+        _state.update {
+            it.copy(conflict = ConflictUi(local = local.toContent().toVersionUi(), remote = remote.toVersionUi()))
+        }
+    }
+
+    private fun resolveConflict(keepLocal: Boolean) {
+        if (_state.value.isResolvingConflict) return
+        _state.update { it.copy(conflict = null, isResolvingConflict = true) }
+        viewModelScope.launch {
+            val result = if (keepLocal) updater.pushChanges(listingId, overwriteRemote = true) else updater.takeRemote(listingId)
+            _state.update { it.copy(isResolvingConflict = false) }
+            val message = when (result) {
+                is Result.Success -> UiText.StringResourceText(Res.string.conflict_resolved)
+                is Result.Error -> result.error.toUiText()
+            }
+            _events.send(WillhabenTabEvent.ShowMessage(message))
+        }
+    }
+
+    private fun ListingContent.toVersionUi() = ListingVersionUi(
+        title = title,
+        priceText = priceCents?.let(PriceFormatter::format).orEmpty(),
+        description = description,
+    )
 
     private fun performStatusAction(action: WillhabenStatusAction) {
         if (_state.value.runningStatusAction != null) return
@@ -171,15 +226,19 @@ class WillhabenTabViewModel(
 
     private fun PublicationStatus.toUi(): PublicationUi? {
         if (statusText == null && expiresAt == null) return null
+        val renewAction = when {
+            isDraft -> RenewAction.FINISH_DRAFT
+            isExpired(timeProvider.nowEpochMillis()) -> RenewAction.REPUBLISH
+            else -> null
+        }
         return PublicationUi(
             statusText = statusText,
             expiresText = expiresAt?.let(::formatDateTime),
             syncState = syncState,
-            renewAction = when {
-                isDraft -> RenewAction.FINISH_DRAFT
-                isExpired(timeProvider.nowEpochMillis()) -> RenewAction.REPUBLISH
-                else -> null
-            },
+            renewAction = renewAction,
+            // A renew sends the local content anyway
+            canPush = renewAction == null && syncState == SyncState.LOCAL_CHANGES,
+            hasConflict = syncState == SyncState.CONFLICT,
         )
     }
 

@@ -7,12 +7,15 @@ import com.lerchenflo.relisto.app.domain.EmptyResult
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.datasource.database.PublicationDao
 import com.lerchenflo.relisto.datasource.network.AppJson
+import com.lerchenflo.relisto.listings.domain.ImageDownloader
+import com.lerchenflo.relisto.listings.domain.ListingContent
 import com.lerchenflo.relisto.listings.domain.ListingRepository
 import com.lerchenflo.relisto.listings.domain.imagesFingerprint
 import com.lerchenflo.relisto.listings.domain.toContent
 import com.lerchenflo.relisto.marketplace.data.ListingPublicationEntity
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.SyncState
+import com.lerchenflo.relisto.marketplace.willhaben.data.dto.WillhabenFieldsDto
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
 import com.lerchenflo.relisto.marketplace.willhaben.domain.RemoteListing
@@ -29,6 +32,7 @@ import kotlinx.serialization.json.JsonObject
  * nobody changed it on willhaben since the last sync, patch the local content into the fresh JSON,
  * `PUT` it to `selfLinkEdit`, replace the images when they changed locally, and keep the answer as
  * the new snapshot. The category is not changed (willhaben converts listings for that).
+ * In a conflict, the user keeps the local version (push with `overwriteRemote`) or takes willhaben's.
  */
 class WillhabenListingUpdater(
     private val writeDataSource: KtorWillhabenWriteDataSource,
@@ -38,6 +42,7 @@ class WillhabenListingUpdater(
     private val listingRepository: ListingRepository,
     private val fieldsDataSource: WillhabenFieldsLocalDataSource,
     private val publicationDao: PublicationDao,
+    private val imageDownloader: ImageDownloader,
     private val activityLog: ActivityLog,
     private val timeProvider: TimeProvider,
 ) : WillhabenUpdater {
@@ -63,6 +68,72 @@ class WillhabenListingUpdater(
             message = (result as? Result.Error)?.error?.toString(),
         )
         return result
+    }
+
+    override suspend fun takeRemote(listingId: Long): EmptyResult<PublishError> {
+        val publication = publicationDao.getByListingAndMarketplace(listingId, MARKETPLACE)
+        val remoteId = publication?.remoteId
+        if (publication == null || remoteId == null || publication.syncState == SyncState.REMOTE_GONE.name) {
+            return Result.Error(PublishError.NotPublished)
+        }
+        val result = replaceLocal(listingId, remoteId)
+        activityLog.record(
+            listingId = listingId,
+            marketplace = Marketplace.WILLHABEN,
+            action = ActivityAction.TAKE_REMOTE,
+            success = result is Result.Success,
+            message = (result as? Result.Error)?.error?.toString(),
+        )
+        return result
+    }
+
+    override suspend fun remoteContent(listingId: Long): ListingContent? {
+        val publication = publicationDao.getByListingAndMarketplace(listingId, MARKETPLACE) ?: return null
+        val snapshot = publication.remoteSnapshotJson ?: return null
+        val adTypeId = fieldsDataSource.getFields(listingId)?.adTypeId
+        return WillhabenListingMapper.toImportedListing(remoteListing(publication.remoteId.orEmpty(), adTypeId, snapshot)) { null }?.content
+    }
+
+    /** Loads everything first, so a failed download leaves the local listing untouched. */
+    private suspend fun replaceLocal(listingId: Long, remoteId: String): EmptyResult<PublishError> {
+        val localFields = fieldsDataSource.getFields(listingId) ?: WillhabenListingFields()
+        val route = WillhabenAdTypes.detailRoute(remoteId, localFields.adTypeId) ?: return Result.Error(PublishError.MissingLink("adId"))
+        val freshJson = runner.step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(route) }.valueOr { return it }
+        val imported = WillhabenListingMapper.toImportedListing(remoteListing(remoteId, localFields.adTypeId, freshJson)) { treeId ->
+            localFields.categoryPath.takeIf { it.lastOrNull()?.treeId == treeId }
+        } ?: return Result.Error(PublishError.Failed(PublishStep.RELOAD, DataError.Network.SERIALIZATION))
+
+        val imageList = ContextLinks.find(AppJson.parseToJsonElement(freshJson) as JsonObject, "imageList")
+        val imageUrls = imageList?.let { link ->
+            runner.step(PublishStep.IMAGES) { listingsDataSource.fetchImageUrls(link.route) }.valueOr { return it }
+        }.orEmpty()
+        val images = imageUrls.map { url ->
+            when (val downloaded = imageDownloader.download(url)) {
+                is Result.Error -> return Result.Error(PublishError.Failed(PublishStep.IMAGES, downloaded.error))
+                is Result.Success -> downloaded.data
+            }
+        }
+
+        listingRepository.updateContent(listingId, imported.content)
+        listingRepository.getListingByIdAsFlow(listingId).first()?.images?.forEach { listingRepository.removeImage(it.id) }
+        if (images.isNotEmpty()) listingRepository.addImageBytes(listingId, images)
+        val newImages = listingRepository.getListingByIdAsFlow(listingId).first()?.images.orEmpty()
+
+        // Written last: the content and image changes above mark the publication as changed
+        val current = publicationDao.getByListingAndMarketplace(listingId, MARKETPLACE) ?: return Result.Success(Unit)
+        publicationDao.update(
+            current.copy(
+                marketplaceFieldsJson = AppJson.encodeToString(WillhabenFieldsDto.serializer(), imported.fields.toDto()),
+                remoteSnapshotJson = freshJson,
+                remoteSnapshotHash = willhabenContentHash(imported.content, imported.fields),
+                expiresAt = imported.expiresAt ?: current.expiresAt,
+                syncState = SyncState.SYNCED.name,
+                syncedImagesHash = newImages.map { it.sha256 }.imagesFingerprint(),
+                lastSyncedAt = timeProvider.nowEpochMillis(),
+                lastError = null,
+            )
+        )
+        return Result.Success(Unit)
     }
 
     private suspend fun push(

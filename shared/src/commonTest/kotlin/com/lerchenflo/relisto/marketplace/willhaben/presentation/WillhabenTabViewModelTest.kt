@@ -12,6 +12,7 @@ import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
+import com.lerchenflo.relisto.listings.domain.ListingContent
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.PublicationStatus
 import com.lerchenflo.relisto.marketplace.domain.SyncState
@@ -33,6 +34,7 @@ import com.lerchenflo.relisto.testutil.FakePublisher
 import com.lerchenflo.relisto.testutil.FakeStatusActions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
+import com.lerchenflo.relisto.testutil.FakeUpdater
 import com.lerchenflo.relisto.testutil.FakeWillhabenCatalogRepository
 import com.lerchenflo.relisto.testutil.FakeWillhabenFieldsDataSource
 import com.lerchenflo.relisto.testutil.MainDispatcherTest
@@ -102,11 +104,13 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
 
     private val statusActions = FakeStatusActions()
 
-    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, importer, statusActions, time)
+    private val updater = FakeUpdater()
 
-    private fun publishedAs(statusText: String?, expiresAt: Long? = null) {
+    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, updater, importer, statusActions, time)
+
+    private fun publishedAs(statusText: String?, expiresAt: Long? = null, syncState: SyncState = SyncState.SYNCED) {
         statuses.statuses.value = listOf(
-            PublicationStatus(listingId = 1, marketplace = Marketplace.WILLHABEN, statusText = statusText, expiresAt = expiresAt, syncState = SyncState.SYNCED),
+            PublicationStatus(listingId = 1, marketplace = Marketplace.WILLHABEN, statusText = statusText, expiresAt = expiresAt, syncState = syncState),
             PublicationStatus(listingId = 2, marketplace = Marketplace.WILLHABEN, statusText = "Online", expiresAt = null, syncState = SyncState.SYNCED),
         )
     }
@@ -525,5 +529,90 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
             assertThat(importer.calls).isEqualTo(0)
             assertThat(viewModel.state.value.isRepublishing).isFalse()
         }
+    }
+
+    @Test
+    fun onlyLocalChangesOfARunningListingCanBePushed() = runTest {
+        publishedAs("Aktiv", syncState = SyncState.LOCAL_CHANGES)
+        assertThat(viewModel().state.value.publication!!.canPush).isTrue()
+
+        publishedAs("Aktiv", syncState = SyncState.SYNCED)
+        assertThat(viewModel().state.value.publication!!.canPush).isFalse()
+
+        // Expired listings get their content with the renew
+        publishedAs("Abgelaufen", syncState = SyncState.LOCAL_CHANGES)
+        assertThat(viewModel().state.value.publication!!.canPush).isFalse()
+    }
+
+    @Test
+    fun pushSendsTheChangesAndReportsTheResult() = runTest {
+        publishedAs("Aktiv", syncState = SyncState.LOCAL_CHANGES)
+        updater.pending = CompletableDeferred()
+        val viewModel = viewModel()
+
+        viewModel.events.test {
+            viewModel.onAction(WillhabenTabAction.OnPushChangesClick)
+            assertThat(viewModel.state.value.isPushing).isTrue()
+
+            updater.pending!!.complete(Unit)
+
+            assertThat(awaitItem()).isInstanceOf(WillhabenTabEvent.ShowMessage::class)
+            assertThat(updater.pushed).containsExactly(1L to false)
+            assertThat(viewModel.state.value.isPushing).isFalse()
+        }
+    }
+
+    @Test
+    fun pushIntoAConflictOpensTheComparison() = runTest {
+        publishedAs("Aktiv", syncState = SyncState.LOCAL_CHANGES)
+        updater.result = Result.Error(PublishError.Conflict)
+        updater.remote = ListingContent(title = "Kinderrad", description = "Von willhaben", priceCents = 5000)
+        val viewModel = viewModel()
+
+        viewModel.onAction(WillhabenTabAction.OnPushChangesClick)
+
+        val conflict = viewModel.state.value.conflict!!
+        assertThat(conflict.local.title).isEqualTo("Kinderfahrrad")
+        assertThat(conflict.remote.title).isEqualTo("Kinderrad")
+        assertThat(conflict.remote.priceText).isEqualTo("50 €")
+    }
+
+    @Test
+    fun conflictFromTheImportCanBeResolved() = runTest {
+        publishedAs("Aktiv", syncState = SyncState.CONFLICT)
+        updater.remote = ListingContent(title = "Kinderrad")
+        val viewModel = viewModel()
+        assertThat(viewModel.state.value.publication!!.hasConflict).isTrue()
+
+        viewModel.onAction(WillhabenTabAction.OnResolveConflictClick)
+
+        assertThat(viewModel.state.value.conflict!!.remote.title).isEqualTo("Kinderrad")
+    }
+
+    @Test
+    fun keepingTheLocalVersionOverwritesWillhaben() = runTest {
+        publishedAs("Aktiv", syncState = SyncState.CONFLICT)
+        updater.remote = ListingContent(title = "Kinderrad")
+        val viewModel = viewModel()
+        viewModel.onAction(WillhabenTabAction.OnResolveConflictClick)
+
+        viewModel.onAction(WillhabenTabAction.OnKeepLocalClick)
+
+        assertThat(updater.pushed).containsExactly(1L to true)
+        assertThat(viewModel.state.value.conflict).isNull()
+    }
+
+    @Test
+    fun takingWillhabensVersionReplacesTheLocalOne() = runTest {
+        publishedAs("Aktiv", syncState = SyncState.CONFLICT)
+        updater.remote = ListingContent(title = "Kinderrad")
+        val viewModel = viewModel()
+        viewModel.onAction(WillhabenTabAction.OnResolveConflictClick)
+
+        viewModel.onAction(WillhabenTabAction.OnTakeRemoteClick)
+
+        assertThat(updater.takenRemote).containsExactly(1L)
+        assertThat(updater.pushed).isEmpty()
+        assertThat(viewModel.state.value.conflict).isNull()
     }
 }

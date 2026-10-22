@@ -30,7 +30,6 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
   buttons in the willhaben tab, links stored per import, DB v3). Live test: ask which listing first
   (e.g. deactivate + activate one online listing).
 - [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if needed).
-- [ ] 5.5 Conflict dialog: local vs. willhaben side by side, "keep local" / "take willhaben".
 - [ ] 5.6 Renew: "expiring soon" filter = marketplace listings past half their runtime (45 days → last
   22.5 days); not for Auto & Motor. (Finishing a draft after a failed renew exists.)
 - [ ] 5.7 Confirmation dialogs for destructive actions; activity log for every write.

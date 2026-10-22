@@ -3,6 +3,7 @@ package com.lerchenflo.relisto.marketplace.willhaben.presentation
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -16,12 +17,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -37,6 +42,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -65,7 +71,18 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import relisto.shared.generated.resources.Res
+import relisto.shared.generated.resources.conflict_button
+import relisto.shared.generated.resources.conflict_keep_local
+import relisto.shared.generated.resources.conflict_local
+import relisto.shared.generated.resources.conflict_no_price
+import relisto.shared.generated.resources.conflict_remote
+import relisto.shared.generated.resources.conflict_running
+import relisto.shared.generated.resources.conflict_take_remote
+import relisto.shared.generated.resources.conflict_text
+import relisto.shared.generated.resources.conflict_title
 import relisto.shared.generated.resources.editor_delete_cancel
+import relisto.shared.generated.resources.push_button
+import relisto.shared.generated.resources.push_running
 import relisto.shared.generated.resources.editor_price_invalid
 import relisto.shared.generated.resources.republish_button
 import relisto.shared.generated.resources.republish_confirm
@@ -157,7 +174,7 @@ fun WillhabenTabScreen(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
         state.publication?.let { publication ->
-            PublicationSection(publication = publication, isRepublishing = state.isRepublishing, onAction = onAction) {
+            PublicationSection(publication = publication, state = state, onAction = onAction) {
                 StatusActionButtons(actions = state.statusActions, running = state.runningStatusAction, onAction = onAction)
             }
         }
@@ -181,12 +198,13 @@ fun WillhabenTabScreen(
     if (state.isRepublishConfirmOpen) {
         RepublishConfirmDialog(action = state.publication?.renewAction ?: RenewAction.REPUBLISH, onAction = onAction)
     }
+    state.conflict?.let { conflict -> ConflictDialog(conflict = conflict, onAction = onAction) }
 }
 
 @Composable
 private fun PublicationSection(
     publication: PublicationUi,
-    isRepublishing: Boolean,
+    state: WillhabenTabState,
     onAction: (WillhabenTabAction) -> Unit,
     statusActions: @Composable () -> Unit,
 ) {
@@ -200,13 +218,24 @@ private fun PublicationSection(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         val action = publication.renewAction
-        if (isRepublishing) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        when {
+            state.isRepublishing -> RunningRow(
+                stringResource(if (action == RenewAction.FINISH_DRAFT) Res.string.finish_draft_running else Res.string.republish_running)
+            )
+            state.isPushing -> RunningRow(stringResource(Res.string.push_running))
+            state.isResolvingConflict -> RunningRow(stringResource(Res.string.conflict_running))
+            publication.hasConflict -> Button(onClick = { onAction(WillhabenTabAction.OnResolveConflictClick) }, modifier = Modifier.padding(top = 8.dp)) {
+                Icon(Icons.Default.CompareArrows, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(if (action == RenewAction.FINISH_DRAFT) Res.string.finish_draft_running else Res.string.republish_running))
+                Text(stringResource(Res.string.conflict_button))
             }
-        } else if (action != null) {
+            publication.canPush -> Button(onClick = { onAction(WillhabenTabAction.OnPushChangesClick) }, modifier = Modifier.padding(top = 8.dp)) {
+                Icon(Icons.Default.CloudUpload, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.push_button))
+            }
+        }
+        if (!state.isRepublishing && action != null) {
             Button(onClick = { onAction(WillhabenTabAction.OnRepublishClick) }, modifier = Modifier.padding(top = 8.dp)) {
                 Icon(if (action == RenewAction.FINISH_DRAFT) Icons.Default.Edit else Icons.Default.Refresh, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
@@ -215,6 +244,76 @@ private fun PublicationSection(
         }
         statusActions()
         HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
+    }
+}
+
+@Composable
+private fun RunningRow(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        Spacer(Modifier.width(8.dp))
+        Text(text)
+    }
+}
+
+/** Both versions side by side (stacked on phones); the confirming choice keeps the local version. */
+@Composable
+private fun ConflictDialog(conflict: ConflictUi, onAction: (WillhabenTabAction) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onAction(WillhabenTabAction.OnConflictDismiss) },
+        title = { Text(stringResource(Res.string.conflict_title)) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+            ) {
+                Text(stringResource(Res.string.conflict_text))
+                BoxWithConstraints {
+                    if (maxWidth < 480.dp) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            VersionCard(stringResource(Res.string.conflict_local), conflict.local, Modifier.fillMaxWidth())
+                            VersionCard(stringResource(Res.string.conflict_remote), conflict.remote, Modifier.fillMaxWidth())
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            VersionCard(stringResource(Res.string.conflict_local), conflict.local, Modifier.weight(1f))
+                            VersionCard(stringResource(Res.string.conflict_remote), conflict.remote, Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onAction(WillhabenTabAction.OnKeepLocalClick) }) {
+                Text(stringResource(Res.string.conflict_keep_local))
+            }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = { onAction(WillhabenTabAction.OnConflictDismiss) }) {
+                    Text(stringResource(Res.string.editor_delete_cancel))
+                }
+                TextButton(onClick = { onAction(WillhabenTabAction.OnTakeRemoteClick) }) {
+                    Text(stringResource(Res.string.conflict_take_remote))
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun VersionCard(label: String, version: ListingVersionUi, modifier: Modifier = Modifier) {
+    OutlinedCard(modifier = modifier) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(12.dp)) {
+            Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Text(version.title, style = MaterialTheme.typography.titleSmall)
+            Text(version.priceText.ifEmpty { stringResource(Res.string.conflict_no_price) }, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                version.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
