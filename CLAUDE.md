@@ -37,7 +37,8 @@ listings on other marketplaces (Kleinanzeigen, Shpock, Facebook Marketplace).
   sensitive headers masked, login/OAuth URLs filtered; see `HttpLoggingTest`). Response capture
   only covers listing endpoints. The project is only about listings, never about user data.
 - Every UI string exists in German (default, `composeResources/values/`) and English
-  (`values-en/`); the desktop app starts in German.
+  (`values-en/`); the app follows the system language on phone and desktop (English systems get
+  English, every other language German).
 - Never drop or reset the local database on updates: no `fallbackToDestructiveMigration`. Every
   schema change raises the version and ships a Room migration (prefer `AutoMigration`) with a
   migration test (`AppDatabaseMigrationTest`, room-testing); schemas are exported to `shared/schemas/`.
@@ -153,3 +154,7 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
   system bars, camera cutout, keyboard; the only snackbar host); screens have no Scaffold of their own.
   Phone editor: top bar with back arrow and icon buttons. Android: photo picker + image storage
   (content URIs, WebP/HEIC stored as JPEG), long-press to reorder images.
+- 2026-10-22 – Push changes (5.1/5.2) built: `WillhabenListingUpdater` (reload, conflict check against the
+  snapshot, patch, `PUT selfLinkEdit`, images only when their fingerprint changed, new snapshot); shared
+  `WillhabenImageUploader`; activity log table (DB v4, AutoMigration). Home shows a login hint while
+  logged out. Language follows the system on desktop too; local builds (1.0.0) skip the update hint.
