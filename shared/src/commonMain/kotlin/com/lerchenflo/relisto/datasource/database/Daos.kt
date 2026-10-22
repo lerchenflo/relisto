@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import androidx.room.Upsert
+import com.lerchenflo.relisto.activity.data.ActivityLogEntity
 import com.lerchenflo.relisto.listings.data.ListingEntity
 import com.lerchenflo.relisto.listings.data.ListingImageEntity
 import com.lerchenflo.relisto.listings.data.ListingWithImages
@@ -117,4 +118,18 @@ interface PublicationDao {
 
     @Delete
     suspend fun delete(publication: ListingPublicationEntity)
+}
+
+@Dao
+interface ActivityLogDao {
+
+    @Query("SELECT * FROM activity_log ORDER BY timestamp DESC, id DESC")
+    fun getAllAsFlow(): Flow<List<ActivityLogEntity>>
+
+    @Insert
+    suspend fun insert(entry: ActivityLogEntity): Long
+
+    /** Keeps the log small: removes entries older than [beforeTimestamp]. */
+    @Query("DELETE FROM activity_log WHERE timestamp < :beforeTimestamp")
+    suspend fun deleteOlderThan(beforeTimestamp: Long)
 }

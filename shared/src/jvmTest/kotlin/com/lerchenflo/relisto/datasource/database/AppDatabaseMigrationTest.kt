@@ -70,4 +70,27 @@ class AppDatabaseMigrationTest {
         }
         connection.close()
     }
+
+    @Test
+    fun version3PublicationsSurviveMigrationTo4WithEmptyActivityLog() {
+        helper.createDatabase(3).apply {
+            execSQL("INSERT INTO listings (id, title, description, priceCents, condition, postcode, archived, createdAt, updatedAt) VALUES (1, 'Rasentraktor', 'Text', 18000, 'USED', '6850', 0, 1, 2)")
+            execSQL("INSERT INTO listing_publications (id, listingId, marketplace, remoteId, syncState, remoteActionsJson) VALUES (1, 1, 'WILLHABEN', '111', 'SYNCED', '[]')")
+            close()
+        }
+
+        val connection = helper.runMigrationsAndValidate(4)
+
+        connection.prepare("SELECT remoteId, remoteActionsJson, syncedImagesHash FROM listing_publications WHERE id = 1").use { statement ->
+            statement.step()
+            assertThat(statement.getText(0)).isEqualTo("111")
+            assertThat(statement.getText(1)).isEqualTo("[]")
+            assertThat(statement.isNull(2)).isEqualTo(true)
+        }
+        connection.prepare("SELECT COUNT(*) FROM activity_log").use { statement ->
+            statement.step()
+            assertThat(statement.getLong(0)).isEqualTo(0L)
+        }
+        connection.close()
+    }
 }

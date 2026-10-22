@@ -549,9 +549,15 @@ Technical defaults (decided during implementation):
   only one free listing per user, every further one is paid. The motor import/renew code stays
   because it works and is tested. A paid-package stop names the cheapest package and its price.
 
+- Interview 2026-10-22: live write tests (push changes, deactivate/activate) use "Rasentraktor Kart"
+  after its renew, and every live test ends with the listing deactivated again (no offers wanted).
+  Local edits reach willhaben only by a button ("Änderungen übertragen" per listing, "push all
+  changed" for the selection), never automatically. "Expiring soon" = a marketplace listing past half
+  its runtime (45 days, so the last 22.5 days); Auto & Motor listings are not in this filter.
+  Phase 8 order: decided later.
+
 Open (asked via interview when the phase starts):
 - Exact attribute fields shown per category (Phase 2/4, after the first import samples).
-- Which listing to use for the first write tests (Phase 5).
 - Order of the other marketplaces and per-marketplace login approach (Phase 8).
 
 ---

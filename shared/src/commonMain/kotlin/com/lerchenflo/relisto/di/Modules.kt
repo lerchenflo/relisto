@@ -1,5 +1,7 @@
 package com.lerchenflo.relisto.di
 
+import com.lerchenflo.relisto.activity.data.RoomActivityLog
+import com.lerchenflo.relisto.activity.domain.ActivityLog
 import com.lerchenflo.relisto.app.data.GitHubUpdateChecker
 import com.lerchenflo.relisto.app.domain.UpdateChecker
 import com.lerchenflo.relisto.app.navigation.Navigator
@@ -61,6 +63,7 @@ val datasourceModule = module {
     single { get<AppDatabase>().listingDao() }
     single { get<AppDatabase>().listingImageDao() }
     single { get<AppDatabase>().publicationDao() }
+    single { get<AppDatabase>().activityLogDao() }
 
     singleOf(::SystemTimeProvider) { bind<TimeProvider>() }
     singleOf(::Preferencemanager) { bind<SettingsDataSource>() }
@@ -71,6 +74,7 @@ val datasourceModule = module {
 
     singleOf(::RoomListingRepository) { bind<ListingRepository>() }
     singleOf(::RoomPublicationStatusRepository) { bind<PublicationStatusRepository>() }
+    singleOf(::RoomActivityLog) { bind<ActivityLog>() }
     singleOf(::RoomWillhabenFieldsDataSource) { bind<WillhabenFieldsLocalDataSource>() }
     singleOf(::KtorWillhabenCatalogDataSource)
     singleOf(::CachedWillhabenCatalogRepository) { bind<WillhabenCatalogRepository>() }

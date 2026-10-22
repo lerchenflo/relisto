@@ -45,4 +45,6 @@ data class ListingPublicationEntity(
     val replacedRemoteIds: String? = null,
     /** Status actions the marketplace offers right now (willhaben: activate, deactivate, sold, ...) as JSON. */
     val remoteActionsJson: String? = null,
+    /** Fingerprint of the local images (their hashes in order) when they last matched the marketplace. */
+    val syncedImagesHash: String? = null,
 )

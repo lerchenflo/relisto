@@ -12,6 +12,8 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 
 - [ ] N.2 Live test of "Neu veröffentlichen" with "Rasentraktor Kart" (willhaben id 704262322); check the
   captured responses in `docs/api-samples/` step by step (mask contact data, never print it).
+  Then, on the same listing: push a small text change (5.1/5.2), deactivate + activate (5.3).
+  **Always deactivate the listing again at the end** (the user does not want offers).
 
 ## Multi-selection (user request 2026-10-18)
 
@@ -29,7 +31,8 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
   (e.g. deactivate + activate one online listing).
 - [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if needed).
 - [ ] 5.5 Conflict dialog: local vs. willhaben side by side, "keep local" / "take willhaben".
-- [ ] 5.6 Renew: "expiring soon" filter. (Finishing a draft after a failed renew exists.)
+- [ ] 5.6 Renew: "expiring soon" filter = marketplace listings past half their runtime (45 days → last
+  22.5 days); not for Auto & Motor. (Finishing a draft after a failed renew exists.)
 - [ ] 5.7 Confirmation dialogs for destructive actions; activity log for every write.
 - [ ] 5.8 Verify each action's HTTP method and body against the real responses; update `docs/willhaben-api.md`.
 
@@ -63,7 +66,7 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 Same local listings on Kleinanzeigen, Shpock and Facebook Marketplace. Each marketplace is a new
 `MarketplaceAdapter` (interface to be extracted from the willhaben code) and a new tab in the editor.
 
-- [ ] 8.1 Ask: order of the marketplaces.
+- [ ] 8.1 Ask: order of the marketplaces (2026-10-22: "decide later").
 - [ ] 8.2 Per marketplace, before code: analyse its web client like PLAN.md section 3; write the result
   into PLAN.md section 7; ask the open decisions.
 - [ ] 8.3 Per marketplace: login + session storage (embedded browser like willhaben); login/logout in the
