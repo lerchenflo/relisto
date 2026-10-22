@@ -106,4 +106,35 @@ class WillhabenRequestRunnerTest {
 
         assertThat(maxRunning).isEqualTo(1)
     }
+
+    @Test
+    fun atMostFourUploadsRunAtTheSameTime() = runTest {
+        var running = 0
+        var mostAtOnce = 0
+        val uploads = (1..6).map {
+            async {
+                runner.runParallel {
+                    running++
+                    mostAtOnce = maxOf(mostAtOnce, running)
+                    delay(100)
+                    running--
+                    Result.Success(it)
+                }
+            }
+        }
+
+        assertThat(uploads.awaitAll()).containsExactly(*(1..6).map { Result.Success(it) }.toTypedArray())
+        assertThat(mostAtOnce).isEqualTo(4)
+    }
+
+    @Test
+    fun uploadsRenewAnExpiredSessionToo() = runTest {
+        val responses = mutableListOf<Result<String, DataError.Network>>(
+            Result.Error(DataError.Network.UNAUTHORIZED),
+            Result.Success("ok"),
+        )
+
+        assertThat(runner.runParallel { responses.removeAt(0) }).isEqualTo(Result.Success("ok"))
+        assertThat(renewCalls).isEqualTo(1)
+    }
 }

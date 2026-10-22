@@ -8,52 +8,47 @@ background and details: [PLAN.md](PLAN.md). Product and scope decisions are aske
 willhaben listings up to date → renew expired listings. **Last phase:** same listings on other marketplaces.
 **Release:** the first production release comes after Phases 5–7 (everything except other marketplaces).
 
-## Next session
+## Next session (needs the user)
 
-- [ ] N.2 Live test of "Neu veröffentlichen" with "Rasentraktor Kart" (willhaben id 704262322); check the
-  captured responses in `docs/api-samples/` step by step (mask contact data, never print it).
-  Then, on the same listing: push a small text change (5.1/5.2), deactivate + activate (5.3).
-  **Always deactivate the listing again at the end** (the user does not want offers).
+- [ ] N.1 User test of the new UI on desktop and Android: phone editor top bar, photo picker, login hint,
+  push button and conflict dialog, "Läuft ab" filter, bulk push and willhaben menu in the selection bar,
+  activity log ("Verlauf"), publish dialog with steps.
+- [ ] N.2 Live test with "Rasentraktor Kart" (willhaben id 704262322): "Neu veröffentlichen", then a small
+  text change pushed (5.1/5.2), then deactivate + activate (5.3). Check the captured responses in
+  `docs/api-samples/` step by step (mask contact data, never print it). **Deactivate the listing again at
+  the end** (the user does not want offers).
+- [ ] N.3 Live checks while doing N.2: does `PUT selfLinkEdit` work and send the listing back to review;
+  image limits (count, size, formats); then update `docs/willhaben-api.md` (5.8).
+- [ ] N.4 Phase 6 live: verify that `GET /iad/bap?productId=67` is the template and that `categoryTreeId` +
+  `categoryPath.path` select the category (6.2); first real publish only with an item the user wants to sell,
+  asked first (6.6). Deactivate again if it is only a test.
 
-## Multi-selection (user request 2026-10-18)
+## Phase 5 – open
 
-- [ ] M.4 Bulk publish to all marketplaces (after Phase 6 and Phase 8).
-
-## Phase 5 – Update existing willhaben listings and status actions
-
-- [ ] 5.1 Push changes (text, price, attributes): reload `GET /iad/bap/{adId}`, conflict check against
-  the snapshot, `AdJsonPatcher`, `PUT` link `selfLinkEdit`, save the new snapshot.
-- [ ] 5.2 Push images: temp upload + `order-and-associate` (exists in the republish flow), `DELETE`
-  unused temp images; document image limits.
-- [ ] 5.3 Status actions are built (activate, deactivate, reserved on/off, sold, delete on willhaben;
-  buttons in the willhaben tab, links stored per import, DB v3). Live test: ask which listing first
-  (e.g. deactivate + activate one online listing).
-- [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if needed).
-- [ ] 5.8 Verify each action's HTTP method and body against the real responses; update `docs/willhaben-api.md`.
-
-## Phase 6 – Create and publish new willhaben listings
-
-Built (2026-10-22): `WillhabenListingCreator` (free product, `GET /iad/bap?productId=67`, local content and
-category patched in, `presave` with the draft id stored at once, shared finish steps, resume from the draft),
-publish button with confirmation and step-by-step progress dialog in the willhaben tab.
-
-- [ ] 6.2 Verify live that `GET /iad/bap?productId=67` is the template and that `categoryTreeId` +
-  `categoryPath.path` select the category in a new listing (inferred, not seen yet).
-- [ ] 6.6 First real publish with an item the user wants to sell (ask first; deactivate again if it is only a test).
+- [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if
+  needed). Needs a captured request from the web client first (body shape unknown).
+- [ ] 5.8 Verify each action's HTTP method and body against real responses; update `docs/willhaben-api.md`.
 
 ## Phase 7 – Polish and release
 
-- [ ] 7.3 Clear "willhaben changed its API" message everywhere (`PublishError.MissingLink` exists).
-- [ ] 7.4 "Open on willhaben" link per listing.
-- [ ] 7.5 Backup / export of database + images as a zip.
+- [ ] 7.3 Clear "willhaben changed its API" message everywhere (`PublishError.MissingLink` exists; also map
+  `SERIALIZATION` from willhaben to it).
+- [ ] 7.4 "Open on willhaben" link per listing (willhaben tab, `remoteUrl` is stored).
+- [ ] 7.5 Backup / export of database + images as a zip (desktop save dialog, Android `CreateDocument`).
 - [ ] 7.6 Window: remember size/position, app icon.
-- [ ] 7.7 Parallel image uploads (today one request at a time).
-- [ ] 7.8 Document session lifetime, CSRF cookie timing and silent re-login in `docs/willhaben-api.md`.
+- [ ] 7.8 Document session lifetime, CSRF cookie timing and silent re-login in `docs/willhaben-api.md` (live).
 - [ ] 7.9 Run the `kmp-crash-guard` and `flow-stability` skills on the finished flows.
 - [ ] 7.10 Production release: from here on never drop the database (Room migrations only).
-- [ ] 7.11 Throttle requests to willhaben so the API is not abused and the account is not banned:
-  pause between requests (import detail GETs, image downloads/uploads, bulk and auto renew), at most
-  one request at a time, back off on `429`/`503`; keep 7.7 (parallel uploads) within that limit.
+- [ ] 7.12 UX pass with the `mobile-ux-conventions` skill over all screens and dialogs (button order,
+  touch targets, empty/loading states), checked on the Android emulator too.
+- [ ] 7.13 Clear all compile warnings (`./gradlew :shared:compileKotlinJvm :desktopApp:compileKotlin
+  :androidApp:compileDebugKotlin`), remove unused resources (e.g. `import_running`).
+- [ ] 7.14 Architecture cleanup against the KMP skills (module structure, data layer, Koin, MVI, navigation,
+  error handling); e.g. `marketplace/data` depends on `marketplace/willhaben/data`, `Daos.kt` holds every DAO.
+
+## Multi-selection
+
+- [ ] M.4 Bulk publish to all marketplaces (after Phase 8).
 
 ## Phase 8 – Other marketplaces (last step)
 

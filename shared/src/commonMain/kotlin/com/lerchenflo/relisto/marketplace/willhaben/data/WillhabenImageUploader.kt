@@ -6,6 +6,9 @@ import com.lerchenflo.relisto.listings.domain.ImageStorage
 import com.lerchenflo.relisto.listings.domain.ListingImage
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -13,7 +16,8 @@ import kotlinx.serialization.json.put
 
 /**
  * Replaces all images of a willhaben listing with the local ones, like the web client: each image is
- * uploaded to the temporary store, then the ordered list is attached to the listing (first = cover).
+ * uploaded to the temporary store (up to four at a time), then the ordered list is attached to the
+ * listing (first = cover).
  */
 class WillhabenImageUploader(
     private val writeDataSource: KtorWillhabenWriteDataSource,
@@ -23,13 +27,19 @@ class WillhabenImageUploader(
 
     /** [imageList] is the listing's `imageList` link. Returns the error, null on success. */
     suspend fun replaceImages(images: List<ListingImage>, imageList: ContextLink): PublishError? {
-        val references = images.sortedBy { it.position }.map { image ->
+        val files = images.sortedBy { it.position }.map { image ->
             val bytes = imageStorage.readBytes(image.filePath)
                 ?: return PublishError.Failed(PublishStep.IMAGES, DataError.Local.NOT_FOUND)
-            val fileName = image.filePath.substringAfterLast('/').substringAfterLast('\\')
-            when (val uploaded = runner.run { writeDataSource.uploadTempImage(bytes, fileName) }) {
-                is Result.Error -> return PublishError.Failed(PublishStep.IMAGES, uploaded.error)
-                is Result.Success -> uploaded.data
+            bytes to image.filePath.substringAfterLast('/').substringAfterLast('\\')
+        }
+        // Up to four uploads at a time; the references keep the image order
+        val uploaded = coroutineScope {
+            files.map { (bytes, fileName) -> async { runner.runParallel { writeDataSource.uploadTempImage(bytes, fileName) } } }.awaitAll()
+        }
+        val references = uploaded.map { result ->
+            when (result) {
+                is Result.Error -> return PublishError.Failed(PublishStep.IMAGES, result.error)
+                is Result.Success -> result.data
             }
         }
         val order = buildJsonObject {

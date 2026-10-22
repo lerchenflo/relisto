@@ -2,6 +2,7 @@ package com.lerchenflo.relisto.listings.data
 
 import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
+import com.lerchenflo.relisto.datasource.network.RequestSpacing
 import com.lerchenflo.relisto.datasource.network.responseToResult
 import com.lerchenflo.relisto.datasource.network.safeResponse
 import com.lerchenflo.relisto.listings.domain.ImageDownloader
@@ -10,12 +11,14 @@ import io.ktor.client.request.get
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.contentType
 
-/** Downloads public listing images (no cookies or willhaben headers needed). */
+/** Downloads public listing images (no cookies or willhaben headers needed), spaced like all willhaben requests. */
 class KtorImageDownloader(
     private val httpClient: HttpClient,
+    private val spacing: RequestSpacing = RequestSpacing.NONE,
 ) : ImageDownloader {
 
     override suspend fun download(url: String): Result<Pair<ByteArray, String>, DataError.Network> {
+        spacing.awaitTurn()
         val response = when (val result = safeResponse { httpClient.get(url) }) {
             is Result.Error -> return result
             is Result.Success -> result.data

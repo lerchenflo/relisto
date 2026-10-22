@@ -1,5 +1,6 @@
 package com.lerchenflo.relisto.di
 
+import com.lerchenflo.relisto.datasource.network.RequestSpacing
 import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenListingCreator
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCreator
 import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenDraftFinisher
@@ -88,11 +89,17 @@ val datasourceModule = module {
     singleOf(::CachedWillhabenCatalogRepository) { bind<WillhabenCatalogRepository>() }
     singleOf(::KtorWillhabenAccountDataSource)
     singleOf(::CookieWillhabenSessionRepository) { bind<WillhabenSessionRepository>() }
-    single { WillhabenRequestRunner(renewSession = { get<KtorWillhabenAccountDataSource>().renewSession() }, backoff = { delay(it) }) }
+    single {
+        WillhabenRequestRunner(
+            renewSession = { get<KtorWillhabenAccountDataSource>().renewSession() },
+            backoff = { delay(it) },
+            spacing = RequestSpacing(WILLHABEN_REQUEST_SPACING_MILLIS),
+        )
+    }
     singleOf(::KtorWillhabenListingsDataSource)
     single<WillhabenListingsSource> { WillhabenListingsFetcher(get(), get()) }
     single<HttpClient>(named(IMAGE_CLIENT)) { HttpClientFactory.createImageClient(get()) }
-    single<ImageDownloader> { KtorImageDownloader(get(named(IMAGE_CLIENT))) }
+    single<ImageDownloader> { KtorImageDownloader(get(named(IMAGE_CLIENT)), RequestSpacing(WILLHABEN_REQUEST_SPACING_MILLIS)) }
     singleOf(::RoomWillhabenImporter) { bind<WillhabenImporter>() }
     singleOf(::KtorWillhabenWriteDataSource)
     singleOf(::WillhabenImageUploader)
@@ -125,3 +132,6 @@ val presentationModule = module {
     viewModelOf(::AccountViewModel)
     viewModelOf(::AppUpdateViewModel)
 }
+
+/** Pause between two willhaben requests (API and image server), so imports and bulk actions stay gentle. */
+private const val WILLHABEN_REQUEST_SPACING_MILLIS = 300L

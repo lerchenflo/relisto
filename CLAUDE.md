@@ -69,21 +69,16 @@ Run the desktop app (only when asked): `./gradlew :desktopApp:run`
 
 ## Current status
 
-Phases 1-4 done. Phase 5 in progress: renewing expired listings is built, not yet tested live.
-- Single renew: editor willhaben tab shows status / expiry / sync state, "Neu veröffentlichen" with
-  confirmation (`WillhabenRepublisher`: free product lookup → copy → presave → images → finish →
-  reload → stop on `paymentURI` → activate).
-- Multi-selection in the list: checkbox on every listing; bulk renew (expired ones only), archive /
-  restore, local delete.
-- Auto renew: setting "Abgelaufene Anzeigen beim Start automatisch erneuern" (default off), runs
-  once per app run at the first login (`WillhabenRenewer.renewAllExpired`); sold, reserved and
-  deactivated listings are never renewed.
-- The expired original of a renewed listing is skipped by the import (`replacedRemoteIds`, DB v2).
-- Update icon in the home header opens the GitHub release page.
-- All willhaben verticals are imported (Auto & Motor via `/iad/motor/get/{id}`, jobs skipped) and
-  renewed when willhaben has a free product for the ad type (`WillhabenAdTypes`, `/iad/productgroups`).
+Phases 1-6 built; live tests outstanding (see `TODO.md` "Next session"). Phase 7 in progress.
+- willhaben: import (all verticals), renew (single, bulk, automatic), push changes + images with conflict
+  check and comparison dialog, status actions (single and bulk), publish new marketplace listings with a
+  progress dialog, activity log of every write. Requests are spaced 300 ms apart, one at a time; image
+  uploads up to four at a time.
+- UI: one root Scaffold (insets, snackbars), phone layout below 720 dp, follows the system language,
+  login hint on the home screen while logged out.
+- Only marketplace listings are created by the app; motor code is kept for import/renew.
 
-Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Phase 5.1 onwards.
+Next: user test of the UI (N.1), live tests (N.2-N.4), then Phase 7 (7.3-7.14).
 
 ## Progress log
 
@@ -167,3 +162,6 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
 - 2026-10-22 – Phase 6 built: new marketplace listings are published from the willhaben tab (confirmation,
   progress dialog with steps, required fields and attributes checked first, interrupted publish continues
   with its draft). `WillhabenDraftFinisher` shares images/finish/package/activate with the renew.
+- 2026-10-22 – Requests to willhaben are spaced (300 ms, `RequestSpacing`, also image downloads); image
+  uploads run up to four at a time (7.7, 7.11). TODO.md rewritten to open work only; paused by the user
+  (token budget).
