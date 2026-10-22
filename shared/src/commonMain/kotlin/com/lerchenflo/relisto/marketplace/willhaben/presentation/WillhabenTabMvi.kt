@@ -142,6 +142,7 @@ sealed interface WillhabenTabAction {
     data object OnKeepLocalClick : WillhabenTabAction
     data object OnTakeRemoteClick : WillhabenTabAction
     data object OnConflictDismiss : WillhabenTabAction
+    data object OnShowActivityClick : WillhabenTabAction
 }
 
 sealed interface WillhabenTabEvent {

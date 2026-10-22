@@ -2,6 +2,8 @@ package com.lerchenflo.relisto.listings.presentation.list
 
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.History
+import relisto.shared.generated.resources.activity_title
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.mutableStateOf
@@ -275,6 +277,9 @@ private fun ListingListPane(
             )
             marketActions()
             headerActions()
+            IconButton(onClick = { onAction(ListingsAction.OnActivityLogClick) }) {
+                Icon(Icons.Default.History, contentDescription = stringResource(Res.string.activity_title))
+            }
             IconButton(onClick = { onAction(ListingsAction.OnSettingsClick) }) {
                 Icon(Icons.Default.Settings, contentDescription = stringResource(Res.string.listings_settings))
             }

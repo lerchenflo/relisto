@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.lifecycle.ViewModel
+import com.lerchenflo.relisto.activity.presentation.ActivityLogViewModel
 import androidx.lifecycle.viewModelScope
 import assertk.assertThat
 import assertk.assertions.isNotNull
@@ -75,5 +76,11 @@ class KoinModulesTest {
     fun listingScopedViewModelsResolveWithListingIdParameter() {
         assertThat(koin.get<ListingEditorViewModel> { parametersOf(1L) }.tracked()).isNotNull()
         assertThat(koin.get<WillhabenTabViewModel> { parametersOf(1L) }.tracked()).isNotNull()
+    }
+
+    @Test
+    fun activityLogResolvesForAllListingsAndForOne() {
+        assertThat(koin.get<ActivityLogViewModel> { parametersOf(null) }.tracked()).isNotNull()
+        assertThat(koin.get<ActivityLogViewModel> { parametersOf(1L) }.tracked()).isNotNull()
     }
 }

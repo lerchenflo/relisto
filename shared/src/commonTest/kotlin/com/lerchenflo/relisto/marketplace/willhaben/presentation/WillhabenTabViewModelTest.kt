@@ -35,6 +35,7 @@ import com.lerchenflo.relisto.testutil.FakeStatusActions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
 import com.lerchenflo.relisto.testutil.FakeUpdater
+import com.lerchenflo.relisto.app.navigation.Navigator
 import com.lerchenflo.relisto.testutil.FakeWillhabenCatalogRepository
 import com.lerchenflo.relisto.testutil.FakeWillhabenFieldsDataSource
 import com.lerchenflo.relisto.testutil.MainDispatcherTest
@@ -106,7 +107,7 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
 
     private val updater = FakeUpdater()
 
-    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, updater, importer, statusActions, time)
+    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, updater, importer, statusActions, Navigator(), time)
 
     private fun publishedAs(statusText: String?, expiresAt: Long? = null, syncState: SyncState = SyncState.SYNCED) {
         statuses.statuses.value = listOf(

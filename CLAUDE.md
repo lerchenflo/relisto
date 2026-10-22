@@ -161,3 +161,6 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
 - 2026-10-22 – Willhaben tab: "Änderungen übertragen" and conflict comparison (keep local / take willhaben).
   List: filter "Läuft ab" (expired or past half the 45-day runtime, marketplace only), bulk push of
   checked listings with local changes, willhaben menu for bulk activate/deactivate/reserve/sold (M.3).
+- 2026-10-22 – Activity log: every write (push, take willhaben, renew, status actions) is logged with
+  its result; screen "Verlauf" from the home header (all) or the willhaben tab (one listing), filters
+  "only failures" and marketplace (shown with more than one). Entries older than 180 days are removed.

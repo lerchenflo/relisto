@@ -11,4 +11,8 @@ sealed interface Route : NavKey {
 
     @Serializable
     data object Settings : Route
+
+    /** What was sent to the marketplaces; [listingId] opens it filtered to one listing. */
+    @Serializable
+    data class ActivityLog(val listingId: Long? = null) : Route
 }

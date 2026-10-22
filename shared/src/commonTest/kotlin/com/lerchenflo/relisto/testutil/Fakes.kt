@@ -382,3 +382,24 @@ class FakeUpdater : com.lerchenflo.relisto.marketplace.willhaben.domain.Willhabe
 
     override suspend fun remoteContent(listingId: Long): ListingContent? = remote
 }
+
+class FakeActivityLog : com.lerchenflo.relisto.activity.domain.ActivityLog {
+    val entries = MutableStateFlow<List<com.lerchenflo.relisto.activity.domain.ActivityEntry>>(emptyList())
+
+    override fun getEntriesAsFlow(): Flow<List<com.lerchenflo.relisto.activity.domain.ActivityEntry>> = entries
+
+    override suspend fun record(
+        listingId: Long?,
+        marketplace: com.lerchenflo.relisto.marketplace.domain.Marketplace,
+        action: com.lerchenflo.relisto.activity.domain.ActivityAction,
+        success: Boolean,
+        message: String?,
+    ) {
+        entries.value = listOf(
+            com.lerchenflo.relisto.activity.domain.ActivityEntry(
+                id = entries.value.size + 1L, listingId = listingId, listingTitle = null, marketplace = marketplace,
+                timestamp = 0L, action = action, success = success, message = message,
+            )
+        ) + entries.value
+    }
+}

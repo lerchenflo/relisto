@@ -29,7 +29,6 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
   buttons in the willhaben tab, links stored per import, DB v3). Live test: ask which listing first
   (e.g. deactivate + activate one online listing).
 - [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if needed).
-- [ ] 5.7 Confirmation dialogs for destructive actions; activity log for every write.
 - [ ] 5.8 Verify each action's HTTP method and body against the real responses; update `docs/willhaben-api.md`.
 
 ## Phase 6 – Create and publish new willhaben listings
@@ -44,7 +43,6 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 
 ## Phase 7 – Polish and release
 
-- [ ] 7.1 Activity log panel with filter per listing and marketplace.
 - [ ] 7.3 Clear "willhaben changed its API" message everywhere (`PublishError.MissingLink` exists).
 - [ ] 7.4 "Open on willhaben" link per listing.
 - [ ] 7.5 Backup / export of database + images as a zip.

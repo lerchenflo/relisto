@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
+import relisto.shared.generated.resources.activity_open
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -243,7 +245,12 @@ private fun PublicationSection(
             }
         }
         statusActions()
-        HorizontalDivider(modifier = Modifier.padding(top = 12.dp))
+        TextButton(onClick = { onAction(WillhabenTabAction.OnShowActivityClick) }) {
+            Icon(Icons.Default.History, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(Res.string.activity_open))
+        }
+        HorizontalDivider(modifier = Modifier.padding(top = 4.dp))
     }
 }
 

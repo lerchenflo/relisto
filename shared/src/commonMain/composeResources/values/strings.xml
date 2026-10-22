@@ -212,4 +212,25 @@
     <string name="bulk_status_summary">%1$d auf willhaben geändert, %2$d fehlgeschlagen</string>
     <string name="bulk_status_sold_title">%1$d Anzeigen als verkauft markieren?</string>
     <string name="bulk_status_sold_text">Die ausgewählten Anzeigen werden auf willhaben als verkauft markiert. Das lässt sich dort nicht zurücknehmen.</string>
+    <string name="activity_title">Verlauf</string>
+    <string name="activity_open">Verlauf</string>
+    <string name="activity_back">Zurück</string>
+    <string name="activity_empty">Noch nichts an einen Marktplatz gesendet.</string>
+    <string name="activity_only_failed">Nur Fehler</string>
+    <string name="activity_for_listing">Anzeige: %1$s</string>
+    <string name="activity_all_listings">Alle Anzeigen</string>
+    <string name="activity_all_marketplaces">Alle</string>
+    <string name="activity_succeeded">Erfolgreich</string>
+    <string name="activity_failed">Fehlgeschlagen</string>
+    <string name="activity_deleted_listing">Gelöschte Anzeige</string>
+    <string name="activity_action_push">Änderungen übertragen</string>
+    <string name="activity_action_take_remote">willhaben-Version übernommen</string>
+    <string name="activity_action_republish">Neu veröffentlicht</string>
+    <string name="activity_action_publish">Veröffentlicht</string>
+    <string name="activity_action_activate">Aktiviert</string>
+    <string name="activity_action_deactivate">Deaktiviert</string>
+    <string name="activity_action_reserve">Reserviert</string>
+    <string name="activity_action_unreserve">Reservierung aufgehoben</string>
+    <string name="activity_action_sold">Als verkauft markiert</string>
+    <string name="activity_action_delete">Gelöscht</string>
 </resources>

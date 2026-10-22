@@ -3,6 +3,8 @@ package com.lerchenflo.relisto.marketplace.willhaben.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lerchenflo.relisto.app.domain.Result
+import com.lerchenflo.relisto.app.navigation.Navigator
+import com.lerchenflo.relisto.app.navigation.Route
 import com.lerchenflo.relisto.app.domain.onFailure
 import com.lerchenflo.relisto.app.domain.onSuccess
 import com.lerchenflo.relisto.listings.domain.ListingContent
@@ -63,6 +65,7 @@ class WillhabenTabViewModel(
     private val updater: WillhabenUpdater,
     private val importer: WillhabenImporter,
     private val statusActions: WillhabenStatusActions,
+    private val navigator: Navigator,
     private val timeProvider: TimeProvider,
 ) : ViewModel() {
 
@@ -149,6 +152,7 @@ class WillhabenTabViewModel(
             WillhabenTabAction.OnKeepLocalClick -> resolveConflict(keepLocal = true)
             WillhabenTabAction.OnTakeRemoteClick -> resolveConflict(keepLocal = false)
             WillhabenTabAction.OnConflictDismiss -> _state.update { it.copy(conflict = null) }
+            WillhabenTabAction.OnShowActivityClick -> viewModelScope.launch { navigator.navigate(Route.ActivityLog(listingId)) }
         }
     }
 

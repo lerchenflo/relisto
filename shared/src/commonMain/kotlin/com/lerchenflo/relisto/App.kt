@@ -22,6 +22,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
+import com.lerchenflo.relisto.activity.presentation.ActivityLogRoot
 import com.lerchenflo.relisto.app.navigation.NavigationAction
 import com.lerchenflo.relisto.app.navigation.Navigator
 import com.lerchenflo.relisto.app.navigation.ObserveAsEvents
@@ -45,6 +46,7 @@ private val backStackConfiguration = SavedStateConfiguration {
         polymorphic(NavKey::class) {
             subclass(Route.Listings::class, Route.Listings.serializer())
             subclass(Route.Settings::class, Route.Settings.serializer())
+            subclass(Route.ActivityLog::class, Route.ActivityLog.serializer())
         }
     }
 }
@@ -107,6 +109,9 @@ fun App() {
                             }
                             entry<Route.Settings> {
                                 SettingsRoot(accountViewModel = accountViewModel)
+                            }
+                            entry<Route.ActivityLog> { route ->
+                                ActivityLogRoot(listingId = route.listingId)
                             }
                         },
                     )

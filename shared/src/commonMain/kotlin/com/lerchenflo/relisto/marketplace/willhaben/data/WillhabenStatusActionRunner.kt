@@ -1,5 +1,7 @@
 package com.lerchenflo.relisto.marketplace.willhaben.data
 
+import com.lerchenflo.relisto.activity.domain.ActivityAction
+import com.lerchenflo.relisto.activity.domain.ActivityLog
 import com.lerchenflo.relisto.app.domain.EmptyResult
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.datasource.database.PublicationDao
@@ -19,6 +21,7 @@ class WillhabenStatusActionRunner(
     private val writeDataSource: KtorWillhabenWriteDataSource,
     private val requestRunner: WillhabenRequestRunner,
     private val importer: WillhabenImporter,
+    private val activityLog: ActivityLog,
 ) : WillhabenStatusActions {
 
     override suspend fun perform(listingId: Long, action: WillhabenStatusAction): EmptyResult<StatusActionError> {
@@ -49,9 +52,25 @@ class WillhabenStatusActionRunner(
         val result = requestRunner.run {
             if (action == WillhabenStatusAction.DELETE) writeDataSource.delete(route) else writeDataSource.put(route)
         }
+        activityLog.record(
+            listingId = listingId,
+            marketplace = Marketplace.WILLHABEN,
+            action = action.activityAction(),
+            success = result is Result.Success,
+            message = (result as? Result.Error)?.error?.name,
+        )
         return when (result) {
             is Result.Error -> Result.Error(StatusActionError.Failed(result.error))
             is Result.Success -> Result.Success(Unit)
         }
+    }
+
+    private fun WillhabenStatusAction.activityAction(): ActivityAction = when (this) {
+        WillhabenStatusAction.ACTIVATE -> ActivityAction.ACTIVATE
+        WillhabenStatusAction.DEACTIVATE -> ActivityAction.DEACTIVATE
+        WillhabenStatusAction.RESERVE -> ActivityAction.MARK_RESERVED
+        WillhabenStatusAction.UNRESERVE -> ActivityAction.REMOVE_RESERVED
+        WillhabenStatusAction.SOLD -> ActivityAction.MARK_SOLD
+        WillhabenStatusAction.DELETE -> ActivityAction.DELETE
     }
 }

@@ -1,5 +1,7 @@
 package com.lerchenflo.relisto.di
 
+import com.lerchenflo.relisto.activity.presentation.ActivityLogViewModel
+import org.koin.core.module.dsl.viewModel
 import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenImageUploader
 import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenListingUpdater
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenUpdater
@@ -113,6 +115,7 @@ val presentationModule = module {
     // The listing id comes from parametersOf(listingId) at the injection site
     viewModelOf(::ListingEditorViewModel)
     viewModelOf(::WillhabenTabViewModel)
+    viewModel { params -> ActivityLogViewModel(params.getOrNull(), get(), get()) }
     viewModelOf(::SettingsViewModel)
     viewModelOf(::AccountViewModel)
     viewModelOf(::AppUpdateViewModel)

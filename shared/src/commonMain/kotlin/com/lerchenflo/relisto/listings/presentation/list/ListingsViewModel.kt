@@ -122,6 +122,7 @@ class ListingsViewModel(
             ListingsAction.OnCloseListingClick -> _state.update { it.copy(selectedListingId = null) }
             ListingsAction.OnNewListingClick -> createListing()
             ListingsAction.OnSettingsClick -> viewModelScope.launch { navigator.navigate(Route.Settings) }
+            ListingsAction.OnActivityLogClick -> viewModelScope.launch { navigator.navigate(Route.ActivityLog()) }
             is ListingsAction.OnListingCheckedChange -> _state.update { state ->
                 val checked = if (action.checked) state.checkedListingIds + action.listingId else state.checkedListingIds - action.listingId
                 state.copy(checkedListingIds = checked).withVisibleListings()

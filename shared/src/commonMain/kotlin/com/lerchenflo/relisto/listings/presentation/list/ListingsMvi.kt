@@ -76,6 +76,7 @@ sealed interface ListingsAction {
     data object OnCloseListingClick : ListingsAction
     data object OnNewListingClick : ListingsAction
     data object OnSettingsClick : ListingsAction
+    data object OnActivityLogClick : ListingsAction
     data class OnListingCheckedChange(val listingId: Long, val checked: Boolean) : ListingsAction
     data object OnSelectAllExpiredClick : ListingsAction
     data object OnSelectAllVisibleClick : ListingsAction

@@ -212,4 +212,25 @@
     <string name="bulk_status_summary">%1$d changed on willhaben, %2$d failed</string>
     <string name="bulk_status_sold_title">Mark %1$d listings as sold?</string>
     <string name="bulk_status_sold_text">The checked listings are marked as sold on willhaben. This cannot be undone there.</string>
+    <string name="activity_title">Activity</string>
+    <string name="activity_open">Activity</string>
+    <string name="activity_back">Back</string>
+    <string name="activity_empty">Nothing sent to a marketplace yet.</string>
+    <string name="activity_only_failed">Only failures</string>
+    <string name="activity_for_listing">Listing: %1$s</string>
+    <string name="activity_all_listings">All listings</string>
+    <string name="activity_all_marketplaces">All</string>
+    <string name="activity_succeeded">Succeeded</string>
+    <string name="activity_failed">Failed</string>
+    <string name="activity_deleted_listing">Deleted listing</string>
+    <string name="activity_action_push">Pushed changes</string>
+    <string name="activity_action_take_remote">Took the willhaben version</string>
+    <string name="activity_action_republish">Published again</string>
+    <string name="activity_action_publish">Published</string>
+    <string name="activity_action_activate">Activated</string>
+    <string name="activity_action_deactivate">Deactivated</string>
+    <string name="activity_action_reserve">Reserved</string>
+    <string name="activity_action_unreserve">Reservation removed</string>
+    <string name="activity_action_sold">Marked as sold</string>
+    <string name="activity_action_delete">Deleted</string>
 </resources>

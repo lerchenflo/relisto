@@ -1,9 +1,12 @@
 package com.lerchenflo.relisto.marketplace.willhaben.data
 
 import assertk.assertThat
+import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.containsExactly
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import com.lerchenflo.relisto.activity.data.RoomActivityLog
+import com.lerchenflo.relisto.activity.domain.ActivityAction
 import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.datasource.network.HttpClientFactory
@@ -22,6 +25,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.respondError
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -34,6 +38,7 @@ class WillhabenStatusActionRunnerTest {
         database.listingDao(), database.listingImageDao(), database.publicationDao(), InMemoryImageStorage(), FakeTimeProvider(),
     )
     private val importer = FakeImporter()
+    private val activityLog = RoomActivityLog(database.activityLogDao(), database.listingDao(), FakeTimeProvider())
     private val calls = mutableListOf<String>()
     private var status = HttpStatusCode.OK
 
@@ -48,6 +53,7 @@ class WillhabenStatusActionRunnerTest {
         writeDataSource = KtorWillhabenWriteDataSource(client),
         requestRunner = WillhabenRequestRunner(renewSession = { false }, backoff = {}),
         importer = importer,
+        activityLog = activityLog,
     )
 
     @AfterTest
@@ -121,5 +127,29 @@ class WillhabenStatusActionRunnerTest {
         assertThat(result.firstError).isEqualTo(StatusActionError.NotAvailable)
         assertThat(calls.size).isEqualTo(2)
         assertThat(importer.calls).isEqualTo(1)
+    }
+
+    @Test
+    fun everySentActionIsLoggedWithItsResult() = runTest {
+        val id = publishedListing(inactiveActions)
+        runner.perform(id, WillhabenStatusAction.ACTIVATE)
+        status = HttpStatusCode.BadRequest
+        runner.performAll(listOf(id), WillhabenStatusAction.DELETE)
+
+        val entries = activityLog.getEntriesAsFlow().first()
+
+        assertThat(entries.map { it.action to it.success }).containsExactlyInAnyOrder(
+            ActivityAction.ACTIVATE to true,
+            ActivityAction.DELETE to false,
+        )
+    }
+
+    @Test
+    fun actionsThatAreNotSentAreNotLogged() = runTest {
+        val id = publishedListing(inactiveActions)
+
+        runner.perform(id, WillhabenStatusAction.SOLD)
+
+        assertThat(activityLog.getEntriesAsFlow().first()).isEmpty()
     }
 }
