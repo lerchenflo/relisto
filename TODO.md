@@ -17,7 +17,6 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 
 ## Multi-selection (user request 2026-10-18)
 
-- [ ] M.3 Bulk deactivate / activate / reserved / sold on willhaben (after 5.3).
 - [ ] M.4 Bulk publish to all marketplaces (after Phase 6 and Phase 8).
 
 ## Phase 5 – Update existing willhaben listings and status actions
@@ -30,8 +29,6 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
   buttons in the willhaben tab, links stored per import, DB v3). Live test: ask which listing first
   (e.g. deactivate + activate one online listing).
 - [ ] 5.4 Delivery options: `PUT /p2p-aggregator/restapi/v2/p2pp/options/delivery` (and `/iad/bap/edit` if needed).
-- [ ] 5.6 Renew: "expiring soon" filter = marketplace listings past half their runtime (45 days → last
-  22.5 days); not for Auto & Motor. (Finishing a draft after a failed renew exists.)
 - [ ] 5.7 Confirmation dialogs for destructive actions; activity log for every write.
 - [ ] 5.8 Verify each action's HTTP method and body against the real responses; update `docs/willhaben-api.md`.
 

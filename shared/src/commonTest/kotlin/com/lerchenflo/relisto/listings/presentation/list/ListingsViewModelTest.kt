@@ -31,6 +31,7 @@ import com.lerchenflo.relisto.testutil.FakeStatusActions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.testutil.FakeSettingsDataSource
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
+import com.lerchenflo.relisto.testutil.FakeUpdater
 import com.lerchenflo.relisto.testutil.FakeWillhabenFieldsDataSource
 import com.lerchenflo.relisto.testutil.MainDispatcherTest
 import com.lerchenflo.relisto.testutil.image
@@ -55,7 +56,9 @@ class ListingsViewModelTest : MainDispatcherTest() {
 
     private val statusActions = FakeStatusActions()
 
-    private fun viewModel() = ListingsViewModel(repository, settings, willhabenFields, navigator, statuses, renewer, statusActions, time)
+    private val updater = FakeUpdater()
+
+    private fun viewModel() = ListingsViewModel(repository, settings, willhabenFields, navigator, statuses, renewer, updater, statusActions, time)
 
     /** Listings 1 and 3 are expired on willhaben, 2 is online, 4 exists only locally. */
     private fun expiredAndOnlineListings() {
@@ -468,5 +471,108 @@ class ListingsViewModelTest : MainDispatcherTest() {
             assertThat(awaitItem()).isInstanceOf(ListingsEvent.ShowMessage::class)
             assertThat(awaitItem()).isEqualTo(ListingsEvent.ShowMessage(PublishError.PaidProduct().toUiText()))
         }
+    }
+
+    @Test
+    fun expiringFilterShowsMarketplaceListingsPastHalfTheirRuntimeAndExpiredOnes() = runTest {
+        val day = 24L * 60 * 60 * 1000
+        val runtime = 45 * day
+        time.now = 100 * day
+        repository.listings.value = listOf(
+            listing(1, updatedAt = 6), listing(2, updatedAt = 5), listing(3, updatedAt = 4),
+            listing(4, updatedAt = 3), listing(5, updatedAt = 2, archived = true),
+        )
+        statuses.statuses.value = listOf(
+            // 10 days left of 45: past half
+            PublicationStatus(1, Marketplace.WILLHABEN, "Aktiv", time.now + 10 * day, SyncState.SYNCED, runtimeMillis = runtime),
+            // 30 days left: not yet
+            PublicationStatus(2, Marketplace.WILLHABEN, "Aktiv", time.now + 30 * day, SyncState.SYNCED, runtimeMillis = runtime),
+            PublicationStatus(3, Marketplace.WILLHABEN, "Abgelaufen", null, SyncState.SYNCED, runtimeMillis = runtime),
+            // Auto & Motor: no known runtime, never "expiring soon"
+            PublicationStatus(4, Marketplace.WILLHABEN, "Aktiv", time.now + 2 * day, SyncState.SYNCED),
+            PublicationStatus(5, Marketplace.WILLHABEN, "Aktiv", time.now + 1 * day, SyncState.SYNCED, runtimeMillis = runtime),
+        )
+        val viewModel = viewModel()
+
+        viewModel.onAction(ListingsAction.OnFilterChange(ListingFilter.EXPIRING))
+
+        assertThat(viewModel.state.value.listings.map { it.id }).containsExactly(1L, 3L)
+    }
+
+    @Test
+    fun onlyCheckedListingsWithLocalChangesArePushed() = runTest {
+        repository.listings.value = listOf(listing(1, updatedAt = 3), listing(2, updatedAt = 2), listing(3, updatedAt = 1))
+        statuses.statuses.value = listOf(
+            PublicationStatus(1, Marketplace.WILLHABEN, "Aktiv", null, SyncState.LOCAL_CHANGES),
+            PublicationStatus(2, Marketplace.WILLHABEN, "Aktiv", null, SyncState.SYNCED),
+            // Expired: the renew sends the content
+            PublicationStatus(3, Marketplace.WILLHABEN, "Abgelaufen", null, SyncState.LOCAL_CHANGES),
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnSelectAllVisibleClick)
+        assertThat(viewModel.state.value.checkedPushableCount).isEqualTo(1)
+
+        viewModel.events.test {
+            viewModel.onAction(ListingsAction.OnPushCheckedClick)
+
+            assertThat(awaitItem()).isInstanceOf(ListingsEvent.ShowMessage::class)
+            assertThat(updater.pushed).containsExactly(1L to false)
+            assertThat(viewModel.state.value.isPushing).isFalse()
+        }
+    }
+
+    @Test
+    fun bulkStatusActionsAreTheOnesTheCheckedListingsOffer() = runTest {
+        repository.listings.value = listOf(listing(1, updatedAt = 2), listing(2, updatedAt = 1))
+        statuses.statuses.value = listOf(
+            PublicationStatus(1, Marketplace.WILLHABEN, "Aktiv", null, SyncState.SYNCED, availableActions = setOf("DEACTIVATE", "SOLD", "DELETE")),
+            PublicationStatus(2, Marketplace.WILLHABEN, "Inaktiv", null, SyncState.SYNCED, availableActions = setOf("ACTIVATE")),
+        )
+        val viewModel = viewModel()
+
+        viewModel.onAction(ListingsAction.OnSelectAllVisibleClick)
+
+        // Delete has its own button
+        assertThat(viewModel.state.value.checkedStatusActions).containsExactly(
+            WillhabenStatusAction.ACTIVATE, WillhabenStatusAction.DEACTIVATE, WillhabenStatusAction.SOLD,
+        )
+    }
+
+    @Test
+    fun bulkDeactivateRunsOnTheListingsThatOfferIt() = runTest {
+        repository.listings.value = listOf(listing(1, updatedAt = 2), listing(2, updatedAt = 1))
+        statuses.statuses.value = listOf(
+            PublicationStatus(1, Marketplace.WILLHABEN, "Aktiv", null, SyncState.SYNCED, availableActions = setOf("DEACTIVATE")),
+            PublicationStatus(2, Marketplace.WILLHABEN, "Inaktiv", null, SyncState.SYNCED, availableActions = setOf("ACTIVATE")),
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnSelectAllVisibleClick)
+
+        viewModel.events.test {
+            viewModel.onAction(ListingsAction.OnBulkStatusActionClick(WillhabenStatusAction.DEACTIVATE))
+
+            assertThat(awaitItem()).isInstanceOf(ListingsEvent.ShowMessage::class)
+            assertThat(statusActions.performed).containsExactly(1L to WillhabenStatusAction.DEACTIVATE)
+            assertThat(viewModel.state.value.checkedListingIds).isEmpty()
+        }
+    }
+
+    @Test
+    fun bulkSoldIsConfirmedFirst() = runTest {
+        repository.listings.value = listOf(listing(1))
+        statuses.statuses.value = listOf(
+            PublicationStatus(1, Marketplace.WILLHABEN, "Aktiv", null, SyncState.SYNCED, availableActions = setOf("SOLD")),
+        )
+        val viewModel = viewModel()
+        viewModel.onAction(ListingsAction.OnSelectAllVisibleClick)
+
+        viewModel.onAction(ListingsAction.OnBulkStatusActionClick(WillhabenStatusAction.SOLD))
+        assertThat(viewModel.state.value.confirmBulkStatusAction).isEqualTo(WillhabenStatusAction.SOLD)
+        assertThat(statusActions.performed).isEmpty()
+
+        viewModel.onAction(ListingsAction.OnBulkStatusActionConfirm)
+
+        assertThat(statusActions.performed).containsExactly(1L to WillhabenStatusAction.SOLD)
+        assertThat(viewModel.state.value.confirmBulkStatusAction).isNull()
     }
 }

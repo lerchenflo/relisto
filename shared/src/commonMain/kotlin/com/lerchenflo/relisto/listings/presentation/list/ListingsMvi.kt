@@ -1,6 +1,7 @@
 package com.lerchenflo.relisto.listings.presentation.list
 
 import androidx.compose.runtime.Stable
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.utilities.UiText
 
 @Stable
@@ -21,6 +22,14 @@ data class ListingsState(
     /** Some checked listings are on willhaben and can be deleted there too. */
     val canDeleteCheckedOnWillhaben: Boolean = false,
     val isDeleting: Boolean = false,
+    /** Checked listings with local changes that can be pushed to willhaben. */
+    val checkedPushableCount: Int = 0,
+    val isPushing: Boolean = false,
+    /** willhaben status changes at least one checked listing offers (delete has its own button). */
+    val checkedStatusActions: List<WillhabenStatusAction> = emptyList(),
+    /** Sold is confirmed first. */
+    val confirmBulkStatusAction: WillhabenStatusAction? = null,
+    val runningBulkStatusAction: WillhabenStatusAction? = null,
 )
 
 data class ListingListItemUi(
@@ -54,6 +63,8 @@ enum class WillhabenStateUi {
 
 enum class ListingFilter {
     ACTIVE,
+    /** Not archived, expired or past half its runtime on the marketplace: due for a renew. */
+    EXPIRING,
     ARCHIVED
 }
 
@@ -76,6 +87,10 @@ sealed interface ListingsAction {
     data object OnDeleteCheckedConfirm : ListingsAction
     data object OnDeleteCheckedEverywhereConfirm : ListingsAction
     data object OnDeleteCheckedDismiss : ListingsAction
+    data object OnPushCheckedClick : ListingsAction
+    data class OnBulkStatusActionClick(val action: WillhabenStatusAction) : ListingsAction
+    data object OnBulkStatusActionConfirm : ListingsAction
+    data object OnBulkStatusActionDismiss : ListingsAction
 }
 
 sealed interface ListingsEvent {

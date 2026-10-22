@@ -26,4 +26,14 @@ internal object WillhabenAdTypes {
     }
 
     fun isMarketplace(adTypeId: Int?): Boolean = WillhabenVertical.of(adTypeId) == WillhabenVertical.MARKETPLACE
+
+    /**
+     * How long a listing runs: 45 days for the free private marketplace product. null for the other ad
+     * types, whose runtime depends on the package (motor "Basic" 14 days, ...).
+     */
+    fun runtimeMillis(adTypeId: Int?): Long? =
+        if ((adTypeId ?: MARKETPLACE_AD_TYPE_ID) == MARKETPLACE_AD_TYPE_ID) MARKETPLACE_RUNTIME_DAYS * DAY_MILLIS else null
+
+    private const val MARKETPLACE_RUNTIME_DAYS = 45L
+    private const val DAY_MILLIS = 24L * 60 * 60 * 1000
 }

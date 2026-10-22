@@ -202,4 +202,14 @@
     <string name="settings_auto_renew">Renew expired listings automatically on start</string>
     <string name="settings_auto_renew_hint">After login, every expired willhaben listing is published again with the local content. Paid extras are never booked.</string>
     <string name="settings_willhaben">willhaben</string>
+    <string name="listings_filter_expiring">Expiring</string>
+    <string name="listings_empty_expiring">No listing has expired or is expiring soon.</string>
+    <string name="push_checked">Push (%1$d)</string>
+    <string name="push_summary">%1$d pushed, %2$d failed</string>
+    <string name="push_checked_running">Pushing changes …</string>
+    <string name="bulk_status_menu">willhaben</string>
+    <string name="bulk_status_running">Changing on willhaben …</string>
+    <string name="bulk_status_summary">%1$d changed on willhaben, %2$d failed</string>
+    <string name="bulk_status_sold_title">Mark %1$d listings as sold?</string>
+    <string name="bulk_status_sold_text">The checked listings are marked as sold on willhaben. This cannot be undone there.</string>
 </resources>

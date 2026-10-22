@@ -202,4 +202,14 @@
     <string name="settings_auto_renew">Abgelaufene Anzeigen beim Start automatisch erneuern</string>
     <string name="settings_auto_renew_hint">Nach dem Anmelden werden alle abgelaufenen willhaben-Anzeigen mit dem lokalen Inhalt neu veröffentlicht. Kostenpflichtige Extras werden nie gebucht.</string>
     <string name="settings_willhaben">willhaben</string>
+    <string name="listings_filter_expiring">Läuft ab</string>
+    <string name="listings_empty_expiring">Keine Anzeige ist abgelaufen oder läuft bald ab.</string>
+    <string name="push_checked">Übertragen (%1$d)</string>
+    <string name="push_summary">%1$d übertragen, %2$d fehlgeschlagen</string>
+    <string name="push_checked_running">Änderungen werden übertragen …</string>
+    <string name="bulk_status_menu">willhaben</string>
+    <string name="bulk_status_running">willhaben wird geändert …</string>
+    <string name="bulk_status_summary">%1$d auf willhaben geändert, %2$d fehlgeschlagen</string>
+    <string name="bulk_status_sold_title">%1$d Anzeigen als verkauft markieren?</string>
+    <string name="bulk_status_sold_text">Die ausgewählten Anzeigen werden auf willhaben als verkauft markiert. Das lässt sich dort nicht zurücknehmen.</string>
 </resources>

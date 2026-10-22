@@ -2,6 +2,7 @@ package com.lerchenflo.relisto.listings.presentation.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.app.domain.onFailure
 import com.lerchenflo.relisto.app.domain.onSuccess
 import com.lerchenflo.relisto.app.navigation.Navigator
@@ -15,6 +16,7 @@ import com.lerchenflo.relisto.marketplace.domain.PublicationStatusRepository
 import com.lerchenflo.relisto.marketplace.domain.SyncState
 import com.lerchenflo.relisto.marketplace.domain.canRenew
 import com.lerchenflo.relisto.marketplace.domain.isExpired
+import com.lerchenflo.relisto.marketplace.domain.isExpiringSoon
 import com.lerchenflo.relisto.marketplace.willhaben.presentation.toUiText
 import com.lerchenflo.relisto.marketplace.willhaben.domain.DeliveryOptions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenFieldsLocalDataSource
@@ -22,6 +24,7 @@ import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenListingField
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenRenewer
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActions
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenUpdater
 import com.lerchenflo.relisto.settings.domain.SettingsDataSource
 import com.lerchenflo.relisto.utilities.TimeProvider
 import com.lerchenflo.relisto.utilities.UiText
@@ -35,6 +38,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import relisto.shared.generated.resources.Res
+import relisto.shared.generated.resources.bulk_status_summary
+import relisto.shared.generated.resources.push_summary
 import relisto.shared.generated.resources.renew_summary
 
 class ListingsViewModel(
@@ -44,6 +49,7 @@ class ListingsViewModel(
     private val navigator: Navigator,
     private val publicationStatuses: PublicationStatusRepository,
     private val renewer: WillhabenRenewer,
+    private val updater: WillhabenUpdater,
     private val statusActions: WillhabenStatusActions,
     private val timeProvider: TimeProvider,
 ) : ViewModel() {
@@ -59,6 +65,9 @@ class ListingsViewModel(
     private var willhabenStateByListing: Map<Long, WillhabenStateUi> = emptyMap()
     private var expiredListingIds: Set<Long> = emptySet()
     private var deletableOnWillhabenIds: Set<Long> = emptySet()
+    private var expiringSoonIds: Set<Long> = emptySet()
+    private var pushableIds: Set<Long> = emptySet()
+    private var statusActionsByListing: Map<Long, Set<WillhabenStatusAction>> = emptyMap()
 
     init {
         viewModelScope.launch {
@@ -76,6 +85,14 @@ class ListingsViewModel(
                     .map { it.listingId }.toSet()
                 willhabenStateByListing = willhaben.mapNotNull { status -> status.toStateUi(now)?.let { status.listingId to it } }.toMap()
                 expiredListingIds = willhaben.filter { it.canRenew(now) }.map { it.listingId }.toSet()
+                expiringSoonIds = willhaben.filter { it.isExpiringSoon(now) }.map { it.listingId }.toSet()
+                // Expired listings and drafts get their content with the renew
+                pushableIds = willhaben
+                    .filter { it.syncState == SyncState.LOCAL_CHANGES && !it.isDraft && !it.isExpired(now) }
+                    .map { it.listingId }.toSet()
+                statusActionsByListing = willhaben.associate { status ->
+                    status.listingId to WillhabenStatusAction.entries.filter { it.name in status.availableActions }.toSet()
+                }
                 _state.update { it.withVisibleListings() }
             }
         }
@@ -127,6 +144,51 @@ class ListingsViewModel(
             ListingsAction.OnDeleteCheckedDismiss -> _state.update { it.copy(isDeleteConfirmOpen = false) }
             ListingsAction.OnDeleteCheckedConfirm -> deleteChecked(alsoOnWillhaben = false)
             ListingsAction.OnDeleteCheckedEverywhereConfirm -> deleteChecked(alsoOnWillhaben = true)
+            ListingsAction.OnPushCheckedClick -> pushChecked()
+            is ListingsAction.OnBulkStatusActionClick ->
+                if (action.action.needsConfirmation) {
+                    _state.update { it.copy(confirmBulkStatusAction = action.action) }
+                } else {
+                    performBulkStatusAction(action.action)
+                }
+            ListingsAction.OnBulkStatusActionConfirm -> _state.value.confirmBulkStatusAction?.let(::performBulkStatusAction)
+            ListingsAction.OnBulkStatusActionDismiss -> _state.update { it.copy(confirmBulkStatusAction = null) }
+        }
+    }
+
+    /** Sends the local changes of the checked listings one after another; a failure does not stop the others. */
+    private fun pushChecked() {
+        val ids = allListings.map { it.id }.filter { it in _state.value.checkedListingIds && it in pushableIds }
+        if (ids.isEmpty() || _state.value.isPushing) return
+        _state.update { it.copy(isPushing = true) }
+        viewModelScope.launch {
+            val errors = ids.mapNotNull { id -> (updater.pushChanges(id) as? Result.Error)?.error }
+            _state.update { it.copy(isPushing = false, checkedListingIds = emptySet()).withVisibleListings() }
+            _events.send(
+                ListingsEvent.ShowMessage(
+                    UiText.StringResourceText(Res.string.push_summary, arrayOf(ids.size - errors.size, errors.size))
+                )
+            )
+            errors.firstOrNull()?.let { _events.send(ListingsEvent.ShowMessage(it.toUiText())) }
+        }
+    }
+
+    /** Runs [action] on every checked listing that offers it; willhaben's state is imported again afterwards. */
+    private fun performBulkStatusAction(action: WillhabenStatusAction) {
+        val ids = allListings.map { it.id }
+            .filter { it in _state.value.checkedListingIds && action in statusActionsByListing[it].orEmpty() }
+        _state.update { it.copy(confirmBulkStatusAction = null) }
+        if (ids.isEmpty() || _state.value.runningBulkStatusAction != null) return
+        _state.update { it.copy(runningBulkStatusAction = action) }
+        viewModelScope.launch {
+            val result = statusActions.performAll(ids, action)
+            _state.update { it.copy(runningBulkStatusAction = null, checkedListingIds = emptySet()).withVisibleListings() }
+            _events.send(
+                ListingsEvent.ShowMessage(
+                    UiText.StringResourceText(Res.string.bulk_status_summary, arrayOf(result.succeeded.size, ids.size - result.succeeded.size))
+                )
+            )
+            result.firstError?.let { _events.send(ListingsEvent.ShowMessage(it.toUiText())) }
         }
     }
 
@@ -215,7 +277,13 @@ class ListingsViewModel(
 
     private fun ListingsState.withVisibleListings(): ListingsState {
         val query = searchQuery.trim()
-        val inFilter = allListings.filter { it.archived == (filter == ListingFilter.ARCHIVED) }
+        val inFilter = allListings.filter { listing ->
+            when (filter) {
+                ListingFilter.ACTIVE -> !listing.archived
+                ListingFilter.EXPIRING -> !listing.archived && (listing.id in expiredListingIds || listing.id in expiringSoonIds)
+                ListingFilter.ARCHIVED -> listing.archived
+            }
+        }
         // Checked listings that left the current filter (archived, deleted) drop out; a search only hides them
         val checked = checkedListingIds intersect inFilter.map { it.id }.toSet()
         val visible = inFilter
@@ -228,6 +296,10 @@ class ListingsViewModel(
             renewableCount = renewable.size,
             checkedRenewableCount = (checked intersect renewable).size,
             canDeleteCheckedOnWillhaben = checked.any { it in deletableOnWillhabenIds },
+            checkedPushableCount = (checked intersect pushableIds).size,
+            checkedStatusActions = WillhabenStatusAction.entries
+                .filter { it != WillhabenStatusAction.DELETE }
+                .filter { action -> checked.any { action in statusActionsByListing[it].orEmpty() } },
         )
     }
 

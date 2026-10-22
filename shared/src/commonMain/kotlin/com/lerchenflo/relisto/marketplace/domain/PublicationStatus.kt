@@ -14,6 +14,8 @@ data class PublicationStatus(
     val isRenewDraft: Boolean = false,
     /** Names of the status actions the marketplace offers right now (willhaben: WillhabenStatusAction). */
     val availableActions: Set<String> = emptySet(),
+    /** How long the listing runs on the marketplace; null when it depends on a package (Auto & Motor). */
+    val runtimeMillis: Long? = null,
 ) {
     /** In editing on the marketplace ("Bearbeitung"): finished, not copied, to publish it. */
     val isDraft: Boolean get() = statusText == WILLHABEN_DRAFT_STATUS
@@ -39,6 +41,16 @@ private val RUNNING_STATUSES = setOf("Online", "Aktiv")
 fun PublicationStatus.isExpired(nowMillis: Long): Boolean =
     statusText == EXPIRED_STATUS ||
         ((statusText == null || statusText in RUNNING_STATUSES) && expiresAt != null && expiresAt <= nowMillis)
+
+/**
+ * Running and past half its runtime (marketplace: the last 22.5 of 45 days), so it should be renewed soon.
+ * Listings without a known runtime (Auto & Motor) are never expiring soon.
+ */
+fun PublicationStatus.isExpiringSoon(nowMillis: Long): Boolean {
+    val runtime = runtimeMillis ?: return false
+    val end = expiresAt ?: return false
+    return (statusText == null || statusText in RUNNING_STATUSES) && end > nowMillis && end - nowMillis <= runtime / 2
+}
 
 /**
  * Renewed in bulk and automatically: expired listings, and drafts an unfinished renew left behind.

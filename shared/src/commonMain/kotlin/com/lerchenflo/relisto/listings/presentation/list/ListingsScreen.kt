@@ -1,5 +1,28 @@
 package com.lerchenflo.relisto.listings.presentation.list
 
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
+import org.jetbrains.compose.resources.StringResource
+import relisto.shared.generated.resources.listings_filter_expiring
+import relisto.shared.generated.resources.listings_empty_expiring
+import relisto.shared.generated.resources.push_checked
+import relisto.shared.generated.resources.push_checked_running
+import relisto.shared.generated.resources.bulk_status_menu
+import relisto.shared.generated.resources.bulk_status_running
+import relisto.shared.generated.resources.bulk_status_sold_title
+import relisto.shared.generated.resources.bulk_status_sold_text
+import relisto.shared.generated.resources.status_action_sold
+import relisto.shared.generated.resources.status_action_activate
+import relisto.shared.generated.resources.status_action_deactivate
+import relisto.shared.generated.resources.status_action_reserve
+import relisto.shared.generated.resources.status_action_unreserve
+import relisto.shared.generated.resources.status_action_delete
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -277,6 +300,11 @@ private fun ListingListPane(
                 label = { Text(stringResource(Res.string.listings_filter_active)) },
             )
             FilterChip(
+                selected = state.filter == ListingFilter.EXPIRING,
+                onClick = { onAction(ListingsAction.OnFilterChange(ListingFilter.EXPIRING)) },
+                label = { Text(stringResource(Res.string.listings_filter_expiring)) },
+            )
+            FilterChip(
                 selected = state.filter == ListingFilter.ARCHIVED,
                 onClick = { onAction(ListingsAction.OnFilterChange(ListingFilter.ARCHIVED)) },
                 label = { Text(stringResource(Res.string.listings_filter_archived)) },
@@ -294,6 +322,7 @@ private fun ListingListPane(
                     when {
                         state.searchQuery.isNotBlank() -> Res.string.listings_empty_search
                         state.filter == ListingFilter.ARCHIVED -> Res.string.listings_empty_archived
+                        state.filter == ListingFilter.EXPIRING -> Res.string.listings_empty_expiring
                         else -> Res.string.listings_empty_active
                     }
                 ),
@@ -317,11 +346,17 @@ private fun ListingListPane(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SelectionBar(state: ListingsState, onAction: (ListingsAction) -> Unit) {
-    if (state.isRenewing) {
+    val runningText = when {
+        state.isRenewing -> stringResource(Res.string.renew_running)
+        state.isPushing -> stringResource(Res.string.push_checked_running)
+        state.runningBulkStatusAction != null -> stringResource(Res.string.bulk_status_running)
+        else -> null
+    }
+    if (runningText != null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             Spacer(Modifier.width(8.dp))
-            Text(stringResource(Res.string.renew_running))
+            Text(runningText)
         }
         return
     }
@@ -351,7 +386,17 @@ private fun SelectionBar(state: ListingsState, onAction: (ListingsAction) -> Uni
                     Text(stringResource(Res.string.renew_checked, state.checkedRenewableCount))
                 }
             }
-            if (state.filter == ListingFilter.ACTIVE) {
+            if (state.checkedPushableCount > 0) {
+                OutlinedButton(onClick = { onAction(ListingsAction.OnPushCheckedClick) }) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(Res.string.push_checked, state.checkedPushableCount))
+                }
+            }
+            if (state.checkedStatusActions.isNotEmpty()) {
+                BulkStatusMenu(actions = state.checkedStatusActions, onAction = onAction)
+            }
+            if (state.filter != ListingFilter.ARCHIVED) {
                 OutlinedButton(onClick = { onAction(ListingsAction.OnArchiveCheckedClick) }) {
                     Text(stringResource(Res.string.editor_archive))
                 }
@@ -367,6 +412,23 @@ private fun SelectionBar(state: ListingsState, onAction: (ListingsAction) -> Uni
                 Text(stringResource(Res.string.renew_clear))
             }
         }
+    }
+    if (state.confirmBulkStatusAction == WillhabenStatusAction.SOLD) {
+        AlertDialog(
+            onDismissRequest = { onAction(ListingsAction.OnBulkStatusActionDismiss) },
+            title = { Text(stringResource(Res.string.bulk_status_sold_title, state.checkedListingIds.size)) },
+            text = { Text(stringResource(Res.string.bulk_status_sold_text)) },
+            confirmButton = {
+                TextButton(onClick = { onAction(ListingsAction.OnBulkStatusActionConfirm) }) {
+                    Text(stringResource(Res.string.status_action_sold))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { onAction(ListingsAction.OnBulkStatusActionDismiss) }) {
+                    Text(stringResource(Res.string.editor_delete_cancel))
+                }
+            },
+        )
     }
     if (state.isDeleteConfirmOpen) {
         AlertDialog(
@@ -403,6 +465,38 @@ private fun SelectionBar(state: ListingsState, onAction: (ListingsAction) -> Uni
             },
         )
     }
+}
+
+/** Status changes on willhaben for the checked listings; each runs on the listings that offer it. */
+@Composable
+private fun BulkStatusMenu(actions: List<WillhabenStatusAction>, onAction: (ListingsAction) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        OutlinedButton(onClick = { expanded = true }) {
+            Text(stringResource(Res.string.bulk_status_menu))
+            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            actions.forEach { action ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(action.bulkLabel())) },
+                    onClick = {
+                        expanded = false
+                        onAction(ListingsAction.OnBulkStatusActionClick(action))
+                    },
+                )
+            }
+        }
+    }
+}
+
+private fun WillhabenStatusAction.bulkLabel(): StringResource = when (this) {
+    WillhabenStatusAction.ACTIVATE -> Res.string.status_action_activate
+    WillhabenStatusAction.DEACTIVATE -> Res.string.status_action_deactivate
+    WillhabenStatusAction.RESERVE -> Res.string.status_action_reserve
+    WillhabenStatusAction.UNRESERVE -> Res.string.status_action_unreserve
+    WillhabenStatusAction.SOLD -> Res.string.status_action_sold
+    WillhabenStatusAction.DELETE -> Res.string.status_action_delete
 }
 
 /** willhaben logo plus an icon for the listing's state there; the status text is read out for accessibility. */

@@ -158,3 +158,6 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
   snapshot, patch, `PUT selfLinkEdit`, images only when their fingerprint changed, new snapshot); shared
   `WillhabenImageUploader`; activity log table (DB v4, AutoMigration). Home shows a login hint while
   logged out. Language follows the system on desktop too; local builds (1.0.0) skip the update hint.
+- 2026-10-22 – Willhaben tab: "Änderungen übertragen" and conflict comparison (keep local / take willhaben).
+  List: filter "Läuft ab" (expired or past half the 45-day runtime, marketplace only), bulk push of
+  checked listings with local changes, willhaben menu for bulk activate/deactivate/reserve/sold (M.3).
