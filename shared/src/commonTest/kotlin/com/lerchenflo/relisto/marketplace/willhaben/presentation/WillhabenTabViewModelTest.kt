@@ -1,5 +1,6 @@
 package com.lerchenflo.relisto.marketplace.willhaben.presentation
 
+import com.lerchenflo.relisto.utilities.toUiText
 import app.cash.turbine.test
 import assertk.assertThat
 import assertk.assertions.containsExactly
@@ -35,6 +36,8 @@ import com.lerchenflo.relisto.testutil.FakeStatusActions
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
 import com.lerchenflo.relisto.testutil.FakeUpdater
+import com.lerchenflo.relisto.testutil.FakeCreator
+import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
 import com.lerchenflo.relisto.app.navigation.Navigator
 import com.lerchenflo.relisto.testutil.FakeWillhabenCatalogRepository
 import com.lerchenflo.relisto.testutil.FakeWillhabenFieldsDataSource
@@ -106,8 +109,9 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
     private val statusActions = FakeStatusActions()
 
     private val updater = FakeUpdater()
+    private val creator = FakeCreator()
 
-    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, updater, importer, statusActions, Navigator(), time)
+    private fun viewModel() = WillhabenTabViewModel(1, catalog, fieldsSource, listings, statuses, publisher, updater, creator, importer, statusActions, Navigator(), time)
 
     private fun publishedAs(statusText: String?, expiresAt: Long? = null, syncState: SyncState = SyncState.SYNCED) {
         statuses.statuses.value = listOf(
@@ -615,5 +619,75 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
         assertThat(updater.takenRemote).containsExactly(1L)
         assertThat(updater.pushed).isEmpty()
         assertThat(viewModel.state.value.conflict).isNull()
+    }
+
+    @Test
+    fun listingOnlyHereCanBePublished() = runTest {
+        assertThat(viewModel().state.value.publishState).isEqualTo(PublishState.NEW)
+
+        publishedAs("Aktiv")
+        assertThat(viewModel().state.value.publishState).isNull()
+    }
+
+    @Test
+    fun interruptedPublishIsContinued() = runTest {
+        statuses.statuses.value = listOf(PublicationStatus(1, Marketplace.WILLHABEN, null, null, SyncState.PUBLISHING))
+
+        assertThat(viewModel().state.value.publishState).isEqualTo(PublishState.INTERRUPTED)
+    }
+
+    @Test
+    fun publishShowsItsStepsAndRefreshesAfterwards() = runTest {
+        creator.steps = listOf(PublishStep.PRODUCT, PublishStep.TEMPLATE)
+        creator.pending = CompletableDeferred()
+        val viewModel = viewModel()
+
+        viewModel.events.test {
+            viewModel.onAction(WillhabenTabAction.OnPublishClick)
+            viewModel.onAction(WillhabenTabAction.OnPublishConfirm)
+
+            val progress = viewModel.state.value.publishProgress!!
+            assertThat(progress.current).isEqualTo(PublishStep.TEMPLATE)
+            assertThat(progress.error).isNull()
+
+            creator.pending!!.complete(Unit)
+
+            assertThat(awaitItem()).isInstanceOf(WillhabenTabEvent.ShowMessage::class)
+            assertThat(creator.published).containsExactly(1L)
+            assertThat(importer.calls).isEqualTo(1)
+            assertThat(viewModel.state.value.publishProgress).isNull()
+        }
+    }
+
+    @Test
+    fun failedPublishKeepsTheErrorInTheProgressDialog() = runTest {
+        creator.steps = listOf(PublishStep.PRODUCT, PublishStep.TEMPLATE, PublishStep.PRESAVE)
+        creator.result = Result.Error(PublishError.Failed(PublishStep.PRESAVE, DataError.Network.SERVER_ERROR))
+        val viewModel = viewModel()
+
+        viewModel.onAction(WillhabenTabAction.OnPublishConfirm)
+
+        val progress = viewModel.state.value.publishProgress!!
+        assertThat(progress.current).isEqualTo(PublishStep.PRESAVE)
+        assertThat(progress.error).isEqualTo(DataError.Network.SERVER_ERROR.toUiText())
+        assertThat(importer.calls).isEqualTo(0)
+
+        viewModel.onAction(WillhabenTabAction.OnPublishProgressDismiss)
+        assertThat(viewModel.state.value.publishProgress).isNull()
+    }
+
+    @Test
+    fun missingRequiredAttributeIsReportedWithoutPublishing() = runTest {
+        fieldsSource.fields.value = mapOf(1L to WillhabenListingFields(categoryPath = bicyclePath))
+        val viewModel = viewModel()
+        assertThat(viewModel.state.value.attributeFields.any { it.required && it.selectedCodes.isEmpty() }).isTrue()
+
+        viewModel.events.test {
+            viewModel.onAction(WillhabenTabAction.OnPublishClick)
+
+            assertThat(awaitItem()).isInstanceOf(WillhabenTabEvent.ShowMessage::class)
+            assertThat(viewModel.state.value.isPublishConfirmOpen).isFalse()
+            assertThat(creator.published).isEmpty()
+        }
     }
 }

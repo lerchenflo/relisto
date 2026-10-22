@@ -164,3 +164,6 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
 - 2026-10-22 – Activity log: every write (push, take willhaben, renew, status actions) is logged with
   its result; screen "Verlauf" from the home header (all) or the willhaben tab (one listing), filters
   "only failures" and marketplace (shown with more than one). Entries older than 180 days are removed.
+- 2026-10-22 – Phase 6 built: new marketplace listings are published from the willhaben tab (confirmation,
+  progress dialog with steps, required fields and attributes checked first, interrupted publish continues
+  with its draft). `WillhabenDraftFinisher` shares images/finish/package/activate with the renew.

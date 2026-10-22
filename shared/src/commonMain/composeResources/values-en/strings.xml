@@ -238,4 +238,21 @@
     <string name="missing_title">title</string>
     <string name="missing_category">category</string>
     <string name="missing_location">location (postcode)</string>
+    <string name="publish_done">Published on willhaben. willhaben still reviews the listing.</string>
+    <string name="publish_button">Publish on willhaben</string>
+    <string name="publish_continue_button">Continue publishing</string>
+    <string name="publish_hint">Not on willhaben yet. It is published as a free marketplace listing (45 days).</string>
+    <string name="publish_interrupted_hint">Publishing was interrupted; the draft on willhaben is finished.</string>
+    <string name="publish_confirm_title">Publish on willhaben?</string>
+    <string name="publish_confirm_text">The listing is published on willhaben for free with text, price, images, category and location, and is public after the review. Paid packages are never booked.</string>
+    <string name="publish_confirm">Publish</string>
+    <string name="publish_progress_title">Publishing on willhaben</string>
+    <string name="publish_progress_close">Close</string>
+    <string name="publish_step_product">Check the free product</string>
+    <string name="publish_step_template">Load an empty listing</string>
+    <string name="publish_step_presave">Create the draft</string>
+    <string name="publish_step_images">Upload images</string>
+    <string name="publish_step_finish">Save the listing</string>
+    <string name="publish_step_reload">Check the listing</string>
+    <string name="publish_step_activate">Activate</string>
 </resources>

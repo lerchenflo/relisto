@@ -33,13 +33,13 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 
 ## Phase 6 – Create and publish new willhaben listings
 
-- [ ] 6.1 `GET /iad/productgroups`: pick the free private marketplace product (`adTypeId` 67, price 0); abort if none.
-- [ ] 6.2 Template `GET /iad/bap?productId=67` (verify; inferred endpoint).
-- [ ] 6.3 Fill the template with `AdJsonPatcher`; `presave` → store `remoteId` at once, state `PUBLISHING`.
-- [ ] 6.4 Images, `selfLinkFinish`, delivery options, reload, stop on `paymentURI`, `selfLinkActivate`
-  (same steps as `WillhabenRepublisher`; share the code).
-- [ ] 6.5 Publish progress dialog with step list; resume an interrupted publish from the stored `remoteId`.
-- [ ] 6.6 First real publish with an item the user wants to sell.
+Built (2026-10-22): `WillhabenListingCreator` (free product, `GET /iad/bap?productId=67`, local content and
+category patched in, `presave` with the draft id stored at once, shared finish steps, resume from the draft),
+publish button with confirmation and step-by-step progress dialog in the willhaben tab.
+
+- [ ] 6.2 Verify live that `GET /iad/bap?productId=67` is the template and that `categoryTreeId` +
+  `categoryPath.path` select the category in a new listing (inferred, not seen yet).
+- [ ] 6.6 First real publish with an item the user wants to sell (ask first; deactivate again if it is only a test).
 
 ## Phase 7 – Polish and release
 

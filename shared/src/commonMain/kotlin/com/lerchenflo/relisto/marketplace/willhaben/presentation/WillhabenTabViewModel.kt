@@ -18,6 +18,7 @@ import com.lerchenflo.relisto.marketplace.domain.isExpired
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenImporter
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenPublisher
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCreator
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenUpdater
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusActions
@@ -47,6 +48,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import relisto.shared.generated.resources.Res
 import relisto.shared.generated.resources.conflict_resolved
+import relisto.shared.generated.resources.publish_done
+import relisto.shared.generated.resources.publish_error_incomplete
 import relisto.shared.generated.resources.push_done
 import relisto.shared.generated.resources.republish_done
 import relisto.shared.generated.resources.status_action_done
@@ -63,6 +66,7 @@ class WillhabenTabViewModel(
     private val publicationStatuses: PublicationStatusRepository,
     private val publisher: WillhabenPublisher,
     private val updater: WillhabenUpdater,
+    private val creator: WillhabenCreator,
     private val importer: WillhabenImporter,
     private val statusActions: WillhabenStatusActions,
     private val navigator: Navigator,
@@ -96,6 +100,11 @@ class WillhabenTabViewModel(
                 .collect { status ->
                     _state.update {
                         it.copy(
+                            publishState = when (status?.syncState) {
+                                null, SyncState.LOCAL_ONLY, SyncState.REMOTE_GONE -> PublishState.NEW
+                                SyncState.PUBLISHING -> PublishState.INTERRUPTED
+                                else -> null
+                            },
                             publication = status?.toUi(),
                             statusActions = WillhabenStatusAction.entries.filter { action -> action.name in status?.availableActions.orEmpty() },
                         )
@@ -153,6 +162,45 @@ class WillhabenTabViewModel(
             WillhabenTabAction.OnTakeRemoteClick -> resolveConflict(keepLocal = false)
             WillhabenTabAction.OnConflictDismiss -> _state.update { it.copy(conflict = null) }
             WillhabenTabAction.OnShowActivityClick -> viewModelScope.launch { navigator.navigate(Route.ActivityLog(listingId)) }
+            WillhabenTabAction.OnPublishClick -> onPublishClick()
+            WillhabenTabAction.OnPublishDismiss -> _state.update { it.copy(isPublishConfirmOpen = false) }
+            WillhabenTabAction.OnPublishConfirm -> publish()
+            WillhabenTabAction.OnPublishProgressDismiss -> _state.update { it.copy(publishProgress = null) }
+        }
+    }
+
+    /** Required category attributes are checked here, where the category tree is known. */
+    private fun onPublishClick() {
+        val missing = _state.value.attributeFields.filter { it.required && it.selectedCodes.isEmpty() }
+        if (missing.isEmpty()) {
+            _state.update { it.copy(isPublishConfirmOpen = true) }
+            return
+        }
+        viewModelScope.launch {
+            val labels = UiText.Joined(missing.map { UiText.DynamicString(it.label) })
+            _events.send(WillhabenTabEvent.ShowMessage(UiText.StringResourceText(Res.string.publish_error_incomplete, arrayOf(labels))))
+        }
+    }
+
+    private fun publish() {
+        if (_state.value.publishProgress != null) return
+        viewModelScope.launch {
+            val hasImages = listingRepository.getListingByIdAsFlow(listingId).first()?.images?.isNotEmpty() == true
+            _state.update { it.copy(isPublishConfirmOpen = false, publishProgress = PublishProgressUi(hasImages = hasImages)) }
+            val result = creator.publish(listingId) { step ->
+                _state.update { state -> state.copy(publishProgress = state.publishProgress?.copy(current = step)) }
+            }
+            when (result) {
+                is Result.Success -> {
+                    // Reads the new listing's status and actions from willhaben
+                    importer.importMyListings()
+                    _state.update { it.copy(publishProgress = null) }
+                    _events.send(WillhabenTabEvent.ShowMessage(UiText.StringResourceText(Res.string.publish_done)))
+                }
+                is Result.Error -> _state.update { state ->
+                    state.copy(publishProgress = state.publishProgress?.copy(error = result.error.toUiText()))
+                }
+            }
         }
     }
 

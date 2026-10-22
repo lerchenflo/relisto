@@ -403,3 +403,22 @@ class FakeActivityLog : com.lerchenflo.relisto.activity.domain.ActivityLog {
         ) + entries.value
     }
 }
+
+class FakeCreator : com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCreator {
+    var result: com.lerchenflo.relisto.app.domain.EmptyResult<com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError> =
+        Result.Success(Unit)
+    val published = mutableListOf<Long>()
+    /** Steps reported before [pending] completes. */
+    var steps: List<com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep> = emptyList()
+    var pending: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
+    override suspend fun publish(
+        listingId: Long,
+        onStep: (com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep) -> Unit,
+    ): com.lerchenflo.relisto.app.domain.EmptyResult<com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError> {
+        published += listingId
+        steps.forEach(onStep)
+        pending?.await()
+        return result
+    }
+}

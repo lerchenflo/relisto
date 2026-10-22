@@ -238,4 +238,21 @@
     <string name="missing_title">Titel</string>
     <string name="missing_category">Kategorie</string>
     <string name="missing_location">Ort (Postleitzahl)</string>
+    <string name="publish_done">Auf willhaben veröffentlicht. willhaben prüft die Anzeige noch.</string>
+    <string name="publish_button">Auf willhaben veröffentlichen</string>
+    <string name="publish_continue_button">Veröffentlichung fortsetzen</string>
+    <string name="publish_hint">Noch nicht auf willhaben. Veröffentlicht wird als kostenlose Marktplatz-Anzeige (45 Tage).</string>
+    <string name="publish_interrupted_hint">Die Veröffentlichung wurde unterbrochen; der Entwurf auf willhaben wird fertiggestellt.</string>
+    <string name="publish_confirm_title">Auf willhaben veröffentlichen?</string>
+    <string name="publish_confirm_text">Die Anzeige wird mit Text, Preis, Bildern, Kategorie und Ort als kostenlose Anzeige auf willhaben veröffentlicht und ist nach der Prüfung öffentlich sichtbar. Kostenpflichtige Pakete werden nie gebucht.</string>
+    <string name="publish_confirm">Veröffentlichen</string>
+    <string name="publish_progress_title">Veröffentlichen auf willhaben</string>
+    <string name="publish_progress_close">Schließen</string>
+    <string name="publish_step_product">Kostenloses Produkt prüfen</string>
+    <string name="publish_step_template">Leere Anzeige laden</string>
+    <string name="publish_step_presave">Entwurf anlegen</string>
+    <string name="publish_step_images">Bilder hochladen</string>
+    <string name="publish_step_finish">Anzeige speichern</string>
+    <string name="publish_step_reload">Anzeige prüfen</string>
+    <string name="publish_step_activate">Aktivieren</string>
 </resources>

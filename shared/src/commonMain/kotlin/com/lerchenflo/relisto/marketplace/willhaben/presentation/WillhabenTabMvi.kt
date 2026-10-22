@@ -2,6 +2,7 @@ package com.lerchenflo.relisto.marketplace.willhaben.presentation
 
 import androidx.compose.runtime.Stable
 import com.lerchenflo.relisto.marketplace.domain.SyncState
+import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenStatusAction
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenVertical
 import com.lerchenflo.relisto.utilities.UiText
@@ -40,6 +41,11 @@ data class WillhabenTabState(
     val publication: PublicationUi? = null,
     val isRepublishConfirmOpen: Boolean = false,
     val isRepublishing: Boolean = false,
+    /** Whether the listing can be published as a new willhaben listing; null when it is on willhaben. */
+    val publishState: PublishState? = null,
+    val isPublishConfirmOpen: Boolean = false,
+    /** Shown while publishing, and with the error when it failed. */
+    val publishProgress: PublishProgressUi? = null,
     val isPushing: Boolean = false,
     /** Local and willhaben version side by side while the user resolves a conflict. */
     val conflict: ConflictUi? = null,
@@ -74,6 +80,21 @@ data class ListingVersionUi(
     /** "45 €"; empty without price. */
     val priceText: String,
     val description: String,
+)
+
+enum class PublishState {
+    /** Only local (or deleted on willhaben): publish as a new listing. */
+    NEW,
+
+    /** A publish stopped after the draft was created: continue with the draft. */
+    INTERRUPTED
+}
+
+data class PublishProgressUi(
+    /** The step running now (or the one that failed); null before the first step. */
+    val current: PublishStep? = null,
+    val hasImages: Boolean = false,
+    val error: UiText? = null,
 )
 
 enum class RenewAction {
@@ -143,6 +164,10 @@ sealed interface WillhabenTabAction {
     data object OnTakeRemoteClick : WillhabenTabAction
     data object OnConflictDismiss : WillhabenTabAction
     data object OnShowActivityClick : WillhabenTabAction
+    data object OnPublishClick : WillhabenTabAction
+    data object OnPublishConfirm : WillhabenTabAction
+    data object OnPublishDismiss : WillhabenTabAction
+    data object OnPublishProgressDismiss : WillhabenTabAction
 }
 
 sealed interface WillhabenTabEvent {

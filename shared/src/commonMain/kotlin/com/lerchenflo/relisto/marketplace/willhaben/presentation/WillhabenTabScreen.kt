@@ -1,5 +1,23 @@
 package com.lerchenflo.relisto.marketplace.willhaben.presentation
 
+import androidx.compose.material.icons.filled.ErrorOutline
+import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
+import relisto.shared.generated.resources.publish_button
+import relisto.shared.generated.resources.publish_continue_button
+import relisto.shared.generated.resources.publish_hint
+import relisto.shared.generated.resources.publish_interrupted_hint
+import relisto.shared.generated.resources.publish_confirm_title
+import relisto.shared.generated.resources.publish_confirm_text
+import relisto.shared.generated.resources.publish_confirm
+import relisto.shared.generated.resources.publish_progress_title
+import relisto.shared.generated.resources.publish_progress_close
+import relisto.shared.generated.resources.publish_step_product
+import relisto.shared.generated.resources.publish_step_template
+import relisto.shared.generated.resources.publish_step_presave
+import relisto.shared.generated.resources.publish_step_images
+import relisto.shared.generated.resources.publish_step_finish
+import relisto.shared.generated.resources.publish_step_reload
+import relisto.shared.generated.resources.publish_step_activate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -175,6 +193,10 @@ fun WillhabenTabScreen(
     onAction: (WillhabenTabAction) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.fillMaxWidth()) {
+        // Only marketplace listings are created by the app (decision 2026-10-22)
+        if (state.publishState != null && state.vertical == WillhabenVertical.MARKETPLACE) {
+            PublishSection(publishState = state.publishState, onAction = onAction)
+        }
         state.publication?.let { publication ->
             PublicationSection(publication = publication, state = state, onAction = onAction) {
                 StatusActionButtons(actions = state.statusActions, running = state.runningStatusAction, onAction = onAction)
@@ -201,6 +223,107 @@ fun WillhabenTabScreen(
         RepublishConfirmDialog(action = state.publication?.renewAction ?: RenewAction.REPUBLISH, onAction = onAction)
     }
     state.conflict?.let { conflict -> ConflictDialog(conflict = conflict, onAction = onAction) }
+    if (state.isPublishConfirmOpen) PublishConfirmDialog(onAction = onAction)
+    state.publishProgress?.let { progress -> PublishProgressDialog(progress = progress, onAction = onAction) }
+}
+
+@Composable
+private fun PublishSection(publishState: PublishState, onAction: (WillhabenTabAction) -> Unit) {
+    val interrupted = publishState == PublishState.INTERRUPTED
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(Res.string.willhaben_listing_title), style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(if (interrupted) Res.string.publish_interrupted_hint else Res.string.publish_hint),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Button(onClick = { onAction(WillhabenTabAction.OnPublishClick) }) {
+            Icon(Icons.Default.CloudUpload, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(if (interrupted) Res.string.publish_continue_button else Res.string.publish_button))
+        }
+        HorizontalDivider(modifier = Modifier.padding(top = 4.dp))
+    }
+}
+
+@Composable
+private fun PublishConfirmDialog(onAction: (WillhabenTabAction) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onAction(WillhabenTabAction.OnPublishDismiss) },
+        title = { Text(stringResource(Res.string.publish_confirm_title)) },
+        text = { Text(stringResource(Res.string.publish_confirm_text)) },
+        confirmButton = {
+            Button(onClick = { onAction(WillhabenTabAction.OnPublishConfirm) }) {
+                Text(stringResource(Res.string.publish_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onAction(WillhabenTabAction.OnPublishDismiss) }) {
+                Text(stringResource(Res.string.editor_delete_cancel))
+            }
+        },
+    )
+}
+
+/** The steps of the publish: done ones checked, the running one with a spinner, a failed one in red. */
+@Composable
+private fun PublishProgressDialog(progress: PublishProgressUi, onAction: (WillhabenTabAction) -> Unit) {
+    val steps = buildList {
+        add(PublishStep.PRODUCT)
+        add(PublishStep.TEMPLATE)
+        add(PublishStep.PRESAVE)
+        if (progress.hasImages) add(PublishStep.IMAGES)
+        add(PublishStep.FINISH)
+        add(PublishStep.RELOAD)
+        add(PublishStep.ACTIVATE)
+    }
+    val currentIndex = progress.current?.let(steps::indexOf) ?: -1
+    AlertDialog(
+        // Not dismissable while running: the publish goes on anyway
+        onDismissRequest = { if (progress.error != null) onAction(WillhabenTabAction.OnPublishProgressDismiss) },
+        title = { Text(stringResource(Res.string.publish_progress_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                steps.forEachIndexed { index, step ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(20.dp), contentAlignment = Alignment.Center) {
+                            when {
+                                index < currentIndex -> Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                index == currentIndex && progress.error != null ->
+                                    Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                index == currentIndex -> CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            }
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            stringResource(step.label()),
+                            color = if (index > currentIndex) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+                        )
+                    }
+                }
+                progress.error?.let { error ->
+                    Text(error.asString(), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+                }
+            }
+        },
+        confirmButton = {
+            if (progress.error != null) {
+                TextButton(onClick = { onAction(WillhabenTabAction.OnPublishProgressDismiss) }) {
+                    Text(stringResource(Res.string.publish_progress_close))
+                }
+            }
+        },
+    )
+}
+
+private fun PublishStep.label(): StringResource = when (this) {
+    PublishStep.PRODUCT -> Res.string.publish_step_product
+    PublishStep.TEMPLATE -> Res.string.publish_step_template
+    PublishStep.PRESAVE, PublishStep.COPY -> Res.string.publish_step_presave
+    PublishStep.IMAGES -> Res.string.publish_step_images
+    PublishStep.FINISH, PublishStep.EDIT -> Res.string.publish_step_finish
+    PublishStep.RELOAD, PublishStep.PACKAGE -> Res.string.publish_step_reload
+    PublishStep.ACTIVATE -> Res.string.publish_step_activate
 }
 
 @Composable
