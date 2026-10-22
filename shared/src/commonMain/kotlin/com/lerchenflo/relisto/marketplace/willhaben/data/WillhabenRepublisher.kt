@@ -13,6 +13,7 @@ import com.lerchenflo.relisto.marketplace.data.ListingPublicationEntity
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.SyncState
 import com.lerchenflo.relisto.marketplace.domain.WILLHABEN_DRAFT_STATUS
+import com.lerchenflo.relisto.marketplace.willhaben.domain.PaidPackage
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
 import com.lerchenflo.relisto.marketplace.willhaben.domain.RemoteListing
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -32,6 +34,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlin.math.roundToLong
 
 /**
  * "Neu veröffentlichen" like the willhaben web app: copies the expired listing into a new draft,
@@ -62,7 +65,7 @@ class WillhabenRepublisher(
 
         // Like the web client, the copy always gets the product for its ad type (here: the free one)
         val freeProductId = step(PublishStep.PRODUCT) { catalogDataSource.fetchFreeProductId(adTypeId) }
-            .valueOr { return it } ?: return Result.Error(PublishError.PaidProduct)
+            .valueOr { return it } ?: return Result.Error(PublishError.PaidProduct())
 
         val saved = if (publication.remoteStatus == WILLHABEN_DRAFT_STATUS) {
             // A draft (e.g. left by a renew whose activation failed) is finished, not copied again
@@ -86,7 +89,7 @@ class WillhabenRepublisher(
             reloadedJson = step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
             reloaded = AppJson.parseToJsonElement(reloadedJson) as JsonObject
         }
-        if (ContextLinks.find(reloaded, "paymentURI") != null) return Result.Error(PublishError.PaidProduct)
+        if (ContextLinks.find(reloaded, "paymentURI") != null) return Result.Error(PublishError.PaidProduct())
 
         val activateLink = ContextLinks.find(reloaded, "selfLinkActivate")
             ?: return Result.Error(PublishError.MissingLink("selfLinkActivate"))
@@ -155,7 +158,8 @@ class WillhabenRepublisher(
         if (bundles.isEmpty()) return Result.Success(false)
 
         val products = bundles.flatMap { (it["upsellingProducts"] as? JsonArray).orEmpty().mapNotNull { p -> p as? JsonObject } }
-        val freeProduct = products.firstOrNull { it.price() == 0.0 } ?: return Result.Error(PublishError.PaidProduct)
+        val freeProduct = products.firstOrNull { it.price() == 0.0 }
+            ?: return Result.Error(PublishError.PaidProduct(cheapestPackage(bundles)))
         val freeId = freeProduct["productId"]
         val selected = products.filter { (it["selected"] as? JsonPrimitive)?.booleanOrNull == true }
         if (selected.size == 1 && selected.single()["productId"] == freeId) return Result.Success(false)
@@ -175,6 +179,15 @@ class WillhabenRepublisher(
         step(PublishStep.PACKAGE) { writeDataSource.put(link.route, body) }.valueOr { return it }
         return Result.Success(true)
     }
+
+    /** The cheapest package of the bundle groups, named by its group ("Basic - 14 Tage"). */
+    private fun cheapestPackage(bundles: List<JsonObject>): PaidPackage? =
+        bundles.flatMap { group ->
+            val name = (group["title"] as? JsonPrimitive)?.contentOrNull ?: return@flatMap emptyList()
+            (group["upsellingProducts"] as? JsonArray).orEmpty().mapNotNull { product ->
+                (product as? JsonObject)?.price()?.let { PaidPackage(name, (it * 100).roundToLong()) }
+            }
+        }.minByOrNull { it.priceCents }
 
     private fun JsonObject.price(): Double? = (this["price"] as? JsonPrimitive)?.doubleOrNull
 

@@ -515,13 +515,13 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
     @Test
     fun failedRepublishShowsErrorAndSkipsRefresh() = runTest {
         publishedAs("Abgelaufen")
-        publisher.result = Result.Error(PublishError.PaidProduct)
+        publisher.result = Result.Error(PublishError.PaidProduct())
         val viewModel = viewModel()
 
         viewModel.events.test {
             viewModel.onAction(WillhabenTabAction.OnRepublishConfirm)
 
-            assertThat(awaitItem()).isEqualTo(WillhabenTabEvent.ShowMessage(PublishError.PaidProduct.toUiText()))
+            assertThat(awaitItem()).isEqualTo(WillhabenTabEvent.ShowMessage(PublishError.PaidProduct().toUiText()))
             assertThat(importer.calls).isEqualTo(0)
             assertThat(viewModel.state.value.isRepublishing).isFalse()
         }

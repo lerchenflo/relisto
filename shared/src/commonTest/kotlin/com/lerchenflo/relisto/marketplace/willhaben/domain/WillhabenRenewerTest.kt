@@ -87,12 +87,12 @@ class WillhabenRenewerTest {
 
     @Test
     fun failedListingDoesNotStopTheOthers() = runTest {
-        publisher.result = Result.Error(PublishError.PaidProduct)
+        publisher.result = Result.Error(PublishError.PaidProduct())
 
         val summary = renewer.renew(listOf(1L, 2L))
 
         assertThat(publisher.republished).containsExactly(1L, 2L)
-        assertThat(summary).isEqualTo(RenewSummary(renewed = 0, failed = 2, firstError = PublishError.PaidProduct))
+        assertThat(summary).isEqualTo(RenewSummary(renewed = 0, failed = 2, firstError = PublishError.PaidProduct()))
         assertThat(importer.calls).isEqualTo(0)
     }
 

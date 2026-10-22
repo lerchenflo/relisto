@@ -15,6 +15,7 @@ import com.lerchenflo.relisto.listings.domain.ListingContent
 import com.lerchenflo.relisto.marketplace.data.ListingPublicationEntity
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.SyncState
+import com.lerchenflo.relisto.marketplace.willhaben.domain.PaidPackage
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishError
 import com.lerchenflo.relisto.marketplace.willhaben.domain.PublishStep
 import com.lerchenflo.relisto.testutil.FakeTimeProvider
@@ -64,7 +65,9 @@ class WillhabenRepublisherTest {
     private fun packages(): String {
         fun product(id: Int, price: String) = """{"productId":$id,"price":$price,"selected":${selectedPackage == id},"label":"x"}"""
         val groups = buildList {
-            if (!onlyPaidPackages) add("""{"title":"Basic","isBundle":true,"upsellingProducts":[${product(40050, "0.00")}]}""")
+            // Like live once the free slot is used: Basic costs money too
+            val basicPrice = if (onlyPaidPackages) "4.99" else "0.00"
+            add("""{"title":"Basic - 14 Tage","isBundle":true,"upsellingProducts":[${product(40050, basicPrice)}]}""")
             add("""{"title":"Turbo","isBundle":true,"upsellingProducts":[${product(40051, "9.99")}]}""")
         }
         return """"upsellingProductList":{"requireExactlyOneUpselling":true,"upsellingProducts":[${groups.joinToString(",")}]},"""
@@ -232,7 +235,7 @@ class WillhabenRepublisherTest {
         withPayment = true
         val id = publishedListing()
 
-        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.PaidProduct))
+        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.PaidProduct()))
         assertThat(calls).doesNotContain("PUT /webapi/iad/bap/activate/222")
     }
 
@@ -316,7 +319,8 @@ class WillhabenRepublisherTest {
         onlyPaidPackages = true
         val id = publishedListing(adTypeId = 21)
 
-        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.PaidProduct))
+        assertThat(republisher.republish(id))
+            .isEqualTo(Result.Error(PublishError.PaidProduct(PaidPackage(name = "Basic - 14 Tage", priceCents = 499))))
         assertThat(calls).doesNotContain("PUT /webapi/iad/upselling/new/333")
         assertThat(calls).doesNotContain("PUT /webapi/iad/motor/activate/333")
     }
@@ -370,7 +374,7 @@ class WillhabenRepublisherTest {
     fun adTypeWithoutFreeProductIsRefusedBeforeAnyWrite() = runTest {
         val id = publishedListing(adTypeId = 1)
 
-        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.PaidProduct))
+        assertThat(republisher.republish(id)).isEqualTo(Result.Error(PublishError.PaidProduct()))
         assertThat(calls).containsExactly("GET /webapi/iad/productgroups")
     }
 

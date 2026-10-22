@@ -146,3 +146,6 @@ Next: live renew tests (TODO N.2 "Rasentraktor Kart", V.4 "Beta RR 50"), then Ph
 - 2026-10-19 – Phone layout: below 720 dp the list fills the screen and a listing opens as its own
   screen (back arrow + system back via `ui-backhandler`); content stays clear of the status bar
   (`safeDrawingPadding`); editor buttons wrap. Texts say "device"/"Gerät" instead of "computer".
+- 2026-10-22 – Paid-package stop names the cheapest package and price ("Basic - 14 Tage für 4,99 €")
+  and says nothing was booked. V.4 dropped: new listings only on the marketplace (motor: one free
+  listing per user); motor import/renew code kept.

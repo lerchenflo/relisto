@@ -16,12 +16,18 @@ enum class PublishStep {
     ACTIVATE
 }
 
+/** A package willhaben sells for a listing, e.g. "Basic - 14 Tage" for 4,99 €. */
+data class PaidPackage(val name: String, val priceCents: Long)
+
 sealed interface PublishError : Error {
     /** The listing has no willhaben listing to renew. */
     data object NotPublished : PublishError
 
-    /** willhaben wants money for this listing (or has no free product for its ad type); paid products are out of scope. */
-    data object PaidProduct : PublishError
+    /**
+     * willhaben wants money for this listing (or has no free product for its ad type); paid products are out of scope.
+     * [cheapestPackage] is the cheapest package willhaben offered, when it offered packages. Nothing was booked.
+     */
+    data class PaidProduct(val cheapestPackage: PaidPackage? = null) : PublishError
 
     /** An expected link is missing in willhaben's answer - the unofficial API has changed. */
     data class MissingLink(val linkId: String) : PublishError

@@ -541,6 +541,10 @@ Technical defaults (decided during implementation):
   product per ad type comes from `/iad/productgroups`; without a free product the app refuses
   before copying. For non-marketplace JSON only keys that already exist are patched.
 
+- Publishing new listings stays on the private marketplace (2026-10-22, user): Auto & Motor allows
+  only one free listing per user, every further one is paid. The motor import/renew code stays
+  because it works and is tested. A paid-package stop names the cheapest package and its price.
+
 Open (asked via interview when the phase starts):
 - Exact attribute fields shown per category (Phase 2/4, after the first import samples).
 - Which listing to use for the first write tests (Phase 5).

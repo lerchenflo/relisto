@@ -458,7 +458,7 @@ class ListingsViewModelTest : MainDispatcherTest() {
     @Test
     fun failedRenewalShowsSummaryAndFirstError() = runTest {
         expiredAndOnlineListings()
-        publisher.result = Result.Error(PublishError.PaidProduct)
+        publisher.result = Result.Error(PublishError.PaidProduct())
         val viewModel = viewModel()
         viewModel.onAction(ListingsAction.OnListingCheckedChange(1, true))
 
@@ -466,7 +466,7 @@ class ListingsViewModelTest : MainDispatcherTest() {
             viewModel.onAction(ListingsAction.OnRenewCheckedClick)
 
             assertThat(awaitItem()).isInstanceOf(ListingsEvent.ShowMessage::class)
-            assertThat(awaitItem()).isEqualTo(ListingsEvent.ShowMessage(PublishError.PaidProduct.toUiText()))
+            assertThat(awaitItem()).isEqualTo(ListingsEvent.ShowMessage(PublishError.PaidProduct().toUiText()))
         }
     }
 }

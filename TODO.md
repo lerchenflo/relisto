@@ -8,17 +8,6 @@ background and details: [PLAN.md](PLAN.md). Product and scope decisions are aske
 willhaben listings up to date → renew expired listings. **Last phase:** same listings on other marketplaces.
 **Release:** the first production release comes after Phases 5–7 (everything except other marketplaces).
 
-## All willhaben verticals (user request 2026-10-19)
-
-Import and renew listings of every willhaben vertical, not only the private marketplace (`adTypeId` 67).
-The user's account has Auto & Motor listings (`adTypeId` 21, product 2443, motorbikes).
-
-- [ ] V.4 "Beta RR 50": draft 1415790914 ("Bearbeitung"). Free package gone (Basic now € 4.99, likely
-  because "Aprilia SX 50" used the free motorbike listing); retry when Basic is € 0 again.
-- [ ] V.7 Paid-package message: name the cheapest package and its price ("Basic – 14 Tage: € 4,99"),
-  and say that nothing was booked.
-  ("Aprilia SX 50" renewed OK on 2026-10-19 → "in Warteschlange"; the user took it offline again.)
-
 ## Next session
 
 - [ ] N.2 Live test of "Neu veröffentlichen" with "Rasentraktor Kart" (willhaben id 704262322); check the
