@@ -141,13 +141,17 @@ class WillhabenRepublisherTest {
     private val runner = WillhabenRequestRunner(renewSession = { false }, backoff = {})
     private val republisher = WillhabenRepublisher(
         writeDataSource = KtorWillhabenWriteDataSource(client),
-        listingsDataSource = KtorWillhabenListingsDataSource(client),
         catalogDataSource = KtorWillhabenCatalogDataSource(client),
         runner = runner,
         listingRepository = listings,
         fieldsDataSource = fields,
         publicationDao = database.publicationDao(),
-        imageUploader = WillhabenImageUploader(KtorWillhabenWriteDataSource(client), imageStorage, runner),
+        finisher = WillhabenDraftFinisher(
+            KtorWillhabenWriteDataSource(client),
+            KtorWillhabenListingsDataSource(client),
+            WillhabenImageUploader(KtorWillhabenWriteDataSource(client), imageStorage, runner),
+            runner,
+        ),
         activityLog = RoomActivityLog(database.activityLogDao(), database.listingDao(), time),
         timeProvider = time,
     )
