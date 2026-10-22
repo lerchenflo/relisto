@@ -100,6 +100,8 @@
 
     <!-- willhaben account -->
     <string name="account_login">Bei willhaben anmelden</string>
+    <string name="account_login_hint">Nicht bei willhaben angemeldet. Zum Importieren, Erneuern und Übertragen anmelden.</string>
+    <string name="account_login_short">Anmelden</string>
     <string name="account_logging_in">Anmeldefenster offen…</string>
     <string name="account_checking">willhaben-Anmeldung wird geprüft…</string>
     <string name="account_logged_in">Bei willhaben angemeldet</string>

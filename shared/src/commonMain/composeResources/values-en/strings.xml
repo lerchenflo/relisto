@@ -100,6 +100,8 @@
 
     <!-- willhaben account -->
     <string name="account_login">Log in to willhaben</string>
+    <string name="account_login_hint">Not logged in to willhaben. Log in to import, renew and push listings.</string>
+    <string name="account_login_short">Log in</string>
     <string name="account_logging_in">Login window open…</string>
     <string name="account_checking">Checking willhaben login…</string>
     <string name="account_logged_in">Logged in to willhaben</string>

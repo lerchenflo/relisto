@@ -136,7 +136,7 @@ fun ListingsRoot(
         state = state,
         onAction = viewModel::onAction,
         marketActions = { ImportButton(state = accountState, onAction = accountViewModel::onAction) },
-        loggedInMarkets = { LoggedInMarketsRow(state = accountState) },
+        loggedInMarkets = { LoggedInMarketsRow(state = accountState, onAction = accountViewModel::onAction) },
         headerActions = headerActions,
         editorContent = { listingId, onBack ->
             ListingEditorRoot(

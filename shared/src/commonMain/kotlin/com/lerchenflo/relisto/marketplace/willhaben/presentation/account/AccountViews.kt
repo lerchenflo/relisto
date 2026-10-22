@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,7 +22,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,6 +48,8 @@ import relisto.shared.generated.resources.account_logged_in
 import relisto.shared.generated.resources.account_logged_in_as
 import relisto.shared.generated.resources.account_logging_in
 import relisto.shared.generated.resources.account_login
+import relisto.shared.generated.resources.account_login_hint
+import relisto.shared.generated.resources.account_login_short
 import relisto.shared.generated.resources.account_logout
 import relisto.shared.generated.resources.account_status_logged_in
 import relisto.shared.generated.resources.import_button
@@ -76,13 +82,20 @@ fun ImportButton(
     }
 }
 
-/** One logo per marketplace the user is logged in to; login and logout are in the settings. */
+/**
+ * One logo per marketplace the user is logged in to; login and logout are in the settings.
+ * Logged out, a hint with a login button says that willhaben features need a login.
+ */
 @Composable
 fun LoggedInMarketsRow(
     state: AccountState,
     modifier: Modifier = Modifier,
+    onAction: (AccountAction) -> Unit = {},
 ) {
-    if (!state.isLoggedIn) return
+    if (!state.isLoggedIn) {
+        if (!state.isChecking) LoginHint(isLoggingIn = state.isLoggingIn, onLoginClick = { onAction(AccountAction.OnLoginClick) }, modifier = modifier)
+        return
+    }
     val description = stringResource(Res.string.account_status_logged_in)
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -174,5 +187,35 @@ private fun AccountSectionPreview() {
             state = AccountState(isChecking = false, isLoggedIn = true, accountName = "Flo"),
             onAction = {},
         )
+    }
+}
+
+@Composable
+private fun LoginHint(isLoggingIn: Boolean, onLoginClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+        ) {
+            Image(
+                painter = painterResource(Res.drawable.market_willhaben),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp).clip(RoundedCornerShape(4.dp)),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = stringResource(Res.string.account_login_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onLoginClick, enabled = !isLoggingIn) {
+                Text(stringResource(Res.string.account_login_short))
+            }
+        }
     }
 }
