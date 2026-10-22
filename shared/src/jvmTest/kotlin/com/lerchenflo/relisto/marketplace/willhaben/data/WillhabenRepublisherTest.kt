@@ -7,6 +7,7 @@ import assertk.assertions.doesNotContain
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import assertk.assertions.isInstanceOf
+import com.lerchenflo.relisto.activity.data.RoomActivityLog
 import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.datasource.network.HttpClientFactory
@@ -146,7 +147,8 @@ class WillhabenRepublisherTest {
         listingRepository = listings,
         fieldsDataSource = fields,
         publicationDao = database.publicationDao(),
-        imageStorage = imageStorage,
+        imageUploader = WillhabenImageUploader(KtorWillhabenWriteDataSource(client), imageStorage, runner),
+        activityLog = RoomActivityLog(database.activityLogDao(), database.listingDao(), time),
         timeProvider = time,
     )
 

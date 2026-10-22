@@ -52,6 +52,7 @@ fun image(id: Long, listingId: Long, position: Int) = ListingImage(
     filePath = "/images/$id.jpg",
     width = 800,
     height = 600,
+    sha256 = "h$id",
 )
 
 /** In-memory listings; sorted newest first like the real repository. */

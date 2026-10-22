@@ -22,7 +22,12 @@ data class ListingImage(
     val filePath: String,
     val width: Int,
     val height: Int,
+    /** SHA-256 of the image bytes; also the stored file's name. */
+    val sha256: String,
 )
+
+/** Fingerprint of an ordered image list (the images' SHA-256 values), to see whether the images changed. */
+fun List<String>.imagesFingerprint(): String = joinToString(",").hashCode().toUInt().toString(16)
 
 /** The fields of a listing the user edits in the editor. */
 data class ListingContent(
@@ -31,6 +36,14 @@ data class ListingContent(
     val priceCents: Long? = null,
     val condition: Condition? = null,
     val postcode: String = "",
+)
+
+fun Listing.toContent() = ListingContent(
+    title = title,
+    description = description,
+    priceCents = priceCents,
+    condition = condition,
+    postcode = postcode,
 )
 
 /** Marketplace-neutral item condition; each marketplace maps it to its own values. */

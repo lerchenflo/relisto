@@ -1,14 +1,16 @@
 package com.lerchenflo.relisto.marketplace.willhaben.data
 
+import com.lerchenflo.relisto.activity.domain.ActivityAction
+import com.lerchenflo.relisto.activity.domain.ActivityLog
 import com.lerchenflo.relisto.app.domain.DataError
 import com.lerchenflo.relisto.app.domain.EmptyResult
 import com.lerchenflo.relisto.app.domain.Result
 import com.lerchenflo.relisto.datasource.database.PublicationDao
 import com.lerchenflo.relisto.datasource.network.AppJson
-import com.lerchenflo.relisto.listings.domain.ImageStorage
-import com.lerchenflo.relisto.listings.domain.Listing
 import com.lerchenflo.relisto.listings.domain.ListingContent
 import com.lerchenflo.relisto.listings.domain.ListingRepository
+import com.lerchenflo.relisto.listings.domain.imagesFingerprint
+import com.lerchenflo.relisto.listings.domain.toContent
 import com.lerchenflo.relisto.marketplace.data.ListingPublicationEntity
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.SyncState
@@ -51,11 +53,24 @@ class WillhabenRepublisher(
     private val listingRepository: ListingRepository,
     private val fieldsDataSource: WillhabenFieldsLocalDataSource,
     private val publicationDao: PublicationDao,
-    private val imageStorage: ImageStorage,
+    private val imageUploader: WillhabenImageUploader,
+    private val activityLog: ActivityLog,
     private val timeProvider: TimeProvider,
 ) : WillhabenPublisher {
 
     override suspend fun republish(listingId: Long): EmptyResult<PublishError> {
+        val result = renew(listingId)
+        activityLog.record(
+            listingId = listingId,
+            marketplace = Marketplace.WILLHABEN,
+            action = ActivityAction.REPUBLISH,
+            success = result is Result.Success,
+            message = (result as? Result.Error)?.error?.toString(),
+        )
+        return result
+    }
+
+    private suspend fun renew(listingId: Long): EmptyResult<PublishError> {
         val publication = publicationDao.getByListingAndMarketplace(listingId, MARKETPLACE)
         val remoteId = publication?.remoteId ?: return Result.Error(PublishError.NotPublished)
         val listing = listingRepository.getListingByIdAsFlow(listingId).first() ?: return Result.Error(PublishError.NotPublished)
@@ -64,7 +79,7 @@ class WillhabenRepublisher(
         val adTypeId = fields.adTypeId ?: MARKETPLACE_AD_TYPE_ID
 
         // Like the web client, the copy always gets the product for its ad type (here: the free one)
-        val freeProductId = step(PublishStep.PRODUCT) { catalogDataSource.fetchFreeProductId(adTypeId) }
+        val freeProductId = runner.step(PublishStep.PRODUCT) { catalogDataSource.fetchFreeProductId(adTypeId) }
             .valueOr { return it } ?: return Result.Error(PublishError.PaidProduct())
 
         val saved = if (publication.remoteStatus == WILLHABEN_DRAFT_STATUS) {
@@ -75,27 +90,30 @@ class WillhabenRepublisher(
             createDraft(publication, remoteId, adTypeId, content, fields, freeProductId).valueOr { return it }
         }
 
-        uploadImages(listing, saved)?.let { return Result.Error(it) }
+        if (listing.images.isNotEmpty()) {
+            val imageList = ContextLinks.find(saved, "imageList") ?: return Result.Error(PublishError.MissingLink("imageList"))
+            imageUploader.replaceImages(listing.images, imageList)?.let { return Result.Error(it) }
+        }
 
         val finishLink = ContextLinks.find(saved, "selfLinkFinish") ?: ContextLinks.find(saved, "selfLinkSave")
             ?: return Result.Error(PublishError.MissingLink("selfLinkFinish"))
-        step(PublishStep.FINISH) { writeDataSource.post(finishLink.route, saved) }.valueOr { return it }
+        runner.step(PublishStep.FINISH) { writeDataSource.post(finishLink.route, saved) }.valueOr { return it }
 
         val newId = (saved["adId"] as? JsonPrimitive)?.content ?: return Result.Error(PublishError.MissingLink("adId"))
         val reloadRoute = WillhabenAdTypes.detailRoute(newId, adTypeId) ?: return Result.Error(PublishError.MissingLink("adId"))
-        var reloadedJson = step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
+        var reloadedJson = runner.step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
         var reloaded = AppJson.parseToJsonElement(reloadedJson) as JsonObject
         if (choosePackage(reloaded).valueOr { return it }) {
-            reloadedJson = step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
+            reloadedJson = runner.step(PublishStep.RELOAD) { listingsDataSource.fetchListingJson(reloadRoute) }.valueOr { return it }
             reloaded = AppJson.parseToJsonElement(reloadedJson) as JsonObject
         }
         if (ContextLinks.find(reloaded, "paymentURI") != null) return Result.Error(PublishError.PaidProduct())
 
         val activateLink = ContextLinks.find(reloaded, "selfLinkActivate")
             ?: return Result.Error(PublishError.MissingLink("selfLinkActivate"))
-        step(PublishStep.ACTIVATE) { writeDataSource.put(activateLink.route) }.valueOr { return it }
+        runner.step(PublishStep.ACTIVATE) { writeDataSource.put(activateLink.route) }.valueOr { return it }
 
-        storeNewPublication(listingId, newId, reloadedJson, content, fields)
+        storeNewPublication(listingId, newId, reloadedJson, content, fields, listing.images.map { it.sha256 }.imagesFingerprint())
         return Result.Success(Unit)
     }
 
@@ -112,11 +130,11 @@ class WillhabenRepublisher(
         freeProductId: Int,
     ): Result<JsonObject, PublishError> {
         val copyRoute = WillhabenAdTypes.copyRoute(remoteId, adTypeId) ?: return Result.Error(PublishError.MissingLink("copy"))
-        val copy = step(PublishStep.COPY) { writeDataSource.post(copyRoute) }.valueOr { return it }
+        val copy = runner.step(PublishStep.COPY) { writeDataSource.post(copyRoute) }.valueOr { return it }
         val draft = JsonObject(AdJsonPatcher.patch(copy, content, fields) + ("productId" to JsonPrimitive(freeProductId)))
 
         val presaveLink = ContextLinks.find(draft, "presave") ?: return Result.Error(PublishError.MissingLink("presave"))
-        val presaved = step(PublishStep.PRESAVE) { writeDataSource.post(presaveLink.route, draft) }.valueOr { return it }
+        val presaved = runner.step(PublishStep.PRESAVE) { writeDataSource.post(presaveLink.route, draft) }.valueOr { return it }
         val saved = draft.mergeIds(presaved)
 
         (saved["adId"] as? JsonPrimitive)?.content?.let { draftId ->
@@ -176,7 +194,7 @@ class WillhabenRepublisher(
                 }
             })
         }
-        step(PublishStep.PACKAGE) { writeDataSource.put(link.route, body) }.valueOr { return it }
+        runner.step(PublishStep.PACKAGE) { writeDataSource.put(link.route, body) }.valueOr { return it }
         return Result.Success(true)
     }
 
@@ -193,33 +211,13 @@ class WillhabenRepublisher(
 
     private fun JsonArray?.orEmpty(): List<JsonElement> = this ?: emptyList()
 
-
-    /** Replaces the images of the draft with the local images; returns the error, null on success. */
-    private suspend fun uploadImages(listing: Listing, draft: JsonObject): PublishError? {
-        if (listing.images.isEmpty()) return null
-        val imageList = ContextLinks.find(draft, "imageList") ?: return PublishError.MissingLink("imageList")
-        val references = listing.images.sortedBy { it.position }.map { image ->
-            val bytes = imageStorage.readBytes(image.filePath)
-                ?: return PublishError.Failed(PublishStep.IMAGES, DataError.Local.NOT_FOUND)
-            val fileName = image.filePath.substringAfterLast('/').substringAfterLast('\\')
-            step(PublishStep.IMAGES) { writeDataSource.uploadTempImage(bytes, fileName) }.valueOr { return it.error }
-        }
-        val order = buildJsonObject {
-            put("advertImage", buildJsonArray { references.forEach { add(buildJsonObject { put("reference", it) }) } })
-            put("floorPlans", JsonArray(emptyList()))
-        }
-        // Image endpoints live on the upload service, the link names the normal one
-        val route = "/iad-upload${imageList.relativePath}/order-and-associate"
-        step(PublishStep.IMAGES) { writeDataSource.put(route, order) }.valueOr { return it.error }
-        return null
-    }
-
     private suspend fun storeNewPublication(
         listingId: Long,
         newId: String,
         reloadedJson: String,
         content: ListingContent,
         fields: WillhabenListingFields,
+        imagesFingerprint: String,
     ) {
         // Title and ad type are the ones just sent, for JSON that does not carry them (other verticals)
         val remote = RemoteListing(
@@ -243,37 +241,16 @@ class WillhabenRepublisher(
                 remoteSnapshotJson = reloadedJson,
                 remoteSnapshotHash = imported?.let { willhabenContentHash(it.content, it.fields) },
                 syncState = SyncState.SYNCED.name,
+                syncedImagesHash = imagesFingerprint,
                 lastSyncedAt = timeProvider.nowEpochMillis(),
                 lastError = null,
             )
         )
     }
 
-    private suspend fun <T> step(
-        step: PublishStep,
-        request: suspend () -> Result<T, DataError.Network>,
-    ): Result<T, PublishError> = when (val result = runner.run(request)) {
-        is Result.Error -> Result.Error(PublishError.Failed(step, result.error))
-        is Result.Success -> result
-    }
-
-    private inline fun <T> Result<T, PublishError>.valueOr(onError: (Result.Error<PublishError>) -> Nothing): T =
-        when (this) {
-            is Result.Error -> onError(this)
-            is Result.Success -> data
-        }
-
     /** Takes the ids and links willhaben assigned to the draft. */
     private fun JsonObject.mergeIds(presaved: JsonObject): JsonObject =
         JsonObject(this + presaved.filterKeys { it in PRESAVE_KEYS && presaved[it] !is JsonNull })
-
-    private fun Listing.toContent() = ListingContent(
-        title = title,
-        description = description,
-        priceCents = priceCents,
-        condition = condition,
-        postcode = postcode,
-    )
 
     private companion object {
         val MARKETPLACE = Marketplace.WILLHABEN.name

@@ -168,6 +168,7 @@
     <string name="republish_error_not_published">This listing is not on willhaben.</string>
     <string name="republish_error_paid">willhaben asks for a payment. Cancelled, nothing was bought.</string>
     <string name="republish_error_paid_package">willhaben asks for a payment (cheapest package: %1$s for %2$s). Cancelled, nothing was bought.</string>
+    <string name="push_error_conflict">The listing was changed on willhaben. Choose which version to keep.</string>
     <string name="republish_error_api_changed">willhaben changed its interface (%1$s is missing).</string>
     <string name="renew_summary">%1$d renewed, %2$d failed</string>
     <string name="renew_checked">Renew selected (%1$d)</string>

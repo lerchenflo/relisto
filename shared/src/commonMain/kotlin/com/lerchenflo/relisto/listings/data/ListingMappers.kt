@@ -24,4 +24,5 @@ fun ListingImageEntity.toListingImage(absolutePath: (String) -> String): Listing
     filePath = absolutePath(fileName),
     width = width,
     height = height,
+    sha256 = sha256,
 )

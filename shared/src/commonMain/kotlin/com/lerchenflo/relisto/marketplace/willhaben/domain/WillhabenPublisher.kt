@@ -13,7 +13,9 @@ enum class PublishStep {
     FINISH,
     RELOAD,
     PACKAGE,
-    ACTIVATE
+    ACTIVATE,
+    /** Saving changes to a listing that is already on willhaben. */
+    EDIT
 }
 
 /** A package willhaben sells for a listing, e.g. "Basic - 14 Tage" for 4,99 €. */
@@ -28,6 +30,9 @@ sealed interface PublishError : Error {
      * [cheapestPackage] is the cheapest package willhaben offered, when it offered packages. Nothing was booked.
      */
     data class PaidProduct(val cheapestPackage: PaidPackage? = null) : PublishError
+
+    /** The listing was changed on willhaben since the last sync; the user decides which version wins. */
+    data object Conflict : PublishError
 
     /** An expected link is missing in willhaben's answer - the unofficial API has changed. */
     data class MissingLink(val linkId: String) : PublishError

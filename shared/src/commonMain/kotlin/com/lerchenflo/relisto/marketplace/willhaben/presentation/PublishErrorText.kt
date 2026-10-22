@@ -6,6 +6,7 @@ import com.lerchenflo.relisto.utilities.PriceFormatter
 import com.lerchenflo.relisto.utilities.UiText
 import com.lerchenflo.relisto.utilities.toUiText
 import relisto.shared.generated.resources.Res
+import relisto.shared.generated.resources.push_error_conflict
 import relisto.shared.generated.resources.republish_error_api_changed
 import relisto.shared.generated.resources.republish_error_not_published
 import relisto.shared.generated.resources.republish_error_paid
@@ -22,6 +23,7 @@ fun PublishError.toUiText(): UiText = when (this) {
     is PublishError.PaidProduct -> cheapestPackage?.let {
         UiText.StringResourceText(Res.string.republish_error_paid_package, arrayOf(it.name, PriceFormatter.format(it.priceCents)))
     } ?: UiText.StringResourceText(Res.string.republish_error_paid)
+    PublishError.Conflict -> UiText.StringResourceText(Res.string.push_error_conflict)
     is PublishError.MissingLink -> UiText.StringResourceText(Res.string.republish_error_api_changed, arrayOf(linkId))
     is PublishError.Failed -> error.toUiText()
 }

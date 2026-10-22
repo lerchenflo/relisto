@@ -6,6 +6,7 @@ import com.lerchenflo.relisto.datasource.database.PublicationDao
 import com.lerchenflo.relisto.datasource.network.AppJson
 import com.lerchenflo.relisto.listings.domain.ImageDownloader
 import com.lerchenflo.relisto.listings.domain.ListingRepository
+import com.lerchenflo.relisto.listings.domain.imagesFingerprint
 import com.lerchenflo.relisto.marketplace.data.ListingPublicationEntity
 import com.lerchenflo.relisto.marketplace.domain.Marketplace
 import com.lerchenflo.relisto.marketplace.domain.SyncState
@@ -106,8 +107,15 @@ class RoomWillhabenImporter(
             )
         )
         addImages(listingId, imported.imageUrls)
+        // The downloaded images are what willhaben shows
+        publicationDao.getByListingAndMarketplace(listingId, MARKETPLACE)?.let {
+            publicationDao.update(it.copy(syncedImagesHash = localImagesFingerprint(listingId)))
+        }
         return Result.Success(Unit)
     }
+
+    private suspend fun localImagesFingerprint(listingId: Long): String? =
+        listingRepository.getListingByIdAsFlow(listingId).first()?.images?.map { it.sha256 }?.imagesFingerprint()
 
     private suspend fun addImages(listingId: Long, urls: List<String>) {
         // A missing image must not stop the import
@@ -126,7 +134,15 @@ class RoomWillhabenImporter(
         if (takeRemote) listingRepository.updateContent(existing.listingId, imported.content)
         // Listings imported before their images could be read get them now; existing images stay as they are
         val hasNoImages = listingRepository.getListingByIdAsFlow(existing.listingId).first()?.images?.isEmpty() == true
-        if (hasNoImages && imported.imageUrls.isNotEmpty()) addImages(existing.listingId, imported.imageUrls)
+        val imagesAdded = hasNoImages && imported.imageUrls.isNotEmpty()
+        if (imagesAdded) addImages(existing.listingId, imported.imageUrls)
+        // Listings imported before images were tracked: their images matched willhaben while in sync
+        val inSync = takeRemote || existing.syncState == SyncState.SYNCED.name
+        val syncedImagesHash = if (imagesAdded || (existing.syncedImagesHash == null && inSync)) {
+            localImagesFingerprint(existing.listingId)
+        } else {
+            existing.syncedImagesHash
+        }
 
         // Written after updateContent, which marks synced publications as changed
         publicationDao.update(
@@ -138,6 +154,7 @@ class RoomWillhabenImporter(
                 remoteSnapshotJson = imported.snapshotJson,
                 remoteSnapshotHash = hash,
                 remoteActionsJson = imported.statusActions.toActionsJson(),
+                syncedImagesHash = syncedImagesHash,
                 syncState = when {
                     takeRemote -> SyncState.SYNCED.name
                     remoteChanged -> SyncState.CONFLICT.name

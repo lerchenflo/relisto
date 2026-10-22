@@ -168,6 +168,7 @@
     <string name="republish_error_not_published">Diese Anzeige ist nicht auf willhaben.</string>
     <string name="republish_error_paid">willhaben verlangt eine Zahlung. Abgebrochen, es wurde nichts gebucht.</string>
     <string name="republish_error_paid_package">willhaben verlangt eine Zahlung (günstigstes Paket: %1$s für %2$s). Abgebrochen, es wurde nichts gebucht.</string>
+    <string name="push_error_conflict">Die Anzeige wurde auf willhaben geändert. Wähle, welche Version gelten soll.</string>
     <string name="republish_error_api_changed">willhaben hat die Schnittstelle geändert (%1$s fehlt).</string>
     <string name="renew_summary">%1$d erneuert, %2$d fehlgeschlagen</string>
     <string name="renew_checked">Ausgewählte erneuern (%1$d)</string>

@@ -1,5 +1,8 @@
 package com.lerchenflo.relisto.di
 
+import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenImageUploader
+import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenListingUpdater
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenUpdater
 import com.lerchenflo.relisto.activity.data.RoomActivityLog
 import com.lerchenflo.relisto.activity.domain.ActivityLog
 import com.lerchenflo.relisto.app.data.GitHubUpdateChecker
@@ -87,7 +90,9 @@ val datasourceModule = module {
     single<ImageDownloader> { KtorImageDownloader(get(named(IMAGE_CLIENT))) }
     singleOf(::RoomWillhabenImporter) { bind<WillhabenImporter>() }
     singleOf(::KtorWillhabenWriteDataSource)
+    singleOf(::WillhabenImageUploader)
     singleOf(::WillhabenRepublisher) { bind<WillhabenPublisher>() }
+    singleOf(::WillhabenListingUpdater) { bind<WillhabenUpdater>() }
     singleOf(::WillhabenStatusActionRunner) { bind<WillhabenStatusActions>() }
     singleOf(::WillhabenRenewer)
 
