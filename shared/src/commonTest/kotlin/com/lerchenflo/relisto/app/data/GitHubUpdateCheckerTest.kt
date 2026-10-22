@@ -75,6 +75,13 @@ class GitHubUpdateCheckerTest {
     }
 
     @Test
+    fun localBuildWithTheDefaultVersionNeverChecks() = runTest {
+        // Builds without -PappVersion (Android Studio, gradlew) are "1.0.0"; releases start at 1.0.1
+        assertThat(checker("1.0.0").checkForUpdate()).isNull()
+        assertThat(requests).isEmpty()
+    }
+
+    @Test
     fun unreachableGitHubMeansNoUpdate() = runTest {
         serverUp = false
 
