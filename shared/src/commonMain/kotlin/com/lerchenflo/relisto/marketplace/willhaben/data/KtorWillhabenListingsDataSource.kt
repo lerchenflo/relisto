@@ -31,6 +31,11 @@ class KtorWillhabenListingsDataSource(
         ).map { it.toMyAdvertsPage() }
     }
 
+    /** The empty listing of [productId] a new listing starts from (`GET /iad/bap?productId=67`), as raw JSON. */
+    suspend fun fetchTemplateJson(productId: Int): Result<String, DataError.Network> {
+        return httpClient.get<JsonObject>(route = "/iad/bap", queryParameters = mapOf("productId" to productId)).map { it.toString() }
+    }
+
     /** Raw JSON of one listing as the edit form loads it; [route] comes from [WillhabenAdTypes.detailRoute]. */
     suspend fun fetchListingJson(route: String): Result<String, DataError.Network> {
         return httpClient.get<JsonObject>(route = route).map { it.toString() }

@@ -233,4 +233,9 @@
     <string name="activity_action_unreserve">Reservation removed</string>
     <string name="activity_action_sold">Marked as sold</string>
     <string name="activity_action_delete">Deleted</string>
+    <string name="publish_error_already">This listing is already on willhaben. Send changes with “Push changes”.</string>
+    <string name="publish_error_incomplete">Still missing for willhaben: %1$s</string>
+    <string name="missing_title">title</string>
+    <string name="missing_category">category</string>
+    <string name="missing_location">location (postcode)</string>
 </resources>

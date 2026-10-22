@@ -7,6 +7,8 @@ import com.lerchenflo.relisto.app.domain.Error
 /** Steps of publishing a listing on willhaben, in this order. */
 enum class PublishStep {
     PRODUCT,
+    /** New listings: the empty listing of the free marketplace product. */
+    TEMPLATE,
     COPY,
     PRESAVE,
     IMAGES,
@@ -30,6 +32,12 @@ sealed interface PublishError : Error {
      * [cheapestPackage] is the cheapest package willhaben offered, when it offered packages. Nothing was booked.
      */
     data class PaidProduct(val cheapestPackage: PaidPackage? = null) : PublishError
+
+    /** A new listing lacks what willhaben requires; nothing was sent. */
+    data class Incomplete(val missing: List<MissingField>) : PublishError
+
+    /** The listing is already on willhaben; changes are pushed, not published again. */
+    data object AlreadyPublished : PublishError
 
     /** The listing was changed on willhaben since the last sync; the user decides which version wins. */
     data object Conflict : PublishError

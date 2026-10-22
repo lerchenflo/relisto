@@ -7,9 +7,13 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * Text for the UI that is either a string resource or a dynamic value.
+ * Arguments of a string resource may be [UiText] themselves; they are resolved first.
  */
 sealed interface UiText {
     data class DynamicString(val value: String) : UiText
+
+    /** Several texts in a row, e.g. a list of missing fields. */
+    data class Joined(val parts: List<UiText>, val separator: String = ", ") : UiText
 
     class StringResourceText(
         val resId: StringResource,
@@ -28,7 +32,8 @@ sealed interface UiText {
     fun asString(): String {
         return when (this) {
             is DynamicString -> value
-            is StringResourceText -> stringResource(resId, *args)
+            is Joined -> parts.map { it.asString() }.joinToString(separator)
+            is StringResourceText -> stringResource(resId, *args.map { (it as? UiText)?.asString() ?: it }.toTypedArray())
         }
     }
 
@@ -36,7 +41,8 @@ sealed interface UiText {
     suspend fun resolve(): String {
         return when (this) {
             is DynamicString -> value
-            is StringResourceText -> getString(resId, *args)
+            is Joined -> parts.map { it.resolve() }.joinToString(separator)
+            is StringResourceText -> getString(resId, *args.map { (it as? UiText)?.resolve() ?: it }.toTypedArray())
         }
     }
 }

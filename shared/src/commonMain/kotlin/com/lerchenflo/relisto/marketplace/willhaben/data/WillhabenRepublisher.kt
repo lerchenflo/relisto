@@ -22,7 +22,6 @@ import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenListingField
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenPublisher
 import com.lerchenflo.relisto.utilities.TimeProvider
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -155,12 +154,8 @@ class WillhabenRepublisher(
         )
     }
 
-    /** Takes the ids and links willhaben assigned to the draft. */
-    private fun JsonObject.mergeIds(presaved: JsonObject): JsonObject =
-        JsonObject(this + presaved.filterKeys { it in PRESAVE_KEYS && presaved[it] !is JsonNull })
 
     private companion object {
         val MARKETPLACE = Marketplace.WILLHABEN.name
-        val PRESAVE_KEYS = setOf("adId", "adUuid", "productId", "contextLinkList")
     }
 }

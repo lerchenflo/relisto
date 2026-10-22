@@ -1,5 +1,7 @@
 package com.lerchenflo.relisto.di
 
+import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenListingCreator
+import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenCreator
 import com.lerchenflo.relisto.marketplace.willhaben.data.WillhabenDraftFinisher
 import com.lerchenflo.relisto.activity.presentation.ActivityLogViewModel
 import org.koin.core.module.dsl.viewModel
@@ -97,6 +99,7 @@ val datasourceModule = module {
     singleOf(::WillhabenDraftFinisher)
     singleOf(::WillhabenRepublisher) { bind<WillhabenPublisher>() }
     singleOf(::WillhabenListingUpdater) { bind<WillhabenUpdater>() }
+    singleOf(::WillhabenListingCreator) { bind<WillhabenCreator>() }
     singleOf(::WillhabenStatusActionRunner) { bind<WillhabenStatusActions>() }
     singleOf(::WillhabenRenewer)
 

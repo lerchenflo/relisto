@@ -233,4 +233,9 @@
     <string name="activity_action_unreserve">Reservierung aufgehoben</string>
     <string name="activity_action_sold">Als verkauft markiert</string>
     <string name="activity_action_delete">Gelöscht</string>
+    <string name="publish_error_already">Diese Anzeige ist schon auf willhaben. Änderungen mit „Änderungen übertragen“ senden.</string>
+    <string name="publish_error_incomplete">Für willhaben fehlt noch: %1$s</string>
+    <string name="missing_title">Titel</string>
+    <string name="missing_category">Kategorie</string>
+    <string name="missing_location">Ort (Postleitzahl)</string>
 </resources>

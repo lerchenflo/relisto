@@ -54,7 +54,16 @@ object AdJsonPatcher {
         Condition.DEFECTIVE to "defekt",
     )
 
-    fun patch(serverJson: JsonObject, content: ListingContent, fields: WillhabenListingFields): JsonObject {
+    /**
+     * [withCategory] also writes the local category (new listings only): an existing listing keeps its
+     * category, because willhaben converts a listing for a category change.
+     */
+    fun patch(
+        serverJson: JsonObject,
+        content: ListingContent,
+        fields: WillhabenListingFields,
+        withCategory: Boolean = false,
+    ): JsonObject {
         val textValues = mapOf(
             "heading" to JsonPrimitive(content.title),
             "description" to JsonPrimitive(HtmlText.fromPlainText(content.description)),
@@ -78,12 +87,27 @@ object AdJsonPatcher {
             )
         }.filterValues { it.isNotEmpty() }
 
+        val category = if (withCategory && fields.categoryPath.isNotEmpty()) categoryValues(serverJson, fields) else emptyMap()
         return JsonObject(
             serverJson + textValues +
                 ("treeAttributes" to patchAttributes(serverJson["treeAttributes"] as? JsonArray, managedAttributes)) +
-                location
+                location + category
         )
     }
+
+    /** Leaf id and path from the top category down, like the listing JSON willhaben sends. */
+    private fun categoryValues(serverJson: JsonObject, fields: WillhabenListingFields): Map<String, JsonElement> {
+        val path = buildJsonArray {
+            fields.categoryPath.forEach { add(buildJsonObject { put("label", it.label); put("code", it.code) }) }
+        }
+        val categoryPath = (serverJson["categoryPath"] as? JsonObject).orEmptyObject() + ("path" to path)
+        return mapOf(
+            "categoryTreeId" to JsonPrimitive(fields.categoryPath.last().treeId),
+            "categoryPath" to JsonObject(categoryPath),
+        )
+    }
+
+    private fun JsonObject?.orEmptyObject(): Map<String, JsonElement> = this ?: emptyMap()
 
     /** Keeps attributes the app does not know, replaces the managed ones with code-only nodes. */
     private fun patchAttributes(existing: JsonArray?, managed: Map<String, List<String>>): JsonArray = buildJsonArray {
