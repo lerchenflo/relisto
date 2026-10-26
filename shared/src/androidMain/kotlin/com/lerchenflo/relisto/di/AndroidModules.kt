@@ -52,7 +52,7 @@ val androidPlatformModule = module {
     single<BackupArchive> { UriBackupArchive(androidContext()) }
     singleOf(::AndroidBackupFilePicker) { bind<BackupFilePicker>() }
     single<SecureStorage> { KSafeSecureStorage(KSafe(androidContext(), fileName = "relisto")) }
-    singleOf(::AndroidWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
+    single<WillhabenLoginBrowser> { AndroidWillhabenLoginBrowser(androidContext()) }
     single { ResponseCaptureSettings(null) }
     single<AppVersionProvider> { AndroidAppVersionProvider(androidContext()) }
 }

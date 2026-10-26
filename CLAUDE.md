@@ -176,3 +176,6 @@ Next: user test of the UI (N.1), live tests (N.2-N.4), then Phase 7 (7.3-7.14).
 - 2026-10-26 – Fixed a duplicate desktop `main.kt` (c7d89fa had added a second one, desktop build broke). 7.13: no
   compile warnings left (`NavigationBackHandler` from navigationevent-compose replaces ui-backhandler), three
   unused strings removed.
+- 2026-10-26 – Android willhaben login: `WillhabenLoginActivity` (WebView with the real login page, JS + DOM
+  storage, third-party cookies for reCAPTCHA); after the redirect to "my adverts" the WebView cookies become
+  host cookies of www.willhaben.at (`parseCookieHeader`). INTERNET permission was missing in the manifest.
