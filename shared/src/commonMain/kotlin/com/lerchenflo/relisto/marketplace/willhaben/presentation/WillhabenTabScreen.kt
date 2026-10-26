@@ -46,7 +46,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.History
 import relisto.shared.generated.resources.activity_open
@@ -354,7 +354,7 @@ private fun PublicationSection(
             state.isPushing -> RunningRow(stringResource(Res.string.push_running))
             state.isResolvingConflict -> RunningRow(stringResource(Res.string.conflict_running))
             publication.hasConflict -> Button(onClick = { onAction(WillhabenTabAction.OnResolveConflictClick) }, modifier = Modifier.padding(top = 8.dp)) {
-                Icon(Icons.Default.CompareArrows, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.CompareArrows, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(Res.string.conflict_button))
             }
