@@ -179,3 +179,5 @@ Next: user test of the UI (N.1), live tests (N.2-N.4), then Phase 7 (7.3-7.14).
 - 2026-10-26 – Android willhaben login: `WillhabenLoginActivity` (WebView with the real login page, JS + DOM
   storage, third-party cookies for reCAPTCHA); after the redirect to "my adverts" the WebView cookies become
   host cookies of www.willhaben.at (`parseCookieHeader`). INTERNET permission was missing in the manifest.
+- 2026-10-26 – Listings are imported right after a successful login (not when auto renew runs for that login,
+  the renew imports first).

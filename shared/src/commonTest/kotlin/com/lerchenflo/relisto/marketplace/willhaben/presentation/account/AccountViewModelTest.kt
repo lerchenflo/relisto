@@ -77,6 +77,26 @@ class AccountViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun listingsAreLoadedAfterLogin() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.onAction(AccountAction.OnLoginClick)
+
+        assertThat(importer.calls).isEqualTo(1)
+    }
+
+    @Test
+    fun autoRenewAtLoginLoadsTheListingsItself() = runTest {
+        settings.settings.value = AppSettings(autoRenewExpired = true)
+        val viewModel = viewModel()
+
+        viewModel.onAction(AccountAction.OnLoginClick)
+
+        // The renew imports first; no second import for the same login
+        assertThat(importer.calls).isEqualTo(1)
+    }
+
+    @Test
     fun loginIsInProgressUntilBrowserReturns() = runTest {
         browser.pending = CompletableDeferred()
         val viewModel = viewModel()

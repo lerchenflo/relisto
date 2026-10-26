@@ -81,12 +81,19 @@ class AccountViewModel(
         if (_state.value.isLoggingIn) return
         _state.update { it.copy(isLoggingIn = true) }
         viewModelScope.launch {
+            // The first login of a run with auto renew imports as part of the renew
+            val autoRenewPending = !autoRenewChecked && settingsDataSource.getSettings().autoRenewExpired
             val error = when (val browserResult = loginBrowser.login()) {
                 is Result.Error -> browserResult.error
                 is Result.Success -> (sessionRepository.completeLogin(browserResult.data) as? Result.Error)?.error
             }
             _state.update { it.copy(isLoggingIn = false) }
-            error?.toUiText()?.let { _events.send(AccountEvent.ShowMessage(it)) }
+            if (error != null) {
+                // Closing the login page is no error and has no message
+                error.toUiText()?.let { _events.send(AccountEvent.ShowMessage(it)) }
+            } else if (!autoRenewPending) {
+                importListings()
+            }
         }
     }
 
