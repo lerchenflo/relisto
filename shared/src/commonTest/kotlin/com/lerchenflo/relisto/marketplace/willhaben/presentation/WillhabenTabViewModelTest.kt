@@ -537,6 +537,19 @@ class WillhabenTabViewModelTest : MainDispatcherTest() {
     }
 
     @Test
+    fun runningListingCanBeOpenedOnWillhaben() = runTest {
+        val url = "https://www.willhaben.at/iad/object?adId=7"
+        statuses.statuses.value = listOf(PublicationStatus(1, Marketplace.WILLHABEN, "Aktiv", null, SyncState.SYNCED, remoteUrl = url))
+        assertThat(viewModel().state.value.publication!!.url).isEqualTo(url)
+
+        // Drafts are not public, gone listings do not exist anymore
+        statuses.statuses.value = listOf(PublicationStatus(1, Marketplace.WILLHABEN, "Bearbeitung", null, SyncState.SYNCED, remoteUrl = url))
+        assertThat(viewModel().state.value.publication!!.url).isNull()
+        statuses.statuses.value = listOf(PublicationStatus(1, Marketplace.WILLHABEN, "Aktiv", null, SyncState.REMOTE_GONE, remoteUrl = url))
+        assertThat(viewModel().state.value.publication?.url).isNull()
+    }
+
+    @Test
     fun onlyLocalChangesOfARunningListingCanBePushed() = runTest {
         publishedAs("Aktiv", syncState = SyncState.LOCAL_CHANGES)
         assertThat(viewModel().state.value.publication!!.canPush).isTrue()

@@ -291,6 +291,7 @@ class WillhabenTabViewModel(
             // A renew sends the local content anyway
             canPush = renewAction == null && syncState == SyncState.LOCAL_CHANGES,
             hasConflict = syncState == SyncState.CONFLICT,
+            url = remoteUrl.takeUnless { isDraft || syncState == SyncState.REMOTE_GONE },
         )
     }
 

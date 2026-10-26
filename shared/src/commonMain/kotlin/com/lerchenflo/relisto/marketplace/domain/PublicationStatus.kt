@@ -16,6 +16,8 @@ data class PublicationStatus(
     val availableActions: Set<String> = emptySet(),
     /** How long the listing runs on the marketplace; null when it depends on a package (Auto & Motor). */
     val runtimeMillis: Long? = null,
+    /** The listing's page on the marketplace; null while it exists only locally. */
+    val remoteUrl: String? = null,
 ) {
     /** In editing on the marketplace ("Bearbeitung"): finished, not copied, to publish it. */
     val isDraft: Boolean get() = statusText == WILLHABEN_DRAFT_STATUS

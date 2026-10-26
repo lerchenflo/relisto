@@ -39,7 +39,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -154,6 +156,7 @@ import relisto.shared.generated.resources.willhaben_listing_expires
 import relisto.shared.generated.resources.willhaben_listing_status
 import relisto.shared.generated.resources.willhaben_listing_sync
 import relisto.shared.generated.resources.willhaben_listing_title
+import relisto.shared.generated.resources.willhaben_open
 import relisto.shared.generated.resources.willhaben_location
 import relisto.shared.generated.resources.willhaben_location_need_postcode
 import relisto.shared.generated.resources.willhaben_location_none
@@ -326,6 +329,7 @@ private fun PublishStep.label(): StringResource = when (this) {
     PublishStep.ACTIVATE -> Res.string.publish_step_activate
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PublicationSection(
     publication: PublicationUi,
@@ -368,10 +372,20 @@ private fun PublicationSection(
             }
         }
         statusActions()
-        TextButton(onClick = { onAction(WillhabenTabAction.OnShowActivityClick) }) {
-            Icon(Icons.Default.History, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(Res.string.activity_open))
+        FlowRow {
+            publication.url?.let { url ->
+                val uriHandler = LocalUriHandler.current
+                TextButton(onClick = { uriHandler.openUri(url) }) {
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(Res.string.willhaben_open))
+                }
+            }
+            TextButton(onClick = { onAction(WillhabenTabAction.OnShowActivityClick) }) {
+                Icon(Icons.Default.History, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(Res.string.activity_open))
+            }
         }
         HorizontalDivider(modifier = Modifier.padding(top = 4.dp))
     }

@@ -31,9 +31,6 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 
 ## Phase 7 – Polish and release
 
-- [ ] 7.3 Clear "willhaben changed its API" message everywhere (`PublishError.MissingLink` exists; also map
-  `SERIALIZATION` from willhaben to it).
-- [ ] 7.4 "Open on willhaben" link per listing (willhaben tab, `remoteUrl` is stored).
 - [ ] 7.5 Backup / export of database + images as a zip (desktop save dialog, Android `CreateDocument`).
 - [ ] 7.6 Window: remember size/position, app icon.
 - [ ] 7.8 Document session lifetime, CSRF cookie timing and silent re-login in `docs/willhaben-api.md` (live).

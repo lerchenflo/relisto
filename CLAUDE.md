@@ -165,3 +165,5 @@ Next: user test of the UI (N.1), live tests (N.2-N.4), then Phase 7 (7.3-7.14).
 - 2026-10-22 – Requests to willhaben are spaced (300 ms, `RequestSpacing`, also image downloads); image
   uploads run up to four at a time (7.7, 7.11). TODO.md rewritten to open work only; paused by the user
   (token budget).
+- 2026-10-26 – 7.3/7.4: unexpected willhaben responses and missing links say "willhaben changed its interface,
+  check for a Relisto update"; willhaben tab has "Auf willhaben öffnen" (not for drafts or gone listings).

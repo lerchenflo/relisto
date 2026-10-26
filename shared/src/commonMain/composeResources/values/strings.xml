@@ -10,7 +10,7 @@
     <string name="error_not_found">Nicht gefunden.</string>
     <string name="error_too_many_requests">Zu viele Anfragen. Bitte warte einen Moment.</string>
     <string name="error_server">willhaben ist gerade nicht erreichbar. Bitte versuche es später noch einmal.</string>
-    <string name="error_serialization">willhaben hat eine unerwartete Antwort geschickt.</string>
+    <string name="error_serialization">willhaben hat die Schnittstelle geändert (unerwartete Antwort). Bitte nach einem Relisto-Update suchen.</string>
     <string name="error_disk_full">Der Speicher ist voll.</string>
     <string name="error_unknown">Etwas ist schiefgelaufen.</string>
 
@@ -184,7 +184,7 @@
     <string name="conflict_resolved">Konflikt gelöst.</string>
     <string name="conflict_no_price">Kein Preis</string>
     <string name="push_error_conflict">Die Anzeige wurde auf willhaben geändert. Wähle, welche Version gelten soll.</string>
-    <string name="republish_error_api_changed">willhaben hat die Schnittstelle geändert (%1$s fehlt).</string>
+    <string name="republish_error_api_changed">willhaben hat die Schnittstelle geändert (%1$s fehlt). Bitte nach einem Relisto-Update suchen.</string>
     <string name="renew_summary">%1$d erneuert, %2$d fehlgeschlagen</string>
     <string name="renew_checked">Ausgewählte erneuern (%1$d)</string>
     <string name="renew_select_all">Alle abgelaufenen auswählen (%1$d)</string>
@@ -255,4 +255,5 @@
     <string name="publish_step_finish">Anzeige speichern</string>
     <string name="publish_step_reload">Anzeige prüfen</string>
     <string name="publish_step_activate">Aktivieren</string>
+    <string name="willhaben_open">Auf willhaben öffnen</string>
 </resources>

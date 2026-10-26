@@ -35,6 +35,7 @@ class RoomPublicationStatusRepository(
                     isRenewDraft = row.remoteStatus == WILLHABEN_DRAFT_STATUS && !row.replacedRemoteIds.isNullOrBlank(),
                     availableActions = row.remoteActionsJson?.toStatusActionLinks().orEmpty().map { it.action.name }.toSet(),
                     runtimeMillis = if (marketplace == Marketplace.WILLHABEN) WillhabenAdTypes.runtimeMillis(row.adTypeId()) else null,
+                    remoteUrl = row.remoteUrl,
                 )
             }
         }

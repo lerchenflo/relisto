@@ -28,12 +28,12 @@ class RoomPublicationStatusRepositoryTest {
     @AfterTest
     fun tearDown() = database.close()
 
-    private suspend fun publication(status: String, replacedRemoteIds: String?, actionsJson: String? = null) {
+    private suspend fun publication(status: String, replacedRemoteIds: String?, actionsJson: String? = null, url: String? = null) {
         val id = (listings.createListing(ListingContent(title = "x")) as Result.Success).data
         database.publicationDao().insert(
             ListingPublicationEntity(
                 listingId = id, marketplace = Marketplace.WILLHABEN.name, marketplaceFieldsJson = null,
-                remoteId = "r$id", remoteUuid = null, remoteUrl = null, remoteStatus = status, expiresAt = null,
+                remoteId = "r$id", remoteUuid = null, remoteUrl = url, remoteStatus = status, expiresAt = null,
                 remoteSnapshotJson = null, remoteSnapshotHash = null, syncState = SyncState.SYNCED.name,
                 lastSyncedAt = null, lastError = null, replacedRemoteIds = replacedRemoteIds, remoteActionsJson = actionsJson,
             )
@@ -60,5 +60,12 @@ class RoomPublicationStatusRepositoryTest {
 
         assertThat(statuses[0].isRenewDraft).isTrue()
         assertThat(statuses[1].isRenewDraft).isFalse()
+    }
+
+    @Test
+    fun remoteUrlIsPassedOn() = runTest {
+        publication("Online", null, url = "https://www.willhaben.at/iad/object?adId=1")
+
+        assertThat(repository.getStatusesAsFlow().first()[0].remoteUrl).isEqualTo("https://www.willhaben.at/iad/object?adId=1")
     }
 }

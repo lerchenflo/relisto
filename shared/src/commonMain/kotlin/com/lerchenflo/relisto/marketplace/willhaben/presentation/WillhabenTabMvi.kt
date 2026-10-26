@@ -68,6 +68,8 @@ data class PublicationUi(
     val canPush: Boolean = false,
     /** Changed on both sides; the user picks the version that wins. */
     val hasConflict: Boolean = false,
+    /** The public listing page; null for drafts (not public yet). */
+    val url: String? = null,
 )
 
 data class ConflictUi(

@@ -10,7 +10,7 @@
     <string name="error_not_found">Not found.</string>
     <string name="error_too_many_requests">Too many requests. Please wait a moment.</string>
     <string name="error_server">willhaben is not reachable right now. Please try again later.</string>
-    <string name="error_serialization">willhaben sent an unexpected response.</string>
+    <string name="error_serialization">willhaben changed its interface (unexpected response). Please check for a Relisto update.</string>
     <string name="error_disk_full">The disk is full.</string>
     <string name="error_unknown">Something went wrong.</string>
 
@@ -184,7 +184,7 @@
     <string name="conflict_resolved">Conflict resolved.</string>
     <string name="conflict_no_price">No price</string>
     <string name="push_error_conflict">The listing was changed on willhaben. Choose which version to keep.</string>
-    <string name="republish_error_api_changed">willhaben changed its interface (%1$s is missing).</string>
+    <string name="republish_error_api_changed">willhaben changed its interface (%1$s is missing). Please check for a Relisto update.</string>
     <string name="renew_summary">%1$d renewed, %2$d failed</string>
     <string name="renew_checked">Renew selected (%1$d)</string>
     <string name="renew_select_all">Select all expired (%1$d)</string>
@@ -255,4 +255,5 @@
     <string name="publish_step_finish">Save the listing</string>
     <string name="publish_step_reload">Check the listing</string>
     <string name="publish_step_activate">Activate</string>
+    <string name="willhaben_open">Open on willhaben</string>
 </resources>
