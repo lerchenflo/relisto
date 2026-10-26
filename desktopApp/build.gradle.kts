@@ -45,6 +45,7 @@ compose.desktop {
                 packageName = "relisto"
                 shortcut = true
                 menuGroup = "Office"
+                iconFile.set(project.file("icons/relisto.png"))
             }
 
             windows {
@@ -53,10 +54,12 @@ compose.desktop {
                 upgradeUuid = "e5b067a6-c9f4-46c0-8863-e7f15b81a1af"
                 menu = true
                 shortcut = true
+                iconFile.set(project.file("icons/relisto.ico"))
             }
 
             macOS {
                 bundleID = "com.lerchenflo.relisto"
+                iconFile.set(project.file("icons/relisto.icns"))
             }
         }
 

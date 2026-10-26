@@ -167,3 +167,6 @@ Next: user test of the UI (N.1), live tests (N.2-N.4), then Phase 7 (7.3-7.14).
   (token budget).
 - 2026-10-26 – 7.3/7.4: unexpected willhaben responses and missing links say "willhaben changed its interface,
   check for a Relisto update"; willhaben tab has "Auf willhaben öffnen" (not for drafts or gone listings).
+- 2026-10-26 – 7.6: app icon (white price tag with renew arrow on teal, two colours) for the window, installers
+  (`desktopApp/icons`: icns/ico/png) and the Android launcher; window size, position and maximized state
+  remembered in `window.properties` (ignored when its title bar is on no screen).
