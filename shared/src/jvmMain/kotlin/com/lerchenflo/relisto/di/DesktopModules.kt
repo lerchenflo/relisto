@@ -25,6 +25,11 @@ import org.koin.core.module.dsl.bind
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import java.io.File
+import com.lerchenflo.relisto.backup.data.DesktopBackupFilePicker
+import com.lerchenflo.relisto.backup.data.FileBackupArchive
+import com.lerchenflo.relisto.backup.data.PendingRestore
+import com.lerchenflo.relisto.backup.domain.BackupArchive
+import com.lerchenflo.relisto.backup.domain.BackupFilePicker
 
 /** Name of the encrypted store; KSafe scopes its key to this name. */
 private const val SECURE_STORE_NAME = "relisto"
@@ -32,8 +37,10 @@ private const val SECURE_STORE_NAME = "relisto"
 val desktopPlatformModule = module {
     single<AppDirectories> { DesktopAppDirectories() }
     single<RoomDatabase.Builder<AppDatabase>> {
-        val dbFile = File(get<AppDirectories>().dataDir, AppDatabase.DB_NAME)
-        Room.databaseBuilder<AppDatabase>(dbFile.absolutePath)
+        val directories = get<AppDirectories>()
+        // A restored backup replaces the database before it is opened
+        PendingRestore.of(directories).applyIfPresent()
+        Room.databaseBuilder<AppDatabase>(directories.databaseFile)
     }
     single<DataStore<Preferences>> {
         createDataStore { File(get<AppDirectories>().dataDir, DATA_STORE_FILE_NAME).absolutePath }
@@ -41,6 +48,8 @@ val desktopPlatformModule = module {
     single<HttpClientEngine> { OkHttp.create() }
     singleOf(::DesktopImageStorage) { bind<ImageStorage>() }
     singleOf(::DesktopImagePicker) { bind<ImagePicker>() }
+    singleOf(::FileBackupArchive) { bind<BackupArchive>() }
+    singleOf(::DesktopBackupFilePicker) { bind<BackupFilePicker>() }
     single<SecureStorage> {
         KSafeSecureStorage(KSafe(fileName = SECURE_STORE_NAME, baseDir = File(get<AppDirectories>().dataDir)))
     }

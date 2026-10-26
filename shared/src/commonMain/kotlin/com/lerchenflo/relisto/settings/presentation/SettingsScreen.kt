@@ -48,13 +48,45 @@ import relisto.shared.generated.resources.settings_shipping
 import relisto.shared.generated.resources.settings_shipping_price
 import relisto.shared.generated.resources.settings_title
 import relisto.shared.generated.resources.settings_willhaben
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.rememberCoroutineScope
+import com.lerchenflo.relisto.app.navigation.ObserveAsEvents
+import kotlinx.coroutines.launch
+import relisto.shared.generated.resources.backup_export
+import relisto.shared.generated.resources.backup_restore
+import relisto.shared.generated.resources.backup_restore_confirm
+import relisto.shared.generated.resources.backup_restore_confirm_text
+import relisto.shared.generated.resources.backup_restore_confirm_title
+import relisto.shared.generated.resources.backup_text
+import relisto.shared.generated.resources.backup_title
+import relisto.shared.generated.resources.editor_delete_cancel
 
 @Composable
 fun SettingsRoot(
     accountViewModel: AccountViewModel,
+    snackbarHostState: SnackbarHostState,
     viewModel: SettingsViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
+
+    ObserveAsEvents(viewModel.events) { event ->
+        when (event) {
+            is SettingsEvent.ShowMessage -> scope.launch {
+                snackbarHostState.showSnackbar(event.message.resolve())
+            }
+        }
+    }
     SettingsScreen(
         state = state,
         onAction = viewModel::onAction,
@@ -122,8 +154,55 @@ fun SettingsScreen(
             )
             Text(stringResource(Res.string.settings_data_folder), style = MaterialTheme.typography.titleMedium)
             Text(state.dataFolder, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            BackupSection(isRunning = state.isBackupRunning, onAction = onAction)
         }
     }
+    if (state.restoreSource != null) {
+        RestoreConfirmDialog(onAction = onAction)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun BackupSection(isRunning: Boolean, onAction: (SettingsAction) -> Unit) {
+    Text(stringResource(Res.string.backup_title), style = MaterialTheme.typography.titleMedium)
+    Text(
+        stringResource(Res.string.backup_text),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = { onAction(SettingsAction.OnExportBackupClick) }, enabled = !isRunning) {
+            Icon(Icons.Default.Save, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(Res.string.backup_export))
+        }
+        OutlinedButton(onClick = { onAction(SettingsAction.OnRestoreBackupClick) }, enabled = !isRunning) {
+            Icon(Icons.Default.Restore, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(Res.string.backup_restore))
+        }
+        if (isRunning) CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterVertically))
+    }
+}
+
+@Composable
+private fun RestoreConfirmDialog(onAction: (SettingsAction) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onAction(SettingsAction.OnRestoreDismiss) },
+        title = { Text(stringResource(Res.string.backup_restore_confirm_title)) },
+        text = { Text(stringResource(Res.string.backup_restore_confirm_text)) },
+        confirmButton = {
+            TextButton(onClick = { onAction(SettingsAction.OnRestoreConfirm) }) {
+                Text(stringResource(Res.string.backup_restore_confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onAction(SettingsAction.OnRestoreDismiss) }) {
+                Text(stringResource(Res.string.editor_delete_cancel))
+            }
+        },
+    )
 }
 
 @Composable

@@ -555,6 +555,11 @@ Technical defaults (decided during implementation):
   changed" for the selection), never automatically. "Expiring soon" = a marketplace listing past half
   its runtime (45 days, so the last 22.5 days); Auto & Motor listings are not in this filter.
   Phase 8 order: decided later.
+- 2026-10-26: Backup = zip with `relisto.db` (after a WAL checkpoint) and `images/<sha>.jpg`; no settings,
+  no login/cookies. Export and restore in the settings; a restore is unpacked to `restore-pending/` and swapped
+  in at the next start, before Room opens the database (never replaces an open database). Only the database
+  entry and plain image names are unpacked. App icon: two colours only (white tag + renew arrow on teal
+  `#006A60`), no gradient.
 
 Open (asked via interview when the phase starts):
 - Exact attribute fields shown per category (Phase 2/4, after the first import samples).

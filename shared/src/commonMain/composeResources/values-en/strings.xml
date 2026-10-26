@@ -256,4 +256,15 @@
     <string name="publish_step_reload">Check the listing</string>
     <string name="publish_step_activate">Activate</string>
     <string name="willhaben_open">Open on willhaben</string>
+    <string name="backup_title">Backup</string>
+    <string name="backup_text">Save all listings and images as a zip file or restore them from a backup. The willhaben login is not included.</string>
+    <string name="backup_export">Create backup</string>
+    <string name="backup_restore">Restore backup</string>
+    <string name="backup_done">Backup saved.</string>
+    <string name="backup_failed">The backup could not be saved.</string>
+    <string name="backup_restore_confirm_title">Restore backup?</string>
+    <string name="backup_restore_confirm_text">At the next start the backup replaces all local listings and images. Changes until then are lost.</string>
+    <string name="backup_restore_confirm">Restore</string>
+    <string name="backup_restore_ready">Backup ready. Restart Relisto to apply it.</string>
+    <string name="backup_restore_failed">The file is not a Relisto backup or could not be read.</string>
 </resources>

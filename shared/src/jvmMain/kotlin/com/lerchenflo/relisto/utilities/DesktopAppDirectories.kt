@@ -1,5 +1,6 @@
 package com.lerchenflo.relisto.utilities
 
+import com.lerchenflo.relisto.datasource.database.AppDatabase
 import java.io.File
 
 /** OS-specific application data folder ("Application Support" on macOS, %APPDATA% on Windows). */
@@ -16,6 +17,7 @@ class DesktopAppDirectories : AppDirectories {
     }
 
     override val dataDir: String = root.ensureExists().absolutePath
+    override val databaseFile: String = File(root, AppDatabase.DB_NAME).absolutePath
     override val imagesDir: String = File(root, "images").ensureExists().absolutePath
     override val cacheDir: String = File(root, "cache").ensureExists().absolutePath
 

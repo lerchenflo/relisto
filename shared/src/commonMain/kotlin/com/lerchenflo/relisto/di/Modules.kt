@@ -62,12 +62,15 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import com.lerchenflo.relisto.backup.data.DefaultBackupRepository
+import com.lerchenflo.relisto.backup.domain.BackupRepository
 
 /**
  * All data-layer singletons. Platform modules provide the database builder, DataStore, HTTP engine,
  * file access, secure storage and the login browser.
  */
 val datasourceModule = module {
+    singleOf(::DefaultBackupRepository) { bind<BackupRepository>() }
     single<AppDatabase> { CreateAppDatabase(get()).getDatabase() }
     single { get<AppDatabase>().listingDao() }
     single { get<AppDatabase>().listingImageDao() }

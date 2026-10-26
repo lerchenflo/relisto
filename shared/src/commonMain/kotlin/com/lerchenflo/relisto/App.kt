@@ -108,7 +108,7 @@ fun App() {
                                 )
                             }
                             entry<Route.Settings> {
-                                SettingsRoot(accountViewModel = accountViewModel)
+                                SettingsRoot(accountViewModel = accountViewModel, snackbarHostState = snackbarHostState)
                             }
                             entry<Route.ActivityLog> { route ->
                                 ActivityLogRoot(listingId = route.listingId)

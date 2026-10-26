@@ -17,6 +17,7 @@ fun inMemoryDatabase(): AppDatabase = Room.inMemoryDatabaseBuilder<AppDatabase>(
 class TempAppDirectories : AppDirectories {
     val root: File = Files.createTempDirectory("relisto-test").toFile()
     override val dataDir: String = root.absolutePath
+    override val databaseFile: String = File(root, "relisto.db").absolutePath
     override val imagesDir: String = File(root, "images").apply { mkdirs() }.absolutePath
     override val cacheDir: String = File(root, "cache").apply { mkdirs() }.absolutePath
 

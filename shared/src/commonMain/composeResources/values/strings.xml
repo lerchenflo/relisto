@@ -256,4 +256,15 @@
     <string name="publish_step_reload">Anzeige prüfen</string>
     <string name="publish_step_activate">Aktivieren</string>
     <string name="willhaben_open">Auf willhaben öffnen</string>
+    <string name="backup_title">Sicherung</string>
+    <string name="backup_text">Alle Anzeigen und Bilder als Zip-Datei sichern oder aus einer Sicherung wiederherstellen. Die willhaben-Anmeldung ist nicht enthalten.</string>
+    <string name="backup_export">Sicherung erstellen</string>
+    <string name="backup_restore">Sicherung wiederherstellen</string>
+    <string name="backup_done">Sicherung gespeichert.</string>
+    <string name="backup_failed">Sicherung konnte nicht gespeichert werden.</string>
+    <string name="backup_restore_confirm_title">Sicherung wiederherstellen?</string>
+    <string name="backup_restore_confirm_text">Beim nächsten Start ersetzt die Sicherung alle lokalen Anzeigen und Bilder. Änderungen bis dahin gehen verloren.</string>
+    <string name="backup_restore_confirm">Wiederherstellen</string>
+    <string name="backup_restore_ready">Sicherung bereit. Relisto neu starten, um sie einzuspielen.</string>
+    <string name="backup_restore_failed">Die Datei ist keine Relisto-Sicherung oder konnte nicht gelesen werden.</string>
 </resources>

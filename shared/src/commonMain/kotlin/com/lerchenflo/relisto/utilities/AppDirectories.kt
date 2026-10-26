@@ -7,6 +7,9 @@ interface AppDirectories {
     /** Root data folder (database, settings). */
     val dataDir: String
 
+    /** The database file (inside [dataDir] on desktop, in the app's database folder on Android). */
+    val databaseFile: String
+
     /** Copies of all listing images, named by their SHA-256 hash. */
     val imagesDir: String
 

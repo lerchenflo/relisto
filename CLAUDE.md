@@ -170,3 +170,6 @@ Next: user test of the UI (N.1), live tests (N.2-N.4), then Phase 7 (7.3-7.14).
 - 2026-10-26 – 7.6: app icon (white price tag with renew arrow on teal, two colours) for the window, installers
   (`desktopApp/icons`: icns/ico/png) and the Android launcher; window size, position and maximized state
   remembered in `window.properties` (ignored when its title bar is on no screen).
+- 2026-10-26 – 7.5: backup in the settings: "Sicherung erstellen" writes database + images as a zip (desktop save
+  dialog, Android `CreateDocument`); "Sicherung wiederherstellen" (confirmed) unpacks a backup into
+  `restore-pending/`, which replaces the local data at the next start before the database opens.

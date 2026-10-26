@@ -29,12 +29,19 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import org.koin.mp.KoinPlatform
 import java.io.File
+import com.lerchenflo.relisto.backup.data.AndroidBackupFilePicker
+import com.lerchenflo.relisto.backup.data.PendingRestore
+import com.lerchenflo.relisto.backup.data.UriBackupArchive
+import com.lerchenflo.relisto.backup.domain.BackupArchive
+import com.lerchenflo.relisto.backup.domain.BackupFilePicker
 
 val androidPlatformModule = module {
     single<AppDirectories> { AndroidAppDirectories(androidContext()) }
     single<RoomDatabase.Builder<AppDatabase>> {
-        val context = androidContext()
-        Room.databaseBuilder<AppDatabase>(context, context.getDatabasePath(AppDatabase.DB_NAME).absolutePath)
+        val directories = get<AppDirectories>()
+        // A restored backup replaces the database before it is opened
+        PendingRestore.of(directories).applyIfPresent()
+        Room.databaseBuilder<AppDatabase>(androidContext(), directories.databaseFile)
     }
     single<DataStore<Preferences>> {
         createDataStore { File(get<AppDirectories>().dataDir, DATA_STORE_FILE_NAME).absolutePath }
@@ -42,6 +49,8 @@ val androidPlatformModule = module {
     single<HttpClientEngine> { OkHttp.create() }
     single<ImageStorage> { AndroidImageStorage(androidContext(), get()) }
     singleOf(::AndroidImagePicker) { bind<ImagePicker>() }
+    single<BackupArchive> { UriBackupArchive(androidContext()) }
+    singleOf(::AndroidBackupFilePicker) { bind<BackupFilePicker>() }
     single<SecureStorage> { KSafeSecureStorage(KSafe(androidContext(), fileName = "relisto")) }
     singleOf(::AndroidWillhabenLoginBrowser) { bind<WillhabenLoginBrowser>() }
     single { ResponseCaptureSettings(null) }
@@ -57,4 +66,5 @@ fun initKoin(activity: ComponentActivity) {
         }
     }
     KoinPlatform.getKoin().get<AndroidImagePicker>().register(activity)
+    KoinPlatform.getKoin().get<AndroidBackupFilePicker>().register(activity)
 }

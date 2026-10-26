@@ -11,6 +11,9 @@ import com.lerchenflo.relisto.datasource.preferences.SecureStorage
 import com.lerchenflo.relisto.di.createDataStore
 import com.lerchenflo.relisto.listings.data.DesktopImageStorage
 import com.lerchenflo.relisto.listings.domain.ImagePicker
+import com.lerchenflo.relisto.backup.data.FileBackupArchive
+import com.lerchenflo.relisto.backup.domain.BackupArchive
+import com.lerchenflo.relisto.backup.domain.BackupFilePicker
 import com.lerchenflo.relisto.listings.domain.ImageStorage
 import com.lerchenflo.relisto.marketplace.willhaben.domain.WillhabenLoginBrowser
 import com.lerchenflo.relisto.utilities.AppDirectories
@@ -30,6 +33,13 @@ fun testPlatformModule(dirs: TempAppDirectories): Module = module {
     single<HttpClientEngine> { MockEngine { respondError(HttpStatusCode.ServiceUnavailable) } }
     single<ImageStorage> { DesktopImageStorage(get()) }
     single<ImagePicker> { object : ImagePicker { override suspend fun pickImages() = emptyList<String>() } }
+    single<BackupArchive> { FileBackupArchive() }
+    single<BackupFilePicker> {
+        object : BackupFilePicker {
+            override suspend fun pickSaveTarget(suggestedName: String): String? = null
+            override suspend fun pickBackupFile(): String? = null
+        }
+    }
     single<SecureStorage> { FakeSecureStorage() }
     single<WillhabenLoginBrowser> { FakeLoginBrowser() }
     single { ResponseCaptureSettings(null) }

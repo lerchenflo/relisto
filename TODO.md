@@ -31,7 +31,6 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 
 ## Phase 7 – Polish and release
 
-- [ ] 7.5 Backup / export of database + images as a zip (desktop save dialog, Android `CreateDocument`).
 - [ ] 7.8 Document session lifetime, CSRF cookie timing and silent re-login in `docs/willhaben-api.md` (live).
 - [ ] 7.9 Run the `kmp-crash-guard` and `flow-stability` skills on the finished flows.
 - [ ] 7.10 Production release: from here on never drop the database (Room migrations only).
