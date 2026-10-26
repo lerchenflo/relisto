@@ -36,8 +36,6 @@ willhaben listings up to date → renew expired listings. **Last phase:** same l
 - [ ] 7.10 Production release: from here on never drop the database (Room migrations only).
 - [ ] 7.12 UX pass with the `mobile-ux-conventions` skill over all screens and dialogs (button order,
   touch targets, empty/loading states), checked on the Android emulator too.
-- [ ] 7.13 Clear the last compile warning (`BackHandler` in `ListingsScreen.kt` is deprecated, use
-  `NavigationEventHandler`), remove unused resources (e.g. `import_running`).
 - [ ] 7.14 Architecture cleanup against the KMP skills (module structure, data layer, Koin, MVI, navigation,
   error handling); e.g. `marketplace/data` depends on `marketplace/willhaben/data`, `Daos.kt` holds every DAO.
 

@@ -173,3 +173,6 @@ Next: user test of the UI (N.1), live tests (N.2-N.4), then Phase 7 (7.3-7.14).
 - 2026-10-26 – 7.5: backup in the settings: "Sicherung erstellen" writes database + images as a zip (desktop save
   dialog, Android `CreateDocument`); "Sicherung wiederherstellen" (confirmed) unpacks a backup into
   `restore-pending/`, which replaces the local data at the next start before the database opens.
+- 2026-10-26 – Fixed a duplicate desktop `main.kt` (c7d89fa had added a second one, desktop build broke). 7.13: no
+  compile warnings left (`NavigationBackHandler` from navigationevent-compose replaces ui-backhandler), three
+  unused strings removed.

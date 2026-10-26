@@ -1,4 +1,5 @@
 [versions]
+navigationevent = "1.1.0"
 twelvemonkeys = "3.12.0"
 # Build tooling
 agp = "9.4.1"                           # Android Gradle Plugin
@@ -52,7 +53,7 @@ turbine = "1.2.1"                       # Flow testing
 assertk = "0.28.1"                      # Fluent assertions
 
 [libraries]
-compose-backhandler = { module = "org.jetbrains.compose.ui:ui-backhandler", version.ref = "composeMultiplatform" } # System back (Android) in common code
+navigationevent-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" } # System back (Android) in common code
 twelvemonkeys-imageio-webp = { module = "com.twelvemonkeys.imageio:imageio-webp", version.ref = "twelvemonkeys" } # WebP reader for ImageIO (willhaben images are WebP)
 # --- Testing ---
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

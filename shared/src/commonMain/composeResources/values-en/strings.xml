@@ -77,7 +77,6 @@
     <string name="willhaben_category_choose">Choose category</string>
     <string name="willhaben_category_suggest">Suggest from title</string>
     <string name="willhaben_category_suggestions">Suggestions</string>
-    <string name="willhaben_category_no_suggestions">No suggestions for this title.</string>
     <string name="willhaben_category_search">Search category</string>
     <string name="willhaben_category_no_results">No category found.</string>
     <string name="willhaben_category_close">Close</string>
@@ -88,7 +87,6 @@
     <string name="willhaben_attributes_hint">Condition and handover come from the listing fields and delivery options.</string>
     <string name="willhaben_attribute_required">%1$s *</string>
     <string name="willhaben_attribute_choose">Choose…</string>
-    <string name="willhaben_attribute_search">Search %1$s</string>
     <string name="willhaben_location">Location</string>
     <string name="willhaben_location_need_postcode">Enter a 4-digit postcode in the listing fields.</string>
     <string name="willhaben_location_none">No location found for postcode %1$s.</string>
@@ -115,7 +113,6 @@
 
     <!-- willhaben import -->
     <string name="import_button">Import from willhaben</string>
-    <string name="import_running">Importing…</string>
     <string name="import_done">%1$d willhaben listings found: %2$d new, %3$d updated.</string>
 
     <!-- Update hint -->

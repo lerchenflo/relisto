@@ -79,7 +79,9 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.backhandler.BackHandler
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -219,7 +221,9 @@ private fun CompactListingsLayout(
         )
         return
     }
-    BackHandler { onAction(ListingsAction.OnCloseListingClick) }
+    NavigationBackHandler(state = rememberNavigationEventState(NavigationEventInfo.None)) {
+        onAction(ListingsAction.OnCloseListingClick)
+    }
     key(selectedId) { editorContent(selectedId) { onAction(ListingsAction.OnCloseListingClick) } }
 }
 

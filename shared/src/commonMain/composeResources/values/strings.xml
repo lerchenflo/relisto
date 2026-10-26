@@ -77,7 +77,6 @@
     <string name="willhaben_category_choose">Kategorie wählen</string>
     <string name="willhaben_category_suggest">Aus Titel vorschlagen</string>
     <string name="willhaben_category_suggestions">Vorschläge</string>
-    <string name="willhaben_category_no_suggestions">Keine Vorschläge für diesen Titel.</string>
     <string name="willhaben_category_search">Kategorie suchen</string>
     <string name="willhaben_category_no_results">Keine Kategorie gefunden.</string>
     <string name="willhaben_category_close">Schließen</string>
@@ -88,7 +87,6 @@
     <string name="willhaben_attributes_hint">Zustand und Übergabe kommen aus den Anzeigenfeldern und den Versandoptionen.</string>
     <string name="willhaben_attribute_required">%1$s *</string>
     <string name="willhaben_attribute_choose">Auswählen…</string>
-    <string name="willhaben_attribute_search">%1$s suchen</string>
     <string name="willhaben_location">Ort</string>
     <string name="willhaben_location_need_postcode">Gib in den Anzeigenfeldern eine vierstellige Postleitzahl ein.</string>
     <string name="willhaben_location_none">Kein Ort für die Postleitzahl %1$s gefunden.</string>
@@ -115,7 +113,6 @@
 
     <!-- willhaben import -->
     <string name="import_button">Von willhaben importieren</string>
-    <string name="import_running">Import läuft…</string>
     <string name="import_done">%1$d willhaben-Anzeigen gefunden: %2$d neu, %3$d aktualisiert.</string>
 
     <!-- Update hint -->
