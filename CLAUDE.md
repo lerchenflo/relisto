@@ -23,8 +23,8 @@ listings on other marketplaces (Kleinanzeigen, Shpock, Facebook Marketplace).
   in `PLAN.md` section 6.
 - Test-driven development for all new logic (test-driven-development + android-testing skills):
   failing test first, then the code. Running `./gradlew :shared:jvmTest` is allowed.
-- Commit regularly. Push to `origin main` only when the compile check below passes (every push to
-  `main` will create a release).
+- Commit regularly. Push to `origin main` only when the compile check below passes (a weekly scheduled
+  run releases `main` when it has new commits; a manual run of `release.yml` releases at once).
 - Running the app (`:desktopApp:run`) and packaging tasks still need an explicit request.
 - Use SchneaggchatV3 (`~/Desktop/SchneaggchatV3`) as the reference for versions, Gradle setup and
   release workflows.

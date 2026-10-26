@@ -523,7 +523,8 @@ Made (all 2026-10-18, confirmed by me in the interview):
   location, delivery options.
 - No separate API spike; endpoints are verified while implementing, reads before writes.
 
-- Every push to `main` creates a release (DMG, MSI, DEB, RPM, Arch, APK), like SchneaggchatV3.
+- A weekly scheduled run (Mondays 04:00 UTC) creates a release (DMG, MSI, DEB, RPM, Arch, APK) when `main`
+  has new commits since the last release tag; a manual run releases at once (2026-10-26, was every push).
 - Android APKs are signed with a sideload key committed to the repo (no release keys to manage).
 - Test-driven development for all logic.
 

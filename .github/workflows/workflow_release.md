@@ -1,6 +1,8 @@
 # Releases
 
-Every push to `main` creates a release automatically (`release.yml`):
+Once a week (Mondays 04:00 UTC) `release.yml` creates a release automatically, but only when `main` has new
+commits since the last release tag. Run the workflow by hand (Actions tab, "Run workflow") to release at once.
+Each release:
 
 1. Unit tests run (`./gradlew :shared:jvmTest`). If they fail, nothing is released.
 2. A GitHub release `v1.0.<run number>` is created with generated release notes.
